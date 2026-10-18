@@ -881,10 +881,10 @@ export function stepCarPhysics(
       ? 0
       : getEngineTorqueNm(state.rpm, state.turboBoostBar, state.damage.engine);
 
-  // Engine compression braking when throttle is closed in gear
+  // Engine compression braking when throttle is closed in gear and moving above idle speed
   const engineBrakingTorqueNm =
-    state.gear !== 0 && state.clutchEngagement > 0.3
-      ? (1 - state.throttle) * (state.rpm / 7500) * 95 * state.clutchEngagement
+    state.gear > 0 && state.forwardSpeedMs > 1.8 && state.clutchEngagement > 0.3
+      ? (1 - state.throttle) * Math.max(0, (state.rpm - 1100) / 6500) * 95 * state.clutchEngagement
       : 0;
 
   const netEngineTorqueNm = engineTorqueNm * state.throttle - engineBrakingTorqueNm;
