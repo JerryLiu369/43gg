@@ -5,6 +5,9 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // GitHub Pages 项目站发布在 /gaistudio/ 子路径下，base 必须对上，
+    // 否则页面 200 但所有 assets 404。
+    base: '/gaistudio/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
