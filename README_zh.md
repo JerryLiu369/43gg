@@ -1,5 +1,8 @@
 [English](./README.md) | **简体中文**
 
+> **在线访问 (GitHub Pages)：** [https://jerryliu369.github.io/gaistudio/](https://jerryliu369.github.io/gaistudio/)（推送 `main` 后由 GitHub Actions 自动构建并发布）  
+> 直达应用：[吉星包租公](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
+
 # gaistudio — 统一 React WebApp 多应用工作区
 
 `gaistudio` 是一个基于 React 19 + Vite 8 + TypeScript + Tailwind CSS 4 的统一 WebApp 外壳工作区，通过单一入口与单一预览端口收口多个相互隔离的小应用与原型。
@@ -102,7 +105,8 @@ npm run apps:check   # 执行 .env 安全检查、tsc、单元测试与 vite bui
 ## 六、仓库私有性与 GitHub Pages 部署隔离
 
 - `main`：工作区源码主分支，仓库保持 **Private（私有）**。
-- `ds-stage`：保留的 `STAGE` 历史独立分支（代码已同步在 `main` 的 `apps/ds-stage/`）。
-- `gh-pages`：GitHub Pages 静态发布分支，站点（`https://jerryliu369.github.io/gaistudio/`）当前保持 **Public（公开访问）**。
-- **有意采用的隔离策略**：源码仓库 **Private**、线上静态 WebApp **Public** 是当前明确选择。发布到 `gh-pages` 的仅限 `dist/` 编译后的纯静态运行时产物（`.nojekyll`、`index.html`、`assets/` 与 `apps/*` 运行时资源），绝不将 `src/` 源码、`.env*`、凭据或 `.aistudio/` 临时媒体提交到 `gh-pages`。
+- `ds-stage`：保留的 `STAGE` 历史独立分支。
+- `gh-pages`：历史静态发布分支，现仅作历史留存，**不再作为 GitHub Pages 发布源**。
+- **自动部署流程（推送 `main` 自动更新 Pages）**：向 `main` 推送提交会自动触发 [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml)（`workflow` 模式），自动执行 `npm run apps:check`（`.env` 安全检查、TypeScript 类型检查、单元测试与 `vite build`）并将编译产物 `./dist` 自动部署至 `https://jerryliu369.github.io/gaistudio/`（也支持 `workflow_dispatch` 手动触发）。
+- **有意采用的隔离策略**：源码仓库 **Private（私有）**、线上静态 WebApp **Public（公开访问）** 是当前明确选择。自动部署仅发布 `./dist` 下的纯静态运行时产物（`index.html`、`assets/` 及可能存在的 `apps/*` 静态运行时资源），绝不会公开 `src/` 源码、`.env*`、凭据或 `.aistudio/` 临时文件。
 - **密钥规范**：真实 API Key 仅保存在本地 `.env`，严禁提交进 Git 历史；示例占位请放在 `.env.example`。
