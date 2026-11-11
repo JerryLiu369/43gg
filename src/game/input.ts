@@ -21,11 +21,12 @@ export class InputController {
   // Gamepad previous button states for edge detection
   private prevGpButtons: boolean[] = [];
 
-  // Callbacks for global shortcuts (Camera, Pause, Transmission, Mute)
+  // Callbacks for global shortcuts (Camera, Pause, Transmission, Mute, Reset)
   public onToggleCamera?: () => void;
   public onTogglePause?: () => void;
   public onToggleTransmission?: () => void;
   public onToggleMute?: () => void;
+  public onResetVehicle?: () => void;
 
   private boundKeyDown: (e: KeyboardEvent) => void;
   private boundKeyUp: (e: KeyboardEvent) => void;
@@ -97,6 +98,8 @@ export class InputController {
         this.onToggleTransmission?.();
       } else if (code === 'KeyM') {
         this.onToggleMute?.();
+      } else if (code === 'KeyR') {
+        this.onResetVehicle?.();
       }
     }
     this.keysDown.add(code);
@@ -120,7 +123,7 @@ export class InputController {
    * Samples progressive keyboard, linear gamepad, and mobile touch controls.
    */
   public sample(dt: number): RawControlsInput {
-    // 1. Progressive Keyboard Steering (supports quick feathering taps vs long holds)
+    // 1. Progressive Keyboard Steering (Left = -1, Right = +1)
     const leftHeld = this.keysDown.has('KeyA') || this.keysDown.has('ArrowLeft');
     const rightHeld = this.keysDown.has('KeyD') || this.keysDown.has('ArrowRight');
     const upHeld = this.keysDown.has('KeyW') || this.keysDown.has('ArrowUp');
@@ -129,15 +132,13 @@ export class InputController {
     const clutchHeld = this.keysDown.has('ShiftLeft') || this.keysDown.has('ShiftRight') || this.keysDown.has('KeyK');
 
     if (leftHeld && !rightHeld) {
-      // Fast snap across center if counter-steering from right to left
-      const rate = this.kbSteer > 0 ? 9.5 : 3.8;
+      const rate = this.kbSteer > 0 ? 11.5 : 5.2;
       this.kbSteer = Math.max(-1, this.kbSteer - rate * dt);
     } else if (rightHeld && !leftHeld) {
-      const rate = this.kbSteer < 0 ? 9.5 : 3.8;
+      const rate = this.kbSteer < 0 ? 11.5 : 5.2;
       this.kbSteer = Math.min(1, this.kbSteer + rate * dt);
     } else {
-      // Self-centering return
-      const returnRate = 6.8;
+      const returnRate = 8.2;
       if (Math.abs(this.kbSteer) < returnRate * dt) {
         this.kbSteer = 0;
       } else {
@@ -145,17 +146,17 @@ export class InputController {
       }
     }
 
-    // Progressive Keyboard Throttle & Brake (allows feathering 40%-60% throttle by tapping)
+    // Crisp Throttle & Brake engagement
     if (upHeld) {
-      this.kbThrottle = Math.min(1, this.kbThrottle + 5.2 * dt);
+      this.kbThrottle = Math.min(1, this.kbThrottle + 7.5 * dt);
     } else {
-      this.kbThrottle = Math.max(0, this.kbThrottle - 7.5 * dt);
+      this.kbThrottle = Math.max(0, this.kbThrottle - 9.0 * dt);
     }
 
     if (downHeld) {
-      this.kbBrake = Math.min(1, this.kbBrake + 5.8 * dt);
+      this.kbBrake = Math.min(1, this.kbBrake + 7.5 * dt);
     } else {
-      this.kbBrake = Math.max(0, this.kbBrake - 8.5 * dt);
+      this.kbBrake = Math.max(0, this.kbBrake - 9.5 * dt);
     }
 
     this.kbHandbrake = hbHeld

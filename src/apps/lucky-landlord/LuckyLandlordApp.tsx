@@ -4,6 +4,7 @@ import {
   BookOpen,
   Check,
   Hammer,
+  HelpCircle,
   Layers,
   Lock,
   Pause,
@@ -30,6 +31,7 @@ import {
 } from './content.ts';
 import { CompendiumModal } from './CompendiumModal.tsx';
 import { DeckAndMergeModal } from './DeckAndMergeModal.tsx';
+import { TutorialModal } from './TutorialModal.tsx';
 import { LedgerAudioEngine } from './audio.ts';
 import {
   BOARD_COLS,
@@ -113,6 +115,7 @@ export default function LuckyLandlordApp() {
 
   const [showCompendium, setShowCompendium] = useState<boolean>(false);
   const [showDeckModal, setShowDeckModal] = useState<boolean>(false);
+  const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
   const [rollingCols, setRollingCols] = useState<boolean[]>([
     false,
     false,
@@ -409,6 +412,7 @@ export default function LuckyLandlordApp() {
     const nextState = payRentAndAdvanceCycle(run, selectedRelicId);
     if (nextState !== run) {
       setRun(nextState);
+      setPrefs((p) => (p.tutorialCompleted ? p : { ...p, tutorialCompleted: true }));
       audioRef.current?.playRentSuccess();
     }
   }, [run, selectedRelicId]);
@@ -422,7 +426,7 @@ export default function LuckyLandlordApp() {
   // Global keyboard shortcuts (Title Enter/Space, Playing Space/1-3/L/S/R/B/M/P/Esc)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (showCompendium || showDeckModal) return;
+      if (showCompendium || showDeckModal || showTutorialModal) return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -582,6 +586,16 @@ export default function LuckyLandlordApp() {
 
               <button
                 type="button"
+                data-testid="open-tutorial-title"
+                onClick={() => setShowTutorialModal(true)}
+                className="px-5 py-2.5 rounded-lg bg-[#FFFBEB] hover:bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span>新手指引（30秒上手）</span>
+              </button>
+
+              <button
+                type="button"
                 data-testid="open-compendium-title"
                 onClick={() => setShowCompendium(true)}
                 className="px-5 py-2.5 rounded-lg bg-[#F2EFE9] hover:bg-[#E7E2D8] text-[#1C1917] text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
@@ -683,6 +697,10 @@ export default function LuckyLandlordApp() {
 
         {showCompendium && (
           <CompendiumModal meta={meta} onClose={() => setShowCompendium(false)} />
+        )}
+
+        {showTutorialModal && (
+          <TutorialModal onClose={() => setShowTutorialModal(false)} />
         )}
       </main>
     );
@@ -826,6 +844,19 @@ export default function LuckyLandlordApp() {
 
             <button
               type="button"
+              data-testid="open-tutorial-btn"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setShowTutorialModal(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FFFBEB] hover:bg-[#FEF3C7] border border-[#F59E0B] text-xs font-bold text-[#92400E] transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>指引</span>
+            </button>
+
+            <button
+              type="button"
               onClick={(e) => {
                 e.currentTarget.blur();
                 setPrefs((p) => ({ ...p, fastSpin: !p.fastSpin }));
@@ -903,6 +934,55 @@ export default function LuckyLandlordApp() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           {/* LEFT 8 COLS: 4x5 Board + Tactical Controls + Draft / Rent Dock */}
           <div className="lg:col-span-8 space-y-2.5">
+            {/* Step-by-Step Contextual Beginner Coach Strip (Auto-guides first-time players) */}
+            {!prefs.tutorialCompleted && run.cycle === 1 && (
+              <div
+                data-testid="beginner-coach-strip"
+                className="p-3 rounded-xl bg-[#FFFBEB] border border-[#F59E0B] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="space-y-1 text-xs">
+                  <div className="font-bold text-[#92400E]">
+                    {run.phase === 'ready' && run.spinsLeftInCycle === run.spinsPerCycle
+                      ? '新手指引 1/3 · 第一步：摇动账本收租'
+                      : run.phase === 'post_spin'
+                        ? '新手指引 2/3 · 第二步：试试控盘调换 & 三选一招募租客'
+                        : run.phase === 'rent_due'
+                          ? '新手指引 3/3 · 恭喜攒够首期房租！选枚传家宝印章过关'
+                          : '新手指引 3/3 · 紧盯左上角租金目标，善用装修与升星'}
+                  </div>
+                  <p className="text-[#57534E] leading-relaxed">
+                    {run.phase === 'ready' && run.spinsLeftInCycle === run.spinsPerCycle
+                      ? '点击棋盘下方的橙色按钮【摇动账本收租】（或按空格键），租客会自动落入 20 个房间并结算基础租金与相邻连携加成！'
+                      : run.phase === 'post_spin'
+                        ? '若两个有配合的符号差一格没挨着，可点上方【相邻调换】挪到一起补领差额；随后从下方 3 张候选卡挑 1 张入驻（不想要可跳过领 +2 补贴）。'
+                        : run.phase === 'rent_due'
+                          ? '下方挑选 1 枚传家宝印章即可点击绿色按钮【缴清房租进入下一期】！'
+                          : '在剩余轮数归零前攒够租金目标即可过关。有免费装修券时可点【格子装修】造收益翻倍的临街旺铺！'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowTutorialModal(true)}
+                    className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-[#FAF8F4] border border-[#D6D0C4] text-xs font-semibold text-[#1C1917] cursor-pointer whitespace-nowrap"
+                  >
+                    图文详解
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="dismiss-coach-btn"
+                    onClick={() =>
+                      setPrefs((p) => ({ ...p, tutorialCompleted: true }))
+                    }
+                    className="px-2.5 py-1.5 rounded-lg bg-[#EDE9E0] hover:bg-[#E2DDD1] text-xs font-medium text-[#57534E] hover:text-[#1C1917] cursor-pointer whitespace-nowrap"
+                  >
+                    学会了
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Tactical Manipulation Toolbar */}
             <div className="pb-2 border-b border-[#E4DFD5] flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -1820,6 +1900,10 @@ export default function LuckyLandlordApp() {
           onRemoveSymbolUid={handleRemoveSymbol}
           onClose={() => setShowDeckModal(false)}
         />
+      )}
+
+      {showTutorialModal && (
+        <TutorialModal onClose={() => setShowTutorialModal(false)} />
       )}
     </main>
   );

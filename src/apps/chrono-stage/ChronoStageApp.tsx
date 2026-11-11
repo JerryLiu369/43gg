@@ -104,7 +104,7 @@ export default function ChronoStageApp() {
   const [selectedStageId, setSelectedStageId] = useState<string>(stages[0].id);
   const [weather, setWeather] = useState<WeatherType>(stages[0].defaultWeather);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(stages[0].defaultTimeOfDay);
-  const [cameraMode, setCameraMode] = useState<CameraMode>('cockpit');
+  const [cameraMode, setCameraMode] = useState<CameraMode>('chase');
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const [presets, setPresets] = useState<TuningSetup[]>(() => loadSavedTuningPresets());
@@ -588,10 +588,10 @@ export default function ChronoStageApp() {
 
       {/* 2. TITLE SCREEN OVERLAY (3D Stage Flyover with Negative Space & SVG Emblem) */}
       {phase === 'title' && (
-        <div className="absolute inset-0 z-20 flex flex-col justify-between p-3 sm:p-5 lg:p-7 overflow-y-auto pointer-events-auto lg:pointer-events-none">
-          <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-6">
+        <div className="absolute inset-0 z-20 flex flex-col justify-between p-3 sm:p-5 lg:px-7 lg:py-6 overflow-y-auto pointer-events-auto lg:pointer-events-none">
+          <div className="w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-8">
             {/* Left Column: Custom SVG Title Lockup, Mode Switches & Primary Actions */}
-            <div className="w-full max-w-lg space-y-4 bg-[#090b0e]/90 border border-slate-800/90 p-5 rounded-lg pointer-events-auto shadow-2xl">
+            <div className="w-full lg:w-[420px] space-y-3.5 bg-[#090b0e]/84 border border-slate-800/90 p-4 sm:p-5 rounded-lg pointer-events-auto shadow-2xl">
               <div className="flex items-center gap-3.5">
                 <svg
                   width="50"
@@ -729,7 +729,7 @@ export default function ChronoStageApp() {
             </div>
 
             {/* Right Column: Compact 6-Stage Grid & Weather Selector */}
-            <div className="w-full lg:w-[500px] bg-[#090b0e]/90 border border-slate-800/90 p-4 sm:p-5 rounded-lg pointer-events-auto shadow-2xl space-y-3">
+            <div className="w-full lg:w-[450px] bg-[#090b0e]/84 border border-slate-800/90 p-4 sm:p-5 rounded-lg pointer-events-auto shadow-2xl space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
                   全球 6 大特殊赛段 (SPECIAL STAGES)
@@ -843,7 +843,7 @@ export default function ChronoStageApp() {
 
           {/* Flat Borderless Control Hint Line at Bottom Safe Margin */}
           <div className="w-full text-center text-xs text-slate-300 font-mono-num tracking-wide py-1.5 bg-[#090b0e]/80 rounded">
-            W/S 或 ↑/↓ 油门与刹车 · A/D 或 ←/→ 转向 · Space 手刹甩尾 · Q/E 升降挡 · G 切换自动/手排 · C 切换四视角 · P 暂停抢修
+            W/S 或 ↑/↓ 油门与刹车倒车 · A/D 或 ←/→ 精准转向 · Space 手刹甩尾 · R 一键回正脱困 · G 自动/手排 · C 切换四视角 · P 暂停抢修
           </div>
         </div>
       )}
@@ -865,7 +865,7 @@ export default function ChronoStageApp() {
             style={{
               width: 'min(28vw, 340px)',
               height: '72px',
-              display: cameraMode === 'cockpit' ? 'block' : 'none',
+              display: 'none',
             }}
             className="hidden sm:block border-2 border-slate-700/90 rounded bg-transparent shadow-lg relative"
           >
@@ -1073,14 +1073,14 @@ export default function ChronoStageApp() {
             <button
               type="button"
               tabIndex={-1}
-              aria-label="赛段救援复位 (+15秒罚时)"
+              aria-label="赛段救援复位 (快捷键 R, +15秒罚时)"
               onClick={(e) => {
                 e.currentTarget.blur();
                 engineRef.current?.recoverCarToRoadWithPenalty();
               }}
               className="px-2.5 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-xs font-mono-num text-amber-400 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>救援</span>
+              <span>救援[R]</span>
               <span className="text-[10px]">+15s</span>
             </button>
 

@@ -3,7 +3,7 @@ import type { InputSettings, StageRecord, TuningSetup } from './types.ts';
 
 const RECORDS_KEY = 'chrono_rally_stage_records_v1';
 const TUNING_PRESETS_KEY = 'chrono_rally_tuning_presets_v1';
-const INPUT_SETTINGS_KEY = 'chrono_rally_input_settings_v2';
+const INPUT_SETTINGS_KEY = 'chrono_rally_input_settings_v3';
 
 export function loadStageRecords(): Record<string, StageRecord> {
   try {

@@ -99,7 +99,7 @@ export class RallySimulationEngine {
   private timeOfDay: TimeOfDay;
   private tuning: TuningSetup;
   private inputSettings: InputSettings;
-  private cameraMode: CameraMode = 'cockpit';
+  private cameraMode: CameraMode = 'chase';
 
   private prevCarState: CarPhysicsState;
   private currCarState: CarPhysicsState;
@@ -111,9 +111,8 @@ export class RallySimulationEngine {
   private flyoverTimeSec = 0;
   private lastRafTimeMs = 0;
   private rafId = 0;
+  private timeoutId = 0;
   private disposed = false;
-  private isHeadless: boolean;
-  private lastHeadlessRenderMs = 0;
 
   // WRC 3-2-1-GO! Start-Line Launch Control State
   private countdownSec = 0;
@@ -183,10 +182,6 @@ export class RallySimulationEngine {
     initialTuning: TuningSetup,
     initialInputSettings: InputSettings
   ) {
-    this.isHeadless =
-      typeof navigator !== 'undefined' &&
-      (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent));
-
     this.stage = getStageById(initialStageId);
     this.weather = this.stage.defaultWeather;
     this.timeOfDay = this.stage.defaultTimeOfDay;
@@ -213,6 +208,11 @@ export class RallySimulationEngine {
     this.input.onToggleMute = () => {
       this.onRequestMuteToggle?.();
     };
+    this.input.onResetVehicle = () => {
+      if (this.phase === 'playing') {
+        this.recoverCarToRoadWithPenalty();
+      }
+    };
 
     this.currCarState = createInitialCarState(this.stage);
     this.prevCarState = cloneCarState(this.currCarState);
@@ -224,21 +224,28 @@ export class RallySimulationEngine {
   public startLoop(): void {
     if (this.disposed) return;
     this.lastRafTimeMs = performance.now();
-    const tick = (nowMs: number) => {
+    // Paint frame 0 synchronously so the Title Screen 3D showcase is immediately visible
+    this.updateAndRender(0.016);
+
+    const stepFrame = () => {
       if (this.disposed) return;
-      this.rafId = requestAnimationFrame(tick);
-
-      // In headless CPU WebGL, throttle to ~18fps so software rendering never stalls Playwright
-      if (this.isHeadless && nowMs - this.lastHeadlessRenderMs < 52) {
-        return;
-      }
-      this.lastHeadlessRenderMs = nowMs;
-
-      const rawDt = Math.min(0.05, Math.max(0.001, (nowMs - this.lastRafTimeMs) / 1000));
+      const nowMs = performance.now();
+      const rawDt = Math.min(0.06, Math.max(0.001, (nowMs - this.lastRafTimeMs) / 1000));
       this.lastRafTimeMs = nowMs;
       this.updateAndRender(rawDt);
+
+      if (this.disposed) return;
+      if (this.renderer.isSoftwareGl) {
+        this.renderer.afterDraw(stepFrame, (fn, ms) => {
+          this.timeoutId = window.setTimeout(fn, ms);
+          return this.timeoutId;
+        });
+      } else {
+        this.rafId = requestAnimationFrame(stepFrame);
+      }
     };
-    this.rafId = requestAnimationFrame(tick);
+
+    this.rafId = requestAnimationFrame(stepFrame);
   }
 
   public dispose(): void {
@@ -247,16 +254,32 @@ export class RallySimulationEngine {
       cancelAnimationFrame(this.rafId);
       this.rafId = 0;
     }
+    if (this.timeoutId) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = 0;
+    }
     this.audio.dispose();
     this.input.dispose();
     this.renderer.dispose();
     if (typeof document !== 'undefined') {
       delete document.body.dataset.state;
+      delete document.body.dataset.speedKmh;
+      delete document.body.dataset.lateralOffset;
     }
   }
 
   public handleResize(width: number, height: number): void {
     this.renderer.resize(width, height);
+    this.renderer.render(
+      this.renderCarState,
+      this.cameraMode,
+      this.weather,
+      this.timeOfDay,
+      this.phase === 'title',
+      this.flyoverTimeSec,
+      this.samplePersonalBestGhostAtTime(this.stageTimeSec),
+      0.016,
+    );
   }
 
   public setPhase(phase: GamePhase): void {
@@ -298,13 +321,14 @@ export class RallySimulationEngine {
   public setCameraMode(mode: CameraMode): void {
     this.cameraMode = mode;
     if (this.hudRefs.mirrorFrameEl) {
-      this.hudRefs.mirrorFrameEl.style.display = mode === 'cockpit' ? 'block' : 'none';
+      this.hudRefs.mirrorFrameEl.style.display =
+        mode === 'cockpit' && !this.renderer.isSoftwareGl ? 'block' : 'none';
     }
     this.onCameraModeChanged?.(mode);
   }
 
   public cycleCameraMode(): CameraMode {
-    const order: CameraMode[] = ['cockpit', 'hood', 'chase', 'chase_far'];
+    const order: CameraMode[] = ['chase', 'chase_far', 'hood', 'cockpit'];
     const next = order[(order.indexOf(this.cameraMode) + 1) % order.length];
     this.setCameraMode(next);
     return next;
@@ -352,20 +376,21 @@ export class RallySimulationEngine {
   public recoverCarToRoadWithPenalty(): void {
     const seg = this.stage.segments[this.currCarState.currentSegmentIndex] || this.stage.segments[0];
     this.currCarState.x = seg.x;
-    this.currCarState.y = seg.y + 0.08;
+    this.currCarState.y = seg.y;
     this.currCarState.z = seg.z;
-    this.currCarState.yaw = Math.atan2(seg.tangentX, seg.tangentZ);
-    this.currCarState.pitch = 0;
-    this.currCarState.roll = 0;
+    this.currCarState.yaw = Math.atan2(seg.tangentX, -seg.tangentZ);
+    this.currCarState.pitch = Math.atan(seg.slope);
+    this.currCarState.roll = seg.camberRad;
     this.currCarState.vx = 0;
     this.currCarState.vy = 0;
     this.currCarState.vz = 0;
     this.currCarState.yawRate = 0;
     this.currCarState.forwardSpeedMs = 0;
     this.currCarState.lateralSpeedMs = 0;
+    this.currCarState.lateralOffsetM = 0;
     this.currCarState.gear = 1;
     this.currCarState.stalled = false;
-    this.currCarState.rpm = 1200;
+    this.currCarState.rpm = 1600;
 
     this.penaltyTimeSec += 15.0;
     this.mistakes.push({
@@ -507,12 +532,12 @@ export class RallySimulationEngine {
           this.currCarState.handbrake = 0;
 
           if (this.currCarState.rpm >= 3600 && this.currCarState.turboBoostBar >= 0.65) {
-            // Perfect Anti-Lag Launch Boost!
+            // Perfect Anti-Lag Launch Boost! (Right-handed forward: +sin(yaw) X, -cos(yaw) Z)
             const sinY = Math.sin(this.currCarState.yaw);
             const cosY = Math.cos(this.currCarState.yaw);
-            const launchSpeed = 6.4;
+            const launchSpeed = 6.8;
             this.currCarState.vx = sinY * launchSpeed;
-            this.currCarState.vz = cosY * launchSpeed;
+            this.currCarState.vz = -cosY * launchSpeed;
             this.currCarState.forwardSpeedMs = launchSpeed;
             this.currCarState.turboBoostBar = 1.65;
             this.currCarState.backfireTrigger = 0.34;
@@ -784,6 +809,10 @@ export class RallySimulationEngine {
     const refs = this.hudRefs;
     const speedKmh = Math.round(Math.abs(car.forwardSpeedMs) * 3.6);
     if (refs.speedEl) refs.speedEl.textContent = String(speedKmh);
+    if (typeof document !== 'undefined') {
+      document.body.dataset.speedKmh = String(speedKmh);
+      document.body.dataset.lateralOffset = car.lateralOffsetM.toFixed(2);
+    }
 
     if (refs.gearEl) {
       const gText = car.gear === -1 ? 'R' : car.gear === 0 ? 'N' : String(car.gear);
