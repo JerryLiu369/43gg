@@ -1,4 +1,4 @@
-import {
+import type {
   CameraMode,
   CarPhysicsState,
   GhostSample,
@@ -7,7 +7,7 @@ import {
   WeatherType,
 } from '../game/types.ts';
 import {
-  Mat4,
+  type Mat4,
   composeTransformMat4,
   createMat4,
   lookAtMat4,
@@ -17,7 +17,10 @@ import {
 import {
   DynamicMeshBuilder,
   FLOATS_PER_VERTEX,
+  buildBrakeGlowMesh,
+  buildCarContactShadowMesh,
   buildCockpitInteriorMesh,
+  buildExhaustBackfireMesh,
   buildHoodCameraMesh,
   buildRallyCarChassisMesh,
   buildStageStaticMesh,
@@ -25,6 +28,126 @@ import {
   buildWheelMesh,
 } from './meshBuilder.ts';
 
+// ============================================================================
+// PROCEDURAL ATMOSPHERIC SKY, SUN/MOON, CLOUDS & ALPINE HORIZON SHADER
+// ============================================================================
+const SKY_VERTEX_SHADER_SRC = `
+attribute vec2 aSkyScreenPos;
+varying vec2 vScreenUv;
+void main() {
+  vScreenUv = aSkyScreenPos;
+  gl_Position = vec4(aSkyScreenPos, 0.999, 1.0);
+}
+`;
+
+const SKY_FRAGMENT_SHADER_SRC = `
+precision mediump float;
+
+varying vec2 vScreenUv;
+
+uniform vec3 uCamForward;
+uniform vec3 uCamRight;
+uniform vec3 uCamUp;
+uniform float uTanHalfFov;
+uniform float uAspect;
+
+uniform vec3 uSkyZenith;
+uniform vec3 uFogColor;
+uniform vec3 uSunDir;
+uniform vec3 uSunColor;
+uniform float uCloudDensity;
+uniform float uIsNight;
+uniform float uTimeSec;
+
+float skyHash(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
+}
+
+float skyNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = skyHash(i);
+  float b = skyHash(i + vec2(1.0, 0.0));
+  float c = skyHash(i + vec2(0.0, 1.0));
+  float d = skyHash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float ridgeHeight(float az, float seed, float scale) {
+  float h = sin(az * 3.0 + seed) * 0.42
+          + sin(az * 7.0 - seed * 1.7) * 0.28
+          + cos(az * 13.0 + seed * 2.3) * 0.16
+          + sin(az * 23.0 - seed * 0.9) * 0.08;
+  return max(0.0, (h * 0.5 + 0.46) * scale);
+}
+
+void main() {
+  vec3 ray = normalize(
+    uCamForward +
+    uCamRight * (vScreenUv.x * uAspect * uTanHalfFov) +
+    uCamUp * (vScreenUv.y * uTanHalfFov)
+  );
+
+  float elev = clamp(ray.y, -0.25, 1.0);
+  float skyT = pow(clamp(elev, 0.0, 1.0), 0.58);
+  vec3 col = mix(uFogColor, uSkyZenith, skyT);
+
+  // Warm/cool atmospheric horizon band & Mie sun/moon halo
+  float sunCos = max(dot(ray, normalize(uSunDir)), 0.0);
+  col += uSunColor * pow(sunCos, 7.0) * 0.28;
+  // Crisp solar / lunar disc
+  float disc = smoothstep(0.9982, 0.9993, sunCos);
+  col += uSunColor * disc * (uIsNight > 0.5 ? 2.4 : 1.6);
+
+  // Night starfield above horizon
+  if (uIsNight > 0.5 && elev > 0.06) {
+    vec2 starCell = floor(vec2(atan(ray.x, ray.z) * 95.0, elev * 150.0));
+    float st = skyHash(starCell);
+    if (st > 0.992) {
+      float twinkle = 0.65 + 0.35 * sin(uTimeSec * 3.2 + st * 80.0);
+      col += vec3(0.80, 0.88, 1.0) * twinkle * smoothstep(0.06, 0.26, elev);
+    }
+  }
+
+  // Procedural drifting cloud deck
+  if (elev > 0.03) {
+    vec2 cloudUv = ray.xz / (elev + 0.16) * 0.85 + vec2(uTimeSec * 0.008, uTimeSec * 0.004);
+    float n = skyNoise(cloudUv * 2.2) * 0.65 + skyNoise(cloudUv * 5.1) * 0.35;
+    float cloudMask = smoothstep(0.56 - uCloudDensity * 0.22, 0.86, n) * smoothstep(0.03, 0.22, elev);
+    vec3 cloudLit = mix(uFogColor * 0.92, uFogColor * 1.18 + uSunColor * 0.22, n);
+    col = mix(col, cloudLit, cloudMask * 0.72);
+  }
+
+  // Dual-layer 360-degree Alpine Horizon Mountain Silhouettes (fading cleanly into horizon fog)
+  float az = atan(ray.x, ray.z);
+  float farPeak = ridgeHeight(az, 1.4, 0.145);
+  float nearPeak = ridgeHeight(az + 1.9, 4.2, 0.092);
+
+  if (elev < farPeak) {
+    vec3 farMtnCol = mix(uFogColor * 0.74, uSkyZenith * 0.68, 0.35);
+    float haze = smoothstep(-0.02, farPeak, elev);
+    col = mix(farMtnCol, uFogColor, 0.58 + 0.22 * haze);
+  }
+  if (elev < nearPeak) {
+    vec3 nearMtnCol = uFogColor * 0.60;
+    col = mix(nearMtnCol, uFogColor, 0.38);
+  }
+
+  // Below horizon ground skirt blends smoothly to fogColor so zero seam ever shows
+  if (elev < 0.0) {
+    col = mix(col, uFogColor * 0.75, clamp(-elev * 5.0, 0.0, 1.0));
+  }
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+// ============================================================================
+// MAIN 3D WORLD & VEHICLE SHADER
+// ============================================================================
 const VERTEX_SHADER_SRC = `
 attribute vec3 aPos;
 attribute vec3 aNormal;
@@ -65,7 +188,6 @@ uniform vec3 uGroundAmbient;
 uniform vec3 uFogColor;
 uniform float uFogDensity;
 
-// Headlight cone uniforms for Night / Dusk / Fog stages
 uniform vec3 uHeadlightPos;
 uniform vec3 uHeadlightDir;
 uniform float uHeadlightIntensity;
@@ -78,6 +200,16 @@ float hash21(vec2 p) {
 }
 
 void main() {
+  float dist = length(vWorldPos - uCamPos);
+
+  // Unlit atmospheric particle / contact shadow (matType == 6): never darkens into black cubes!
+  if (vMatType > 5.5) {
+    float fogFactor = clamp(exp(-dist * uFogDensity), 0.0, 1.0);
+    vec3 col = mix(uFogColor, vColor, fogFactor);
+    gl_FragColor = vec4(col, uAlpha);
+    return;
+  }
+
   vec3 N = normalize(vNormal);
   vec3 V = normalize(uCamPos - vWorldPos);
   vec3 baseColor = vColor;
@@ -92,11 +224,10 @@ void main() {
     baseColor *= 0.90 + 0.18 * grassNoise;
   }
 
-  // Emissive material (lamps, brake lights, ghost car, shift LEDs)
+  // Emissive material (lamps, brake lights, ghost car, shift LEDs, anti-lag flames)
   if (vMatType > 2.5 && vMatType < 3.5) {
-    float dist = length(vWorldPos - uCamPos);
-    float fogFactor = clamp(exp(-dist * uFogDensity * 0.65), 0.0, 1.0);
-    vec3 col = mix(uFogColor, baseColor * 1.25, fogFactor);
+    float fogFactor = clamp(exp(-dist * uFogDensity * 0.55), 0.0, 1.0);
+    vec3 col = mix(uFogColor, baseColor * 1.28, fogFactor);
     gl_FragColor = vec4(col, uAlpha);
     return;
   }
@@ -109,8 +240,8 @@ void main() {
 
   // Specular highlights for glossy car paint (matType=2) or ice/water (matType=5)
   vec3 H = normalize(uSunDir + V);
-  float specPower = (vMatType > 4.5) ? 48.0 : (vMatType > 1.5 && vMatType < 2.5) ? 28.0 : 8.0;
-  float specStrength = (vMatType > 4.5) ? 0.55 : (vMatType > 1.5 && vMatType < 2.5) ? 0.38 : 0.06;
+  float specPower = (vMatType > 4.5) ? 48.0 : (vMatType > 1.5 && vMatType < 2.5) ? 30.0 : 8.0;
+  float specStrength = (vMatType > 4.5) ? 0.55 : (vMatType > 1.5 && vMatType < 2.5) ? 0.40 : 0.06;
   float spec = pow(max(dot(N, H), 0.0), specPower) * specStrength;
 
   // Dual Rally Headlight Cone Illumination
@@ -118,16 +249,14 @@ void main() {
   if (uHeadlightIntensity > 0.01) {
     vec3 toFrag = vWorldPos - uHeadlightPos;
     float dLight = length(toFrag);
-    if (dLight < 135.0 && dLight > 0.5) {
+    if (dLight < 140.0 && dLight > 0.5) {
       vec3 L = toFrag / dLight;
       float spotCos = dot(L, uHeadlightDir);
-      // Wide flood beam + intense long-throw central rally spot beam
       if (spotCos > 0.72) {
         float spotCone = smoothstep(0.72, 0.96, spotCos);
-        float atten = 1.0 / (1.0 + dLight * 0.018 + dLight * dLight * 0.00038);
-        float hNdotL = max(dot(N, -L), 0.22);
-        // Retro-reflective roadside chevrons (matType == 4) bounce intense light back to driver!
-        float retroBoost = (vMatType > 3.5 && vMatType < 4.5) ? 4.2 : 1.0;
+        float atten = 1.0 / (1.0 + dLight * 0.018 + dLight * dLight * 0.00036);
+        float hNdotL = max(dot(N, -L), 0.24);
+        float retroBoost = (vMatType > 3.5 && vMatType < 4.5) ? 4.4 : 1.0;
         headlightContrib = vec3(1.0, 0.95, 0.84) * spotCone * atten * hNdotL * uHeadlightIntensity * retroBoost * 2.4;
       }
     }
@@ -135,10 +264,10 @@ void main() {
 
   vec3 litColor = baseColor * (ambient + diffuse) + vec3(spec) + baseColor * headlightContrib;
 
-  // Distance exponential horizon fog
-  float dist = length(vWorldPos - uCamPos);
+  // Distance exponential horizon fog + gentle ACES-like highlight roll-off
   float fogFactor = clamp(exp(-dist * uFogDensity), 0.0, 1.0);
   vec3 finalColor = mix(uFogColor, litColor, fogFactor);
+  finalColor = finalColor / (1.0 + finalColor * 0.16);
 
   gl_FragColor = vec4(finalColor, uAlpha);
 }
@@ -146,6 +275,7 @@ void main() {
 
 interface Particle {
   active: boolean;
+  isStreak: boolean;
   x: number;
   y: number;
   z: number;
@@ -177,15 +307,18 @@ interface SoftTriangle {
 interface AtmosphereEnv {
   sunDir: [number, number, number];
   sunColor: [number, number, number];
+  skyZenith: [number, number, number];
   skyAmb: [number, number, number];
   gndAmb: [number, number, number];
   fogColor: [number, number, number];
   fogDensity: number;
+  cloudDensity: number;
+  isNight: number;
   headlightIntensity: number;
 }
 
 const MAX_PARTICLES = 220;
-const MAX_SOFT_TRIS = 3200;
+const MAX_SOFT_TRIS = 3400;
 
 function acquireWebGLContext(
   canvas: HTMLCanvasElement,
@@ -237,9 +370,10 @@ export class RallyWebGLRenderer {
   private gl: WebGLRenderingContext | null = null;
   private ctx2d: CanvasRenderingContext2D | null = null;
   private program: WebGLProgram | null = null;
+  private skyProgram: WebGLProgram | null = null;
   private isHeadless: boolean;
 
-  // Attribute & Uniform locations (when WebGL is active)
+  // Main World Shader Locations
   private aPosLoc = -1;
   private aNormalLoc = -1;
   private aColorLoc = -1;
@@ -259,9 +393,28 @@ export class RallyWebGLRenderer {
   private uHeadlightIntensityLoc: WebGLUniformLocation | null = null;
   private uAlphaLoc: WebGLUniformLocation | null = null;
 
-  // CPU Mesh Data (retained for both GPU upload and 3D Software Rasterizer fallback)
+  // Sky Shader Locations & Fullscreen Quad Buffer
+  private skyQuadBuffer: WebGLBuffer | null = null;
+  private aSkyScreenPosLoc = -1;
+  private uSkyCamForwardLoc: WebGLUniformLocation | null = null;
+  private uSkyCamRightLoc: WebGLUniformLocation | null = null;
+  private uSkyCamUpLoc: WebGLUniformLocation | null = null;
+  private uSkyTanHalfFovLoc: WebGLUniformLocation | null = null;
+  private uSkyAspectLoc: WebGLUniformLocation | null = null;
+  private uSkyZenithLoc: WebGLUniformLocation | null = null;
+  private uSkyFogColorLoc: WebGLUniformLocation | null = null;
+  private uSkySunDirLoc: WebGLUniformLocation | null = null;
+  private uSkySunColorLoc: WebGLUniformLocation | null = null;
+  private uSkyCloudDensityLoc: WebGLUniformLocation | null = null;
+  private uSkyIsNightLoc: WebGLUniformLocation | null = null;
+  private uSkyTimeSecLoc: WebGLUniformLocation | null = null;
+
+  // CPU Mesh Data
   private stageMeshData: Float32Array = new Float32Array(0);
   private carChassisData: Float32Array;
+  private contactShadowData: Float32Array;
+  private brakeGlowData: Float32Array;
+  private exhaustBackfireData: Float32Array;
   private ghostCarData: Float32Array;
   private wheelData: Float32Array;
   private cockpitInteriorData: Float32Array;
@@ -275,6 +428,15 @@ export class RallyWebGLRenderer {
 
   private carChassisBuffer: WebGLBuffer | null = null;
   private carChassisVertexCount = 0;
+
+  private contactShadowBuffer: WebGLBuffer | null = null;
+  private contactShadowVertexCount = 0;
+
+  private brakeGlowBuffer: WebGLBuffer | null = null;
+  private brakeGlowVertexCount = 0;
+
+  private exhaustBackfireBuffer: WebGLBuffer | null = null;
+  private exhaustBackfireVertexCount = 0;
 
   private ghostCarBuffer: WebGLBuffer | null = null;
   private ghostCarVertexCount = 0;
@@ -296,7 +458,7 @@ export class RallyWebGLRenderer {
   private particles: Particle[] = [];
   private particleCursor = 0;
 
-  // Pre-allocated scratch matrices & software triangle pool (Zero GC inside render loop)
+  // Pre-allocated scratch matrices & software triangle pool (Zero GC)
   private projMat: Mat4 = createMat4();
   private viewMat: Mat4 = createMat4();
   private viewProjMat: Mat4 = createMat4();
@@ -304,12 +466,15 @@ export class RallyWebGLRenderer {
   private softTriPool: SoftTriangle[] = [];
   private softTriRefs: SoftTriangle[] = [];
 
-  // Smoothly damped chase camera state
+  // Smoothly damped chase camera & trauma impact shake state
   private chaseCamX = 0;
   private chaseCamY = 14;
   private chaseCamZ = -6;
   private chaseCamInitialized = false;
   private wheelSpinAngle = 0;
+  private elapsedRenderSec = 0;
+  private camTrauma = 0;
+  private prevForwardSpeedMs = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -317,9 +482,17 @@ export class RallyWebGLRenderer {
       typeof navigator !== 'undefined' &&
       (navigator.webdriver || /HeadlessChrome/i.test(navigator.userAgent));
 
-    // Build static 3D meshes in CPU Float32Arrays
     this.carChassisData = buildRallyCarChassisMesh(false);
     this.carChassisVertexCount = this.carChassisData.length / FLOATS_PER_VERTEX;
+
+    this.contactShadowData = buildCarContactShadowMesh();
+    this.contactShadowVertexCount = this.contactShadowData.length / FLOATS_PER_VERTEX;
+
+    this.brakeGlowData = buildBrakeGlowMesh();
+    this.brakeGlowVertexCount = this.brakeGlowData.length / FLOATS_PER_VERTEX;
+
+    this.exhaustBackfireData = buildExhaustBackfireMesh();
+    this.exhaustBackfireVertexCount = this.exhaustBackfireData.length / FLOATS_PER_VERTEX;
 
     this.ghostCarData = buildRallyCarChassisMesh(true);
     this.ghostCarVertexCount = this.ghostCarData.length / FLOATS_PER_VERTEX;
@@ -336,10 +509,10 @@ export class RallyWebGLRenderer {
     this.steeringWheelData = buildSteeringWheelAndHandsMesh();
     this.steeringWheelVertexCount = this.steeringWheelData.length / FLOATS_PER_VERTEX;
 
-    // Initialize fixed-size particle pool (Zero GC)
     for (let i = 0; i < MAX_PARTICLES; i++) {
       this.particles.push({
         active: false,
+        isStreak: false,
         x: 0,
         y: 0,
         z: 0,
@@ -355,14 +528,14 @@ export class RallyWebGLRenderer {
       });
     }
 
-    // Attempt hardware WebGL context creation; gracefully fall back to 3D Software Rasterizer if unavailable
     const gl = acquireWebGLContext(canvas, this.isHeadless);
     if (gl) {
       try {
         this.gl = gl;
         this.program = this.createShaderProgram(VERTEX_SHADER_SRC, FRAGMENT_SHADER_SRC);
-        gl.useProgram(this.program);
+        this.skyProgram = this.createShaderProgram(SKY_VERTEX_SHADER_SRC, SKY_FRAGMENT_SHADER_SRC);
 
+        gl.useProgram(this.program);
         this.aPosLoc = gl.getAttribLocation(this.program, 'aPos');
         this.aNormalLoc = gl.getAttribLocation(this.program, 'aNormal');
         this.aColorLoc = gl.getAttribLocation(this.program, 'aColor');
@@ -382,7 +555,29 @@ export class RallyWebGLRenderer {
         this.uHeadlightIntensityLoc = gl.getUniformLocation(this.program, 'uHeadlightIntensity');
         this.uAlphaLoc = gl.getUniformLocation(this.program, 'uAlpha');
 
+        gl.useProgram(this.skyProgram);
+        this.aSkyScreenPosLoc = gl.getAttribLocation(this.skyProgram, 'aSkyScreenPos');
+        this.uSkyCamForwardLoc = gl.getUniformLocation(this.skyProgram, 'uCamForward');
+        this.uSkyCamRightLoc = gl.getUniformLocation(this.skyProgram, 'uCamRight');
+        this.uSkyCamUpLoc = gl.getUniformLocation(this.skyProgram, 'uCamUp');
+        this.uSkyTanHalfFovLoc = gl.getUniformLocation(this.skyProgram, 'uTanHalfFov');
+        this.uSkyAspectLoc = gl.getUniformLocation(this.skyProgram, 'uAspect');
+        this.uSkyZenithLoc = gl.getUniformLocation(this.skyProgram, 'uSkyZenith');
+        this.uSkyFogColorLoc = gl.getUniformLocation(this.skyProgram, 'uFogColor');
+        this.uSkySunDirLoc = gl.getUniformLocation(this.skyProgram, 'uSunDir');
+        this.uSkySunColorLoc = gl.getUniformLocation(this.skyProgram, 'uSunColor');
+        this.uSkyCloudDensityLoc = gl.getUniformLocation(this.skyProgram, 'uCloudDensity');
+        this.uSkyIsNightLoc = gl.getUniformLocation(this.skyProgram, 'uIsNight');
+        this.uSkyTimeSecLoc = gl.getUniformLocation(this.skyProgram, 'uTimeSec');
+
+        this.skyQuadBuffer = this.createStaticBuffer(
+          new Float32Array([-1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1])
+        );
+
         this.carChassisBuffer = this.createStaticBuffer(this.carChassisData);
+        this.contactShadowBuffer = this.createStaticBuffer(this.contactShadowData);
+        this.brakeGlowBuffer = this.createStaticBuffer(this.brakeGlowData);
+        this.exhaustBackfireBuffer = this.createStaticBuffer(this.exhaustBackfireData);
         this.ghostCarBuffer = this.createStaticBuffer(this.ghostCarData);
         this.wheelBuffer = this.createStaticBuffer(this.wheelData);
         this.cockpitInteriorBuffer = this.createStaticBuffer(this.cockpitInteriorData);
@@ -395,7 +590,6 @@ export class RallyWebGLRenderer {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       } catch {
-        // Shader compilation or buffer allocation failed; switch to 3D software rasterizer
         this.gl = null;
       }
     }
@@ -442,6 +636,7 @@ export class RallyWebGLRenderer {
     }
 
     this.chaseCamInitialized = false;
+    this.camTrauma = 0;
     for (const p of this.particles) p.active = false;
   }
 
@@ -459,7 +654,11 @@ export class RallyWebGLRenderer {
     const gl = this.gl;
     if (gl) {
       if (this.stageBuffer) gl.deleteBuffer(this.stageBuffer);
+      if (this.skyQuadBuffer) gl.deleteBuffer(this.skyQuadBuffer);
       if (this.carChassisBuffer) gl.deleteBuffer(this.carChassisBuffer);
+      if (this.contactShadowBuffer) gl.deleteBuffer(this.contactShadowBuffer);
+      if (this.brakeGlowBuffer) gl.deleteBuffer(this.brakeGlowBuffer);
+      if (this.exhaustBackfireBuffer) gl.deleteBuffer(this.exhaustBackfireBuffer);
       if (this.ghostCarBuffer) gl.deleteBuffer(this.ghostCarBuffer);
       if (this.wheelBuffer) gl.deleteBuffer(this.wheelBuffer);
       if (this.cockpitInteriorBuffer) gl.deleteBuffer(this.cockpitInteriorBuffer);
@@ -467,10 +666,15 @@ export class RallyWebGLRenderer {
       if (this.steeringWheelBuffer) gl.deleteBuffer(this.steeringWheelBuffer);
       if (this.particleBuffer) gl.deleteBuffer(this.particleBuffer);
       if (this.program) gl.deleteProgram(this.program);
+      if (this.skyProgram) gl.deleteProgram(this.skyProgram);
       this.gl = null;
     }
     this.stageBuffer = null;
+    this.skyQuadBuffer = null;
     this.carChassisBuffer = null;
+    this.contactShadowBuffer = null;
+    this.brakeGlowBuffer = null;
+    this.exhaustBackfireBuffer = null;
     this.ghostCarBuffer = null;
     this.wheelBuffer = null;
     this.cockpitInteriorBuffer = null;
@@ -478,15 +682,12 @@ export class RallyWebGLRenderer {
     this.steeringWheelBuffer = null;
     this.particleBuffer = null;
     this.program = null;
+    this.skyProgram = null;
     this.ctx2d = null;
     this.canvas.width = 0;
     this.canvas.height = 0;
   }
 
-  /**
-   * Emits surface feedback particles (gravel stones, dust clouds, snow mist, water spray, mud clods)
-   * and ambient weather precipitation (rain/snow).
-   */
   public updateParticles(
     car: CarPhysicsState,
     weather: WeatherType,
@@ -500,53 +701,63 @@ export class RallyWebGLRenderer {
       car.wheels[3].combinedSlip
     );
 
-    // 1. Tire surface roost & dust/snow/water spray when moving & sliding
+    // Trigger trauma camera shake on heavy jump landings or sudden collision deceleration
+    const speedDrop = this.prevForwardSpeedMs - car.forwardSpeedMs;
+    this.prevForwardSpeedMs = car.forwardSpeedMs;
+    if (speedDrop > 5.5 && dt > 0) {
+      this.camTrauma = Math.min(1.0, this.camTrauma + Math.min(0.65, speedDrop * 0.05));
+    }
+    if (car.lastLandingForceG > 2.0 && car.wheels[0].bottomedOutImpact > 0.25) {
+      this.camTrauma = Math.min(1.0, Math.max(this.camTrauma, Math.min(0.55, car.lastLandingForceG * 0.14)));
+    }
+    this.camTrauma = Math.max(0, this.camTrauma - 2.2 * dt);
+
+    // 1. Tire surface roost & bright dust/snow/water spray when moving & sliding
     if (speed > 2.5 && (car.wheels[2].isGrounded || car.wheels[3].isGrounded)) {
-      const emitChance = Math.min(1.0, (speed / 25) * 0.55 + maxSlip * 0.45);
+      const emitChance = Math.min(1.0, (speed / 24) * 0.58 + maxSlip * 0.45);
       if (Math.random() < emitChance) {
         const sinY = Math.sin(car.yaw);
         const cosY = Math.cos(car.yaw);
         const sideSign = Math.random() < 0.5 ? -0.78 : 0.78;
-        // Rear wheel contact point in world space
-        const wx = car.x - sinY * 1.28 + cosY * sideSign;
-        const wy = car.y + 0.15;
-        const wz = car.z - cosY * 1.28 - sinY * sideSign;
+        const wx = car.x - sinY * 1.42 + cosY * sideSign + (Math.random() - 0.5) * 0.16;
+        const wy = car.y + 0.10;
+        const wz = car.z - cosY * 1.42 - sinY * sideSign + (Math.random() - 0.5) * 0.16;
 
-        let r = 0.64, g = 0.55, b = 0.44;
-        let size = 0.22 + Math.min(0.45, maxSlip * 0.22);
-        let maxAge = 0.85;
-        let upVel = 1.6 + Math.random() * 1.8;
+        let r = 0.76, g = 0.67, b = 0.54;
+        let size = 0.13 + Math.min(0.12, maxSlip * 0.06);
+        let maxAge = 0.62;
+        let upVel = 0.65 + Math.random() * 0.75;
 
         if (car.currentSurface === 'gravel' || car.currentSurface === 'tarmac_dirty') {
-          if (Math.random() < 0.35) {
-            r = 0.42; g = 0.36; b = 0.28;
-            size = 0.09;
-            maxAge = 0.45;
-            upVel = 2.8 + Math.random() * 2.2;
+          if (Math.random() < 0.38) {
+            r = 0.58; g = 0.49; b = 0.37;
+            size = 0.048;
+            maxAge = 0.38;
+            upVel = 1.6 + Math.random() * 1.3;
           } else {
-            r = 0.68; g = 0.59; b = 0.47;
-            size = 0.38 + Math.min(0.55, maxSlip * 0.3);
-            maxAge = 1.25;
+            r = 0.78; g = 0.69; b = 0.56;
+            size = 0.14 + Math.min(0.13, maxSlip * 0.07);
+            maxAge = 0.68;
           }
         } else if (car.currentSurface === 'snow' || car.currentSurface === 'ice') {
-          r = 0.90; g = 0.94; b = 0.99;
-          size = 0.34 + Math.min(0.45, maxSlip * 0.25);
-          maxAge = 0.95;
+          r = 0.94; g = 0.97; b = 1.0;
+          size = 0.14 + Math.min(0.12, maxSlip * 0.06);
+          maxAge = 0.65;
         } else if (car.currentSurface === 'water_puddle') {
-          r = 0.72; g = 0.84; b = 0.94;
-          size = 0.28;
-          upVel = 3.4 + Math.random() * 2.0;
-          maxAge = 0.55;
+          r = 0.82; g = 0.91; b = 0.98;
+          size = 0.13;
+          upVel = 1.9 + Math.random() * 1.3;
+          maxAge = 0.48;
         } else if (car.currentSurface === 'offtrack') {
-          r = 0.28; g = 0.23; b = 0.16;
-          size = 0.16;
-          upVel = 2.5 + Math.random() * 1.8;
-          maxAge = 0.6;
+          r = 0.48; g = 0.40; b = 0.28;
+          size = 0.09;
+          upVel = 1.4 + Math.random() * 1.0;
+          maxAge = 0.48;
         } else {
           if (maxSlip > 1.15) {
-            r = 0.82; g = 0.84; b = 0.88;
-            size = 0.32;
-            maxAge = 0.75;
+            r = 0.88; g = 0.90; b = 0.94;
+            size = 0.14;
+            maxAge = 0.52;
           } else {
             size = 0;
           }
@@ -554,12 +765,13 @@ export class RallyWebGLRenderer {
 
         if (size > 0) {
           this.spawnParticle(
+            false,
             wx,
             wy,
             wz,
-            -sinY * speed * 0.35 + (Math.random() - 0.5) * 2.5,
+            -sinY * speed * 0.26 + (Math.random() - 0.5) * 1.6,
             upVel,
-            -cosY * speed * 0.35 + (Math.random() - 0.5) * 2.5,
+            -cosY * speed * 0.26 + (Math.random() - 0.5) * 1.6,
             size,
             maxAge,
             r,
@@ -570,38 +782,38 @@ export class RallyWebGLRenderer {
       }
     }
 
-    // 2. Weather precipitation (Rain streaks or Snowflakes ahead of the car)
+    // 2. Weather precipitation (Thin silver-blue rain streaks or bright snow crystals)
     if (weather === 'rain' || weather === 'snow') {
       const sinY = Math.sin(car.yaw);
       const cosY = Math.cos(car.yaw);
       for (let k = 0; k < 2; k++) {
-        const ahead = 4 + Math.random() * 28;
+        const ahead = 5 + Math.random() * 26;
         const spread = (Math.random() - 0.5) * 22;
         const px = car.x + sinY * ahead + cosY * spread;
-        const py = car.y + 4.5 + Math.random() * 5.0;
+        const py = car.y + 4.8 + Math.random() * 5.0;
         const pz = car.z + cosY * ahead - sinY * spread;
 
         if (weather === 'rain') {
-          this.spawnParticle(px, py, pz, -0.5, -14.0, -0.5, 0.06, 0.4, 0.68, 0.78, 0.90);
+          this.spawnParticle(true, px, py, pz, -0.6, -15.5, -0.6, 0.032, 0.38, 0.78, 0.86, 0.95);
         } else {
           this.spawnParticle(
+            false,
             px,
             py,
             pz,
             (Math.random() - 0.5) * 1.8,
             -3.2,
             (Math.random() - 0.5) * 1.8,
-            0.11,
-            1.2,
-            0.94,
+            0.085,
+            1.15,
             0.96,
+            0.98,
             1.0
           );
         }
       }
     }
 
-    // Advance active particles
     for (let i = 0; i < MAX_PARTICLES; i++) {
       const p = this.particles[i];
       if (!p.active) continue;
@@ -613,11 +825,14 @@ export class RallyWebGLRenderer {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.z += p.vz * dt;
-      p.vy -= 4.2 * dt; // Gentle gravity
+      if (!p.isStreak) {
+        p.vy -= 3.8 * dt;
+      }
     }
   }
 
   private spawnParticle(
+    isStreak: boolean,
     x: number,
     y: number,
     z: number,
@@ -633,6 +848,7 @@ export class RallyWebGLRenderer {
     const p = this.particles[this.particleCursor];
     this.particleCursor = (this.particleCursor + 1) % MAX_PARTICLES;
     p.active = true;
+    p.isStreak = isStreak;
     p.x = x;
     p.y = y;
     p.z = z;
@@ -647,10 +863,6 @@ export class RallyWebGLRenderer {
     p.b = b;
   }
 
-  /**
-   * Main render entry point. Uses hardware WebGL when available, or seamlessly renders via
-   * the built-in 3D Software Projection & Painter's Rasterizer if WebGL is unavailable.
-   */
   public render(
     car: CarPhysicsState,
     cameraMode: CameraMode,
@@ -661,7 +873,7 @@ export class RallyWebGLRenderer {
     ghostSample: GhostSample | null,
     dt: number
   ): void {
-    // Advance wheel rotation angle
+    this.elapsedRenderSec += dt;
     this.wheelSpinAngle = (this.wheelSpinAngle + (car.forwardSpeedMs / 0.33) * dt) % (Math.PI * 2);
 
     const env = this.getAtmosphereParams(weather, timeOfDay, car);
@@ -697,32 +909,39 @@ export class RallyWebGLRenderer {
     const w = this.canvas.width;
     const h = this.canvas.height;
 
-    gl.useProgram(this.program);
-
-    // 1. Configure Lighting & Atmosphere Uniforms based on TimeOfDay & Weather
-    gl.uniform3f(this.uSunDirLoc, env.sunDir[0], env.sunDir[1], env.sunDir[2]);
-    gl.uniform3f(this.uSunColorLoc, env.sunColor[0], env.sunColor[1], env.sunColor[2]);
-    gl.uniform3f(this.uSkyAmbientLoc, env.skyAmb[0], env.skyAmb[1], env.skyAmb[2]);
-    gl.uniform3f(this.uGroundAmbientLoc, env.gndAmb[0], env.gndAmb[1], env.gndAmb[2]);
-    gl.uniform3f(this.uFogColorLoc, env.fogColor[0], env.fogColor[1], env.fogColor[2]);
-    gl.uniform1f(this.uFogDensityLoc, env.fogDensity);
-
-    gl.uniform3f(this.uHeadlightPosLoc, hlPos[0], hlPos[1], hlPos[2]);
-    gl.uniform3f(this.uHeadlightDirLoc, hlDir[0], hlDir[1], hlDir[2]);
-    gl.uniform1f(this.uHeadlightIntensityLoc, env.headlightIntensity);
-
-    // 2. Render Main Full-Screen Viewport
+    // 1. Main Full-Screen Viewport
     gl.disable(gl.SCISSOR_TEST);
     gl.viewport(0, 0, w, h);
     gl.clearColor(env.fogColor[0], env.fogColor[1], env.fogColor[2], 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const aspect = w / Math.max(1, h);
-    const speedFovBoost = Math.min(0.14, Math.abs(car.forwardSpeedMs) * 0.003);
-    const baseFovRad = cameraMode === 'cockpit' ? 1.08 : 1.05 + speedFovBoost;
-    perspectiveMat4(this.projMat, baseFovRad, aspect, 0.12, 420.0);
+    const speedFovBoost = Math.min(0.15, Math.abs(car.forwardSpeedMs) * 0.0032);
+    const baseFovRad =
+      cameraMode === 'cockpit'
+        ? 1.08 + speedFovBoost * 0.35
+        : cameraMode === 'chase_far'
+          ? 1.02 + speedFovBoost
+          : 1.05 + speedFovBoost;
+    perspectiveMat4(this.projMat, baseFovRad, aspect, 0.12, 460.0);
 
     const cam = this.computeCameraPose(car, cameraMode, isTitleFlyover, flyoverTimeSec, dt);
+
+    // Draw Procedural Sky, Sun/Moon, Clouds & Alpine Horizon Mountains First (depthMask = false)
+    this.drawProceduralSky(cam, baseFovRad, aspect, env);
+
+    // Switch to Main 3D World Shader
+    gl.useProgram(this.program);
+    gl.uniform3f(this.uSunDirLoc, env.sunDir[0], env.sunDir[1], env.sunDir[2]);
+    gl.uniform3f(this.uSunColorLoc, env.sunColor[0], env.sunColor[1], env.sunColor[2]);
+    gl.uniform3f(this.uSkyAmbientLoc, env.skyAmb[0], env.skyAmb[1], env.skyAmb[2]);
+    gl.uniform3f(this.uGroundAmbientLoc, env.gndAmb[0], env.gndAmb[1], env.gndAmb[2]);
+    gl.uniform3f(this.uFogColorLoc, env.fogColor[0], env.fogColor[1], env.fogColor[2]);
+    gl.uniform1f(this.uFogDensityLoc, env.fogDensity);
+    gl.uniform3f(this.uHeadlightPosLoc, hlPos[0], hlPos[1], hlPos[2]);
+    gl.uniform3f(this.uHeadlightDirLoc, hlDir[0], hlDir[1], hlDir[2]);
+    gl.uniform1f(this.uHeadlightIntensityLoc, env.headlightIntensity);
+
     lookAtMat4(
       this.viewMat,
       cam.eyeX,
@@ -749,8 +968,8 @@ export class RallyWebGLRenderer {
       this.drawGhostCar(ghostSample);
     }
 
-    // Draw Player Car (in Chase or Title Flyover) OR Draw 3D Cockpit Interior & Steering Wheel (in Cockpit mode)
-    if (isTitleFlyover || cameraMode === 'chase') {
+    // Draw Player Car (in Chase / Chase Far / Title Flyover) OR Cockpit / Hood
+    if (isTitleFlyover || cameraMode === 'chase' || cameraMode === 'chase_far') {
       this.drawPlayerCar(car);
     } else if (cameraMode === 'cockpit') {
       this.drawCockpitAndSteeringWheel(car);
@@ -758,35 +977,56 @@ export class RallyWebGLRenderer {
       this.drawHoodBonnet(car);
     }
 
-    // Draw 3D Particles (Gravel, Dust, Snow, Water, Rain)
+    // Draw 3D Unlit Atmospheric Particles
     this.drawParticles();
 
-    // 3. In Cockpit Mode during gameplay: Render Functional 3D Rear-View Mirror Pass at Top-Center!
+    // 2. Cockpit Rear-View Mirror Pass at Top-Center
     if (!isTitleFlyover && cameraMode === 'cockpit' && w >= 480) {
       const mirrorW = Math.floor(Math.min(w * 0.28, 340));
       const mirrorH = Math.floor(Math.min(h * 0.095, 76));
       const mirrorX = Math.floor((w - mirrorW) * 0.5);
       const mirrorY = Math.floor(h - mirrorH - h * 0.025);
+      const mirrorAspect = mirrorW / Math.max(1, mirrorH);
 
       gl.enable(gl.SCISSOR_TEST);
       gl.scissor(mirrorX, mirrorY, mirrorW, mirrorH);
       gl.viewport(mirrorX, mirrorY, mirrorW, mirrorH);
-      gl.clearColor(env.fogColor[0] * 0.85, env.fogColor[1] * 0.85, env.fogColor[2] * 0.85, 1.0);
+      gl.clearColor(env.fogColor[0] * 0.9, env.fogColor[1] * 0.9, env.fogColor[2] * 0.9, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      perspectiveMat4(this.projMat, 0.95, mirrorW / Math.max(1, mirrorH), 0.2, 240.0);
-      const rearEyeX = car.x - sinY * 0.8;
-      const rearEyeY = car.y + 1.12;
-      const rearEyeZ = car.z - cosY * 0.8;
-      const rearLookX = car.x - sinY * 30.0;
-      const rearLookY = car.y + 0.85;
-      const rearLookZ = car.z - cosY * 30.0;
+      const rearCam = {
+        eyeX: car.x - sinY * 0.8,
+        eyeY: car.y + 1.12,
+        eyeZ: car.z - cosY * 0.8,
+        lookX: car.x - sinY * 30.0,
+        lookY: car.y + 0.85,
+        lookZ: car.z - cosY * 30.0,
+        upX: 0,
+        upY: 1,
+        upZ: 0,
+      };
 
-      lookAtMat4(this.viewMat, rearEyeX, rearEyeY, rearEyeZ, rearLookX, rearLookY, rearLookZ, 0, 1, 0);
+      this.drawProceduralSky(rearCam, 0.95, mirrorAspect, env);
+
+      gl.useProgram(this.program);
+      perspectiveMat4(this.projMat, 0.95, mirrorAspect, 0.2, 240.0);
+      lookAtMat4(
+        this.viewMat,
+        rearCam.eyeX,
+        rearCam.eyeY,
+        rearCam.eyeZ,
+        rearCam.lookX,
+        rearCam.lookY,
+        rearCam.lookZ,
+        0,
+        1,
+        0
+      );
       multiplyMat4(this.viewProjMat, this.projMat, this.viewMat);
 
       gl.uniformMatrix4fv(this.uViewProjLoc, false, this.viewProjMat);
-      gl.uniform3f(this.uCamPosLoc, rearEyeX, rearEyeY, rearEyeZ);
+      gl.uniform3f(this.uCamPosLoc, rearCam.eyeX, rearCam.eyeY, rearCam.eyeZ);
+      gl.uniform1f(this.uAlphaLoc, 1.0);
 
       this.drawStage();
       this.drawParticles();
@@ -794,9 +1034,85 @@ export class RallyWebGLRenderer {
     }
   }
 
-  /**
-   * Complete 3D Software Projection & Painter's Rasterizer for environments without WebGL.
-   */
+  private drawProceduralSky(
+    cam: {
+      eyeX: number;
+      eyeY: number;
+      eyeZ: number;
+      lookX: number;
+      lookY: number;
+      lookZ: number;
+      upX: number;
+      upY: number;
+      upZ: number;
+    },
+    fovRad: number,
+    aspect: number,
+    env: AtmosphereEnv
+  ): void {
+    const gl = this.gl;
+    if (!gl || !this.skyProgram || !this.skyQuadBuffer) return;
+
+    // Orthonormal camera basis vectors
+    let fx = cam.lookX - cam.eyeX;
+    let fy = cam.lookY - cam.eyeY;
+    let fz = cam.lookZ - cam.eyeZ;
+    const fLen = Math.hypot(fx, fy, fz) || 1;
+    fx /= fLen;
+    fy /= fLen;
+    fz /= fLen;
+
+    // right = normalize(cross(forward, up))
+    let rx = fy * cam.upZ - fz * cam.upY;
+    let ry = fz * cam.upX - fx * cam.upZ;
+    let rz = fx * cam.upY - fy * cam.upX;
+    const rLen = Math.hypot(rx, ry, rz) || 1;
+    rx /= rLen;
+    ry /= rLen;
+    rz /= rLen;
+
+    // trueUp = cross(right, forward)
+    const ux = ry * fz - rz * fy;
+    const uy = rz * fx - rx * fz;
+    const uz = rx * fy - ry * fx;
+
+    gl.useProgram(this.skyProgram);
+    gl.disable(gl.DEPTH_TEST);
+    gl.depthMask(false);
+
+    // Disable extra vertex attribute arrays from the main program while drawing the 2D sky quad
+    if (this.aNormalLoc >= 0) gl.disableVertexAttribArray(this.aNormalLoc);
+    if (this.aColorLoc >= 0) gl.disableVertexAttribArray(this.aColorLoc);
+    if (this.aMatTypeLoc >= 0) gl.disableVertexAttribArray(this.aMatTypeLoc);
+
+    gl.uniform3f(this.uSkyCamForwardLoc, fx, fy, fz);
+    gl.uniform3f(this.uSkyCamRightLoc, rx, ry, rz);
+    gl.uniform3f(this.uSkyCamUpLoc, ux, uy, uz);
+    gl.uniform1f(this.uSkyTanHalfFovLoc, Math.tan(fovRad * 0.5));
+    gl.uniform1f(this.uSkyAspectLoc, aspect);
+
+    gl.uniform3f(this.uSkyZenithLoc, env.skyZenith[0], env.skyZenith[1], env.skyZenith[2]);
+    gl.uniform3f(this.uSkyFogColorLoc, env.fogColor[0], env.fogColor[1], env.fogColor[2]);
+    gl.uniform3f(this.uSkySunDirLoc, env.sunDir[0], env.sunDir[1], env.sunDir[2]);
+    gl.uniform3f(this.uSkySunColorLoc, env.sunColor[0], env.sunColor[1], env.sunColor[2]);
+    gl.uniform1f(this.uSkyCloudDensityLoc, env.cloudDensity);
+    gl.uniform1f(this.uSkyIsNightLoc, env.isNight);
+    gl.uniform1f(this.uSkyTimeSecLoc, this.elapsedRenderSec);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.skyQuadBuffer);
+    if (this.aSkyScreenPosLoc >= 0) {
+      gl.enableVertexAttribArray(this.aSkyScreenPosLoc);
+      gl.vertexAttribPointer(this.aSkyScreenPosLoc, 2, gl.FLOAT, false, 8, 0);
+    }
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    if (this.aSkyScreenPosLoc >= 0) {
+      gl.disableVertexAttribArray(this.aSkyScreenPosLoc);
+    }
+    gl.depthMask(true);
+    gl.enable(gl.DEPTH_TEST);
+  }
+
   private renderSoftwareFallback(
     car: CarPhysicsState,
     cameraMode: CameraMode,
@@ -836,7 +1152,6 @@ export class RallyWebGLRenderer {
     );
     multiplyMat4(this.viewProjMat, this.projMat, this.viewMat);
 
-    // Render main full-screen 3D viewport
     this.renderSoftwareViewport(
       ctx,
       0,
@@ -856,7 +1171,6 @@ export class RallyWebGLRenderer {
       false
     );
 
-    // Render 3D Rear-View Mirror at top-center in Cockpit mode
     if (!isTitleFlyover && cameraMode === 'cockpit' && w >= 480) {
       const mirrorW = Math.floor(Math.min(w * 0.28, 340));
       const mirrorH = Math.floor(Math.min(h * 0.095, 76));
@@ -921,16 +1235,36 @@ export class RallyWebGLRenderer {
     ghostSample: GhostSample | null,
     isMirrorPass: boolean
   ): void {
-    // 1. Fill atmospheric sky & horizon gradient
-    const skyR = Math.round(Math.min(255, env.fogColor[0] * 255));
-    const skyG = Math.round(Math.min(255, env.fogColor[1] * 255));
-    const skyB = Math.round(Math.min(255, env.fogColor[2] * 255));
-    ctx.fillStyle = `rgb(${skyR},${skyG},${skyB})`;
+    // 1. Atmospheric Sky Gradient + Alpine Horizon Ridge Silhouette
+    const zenR = Math.round(Math.min(255, env.skyZenith[0] * 255));
+    const zenG = Math.round(Math.min(255, env.skyZenith[1] * 255));
+    const zenB = Math.round(Math.min(255, env.skyZenith[2] * 255));
+    const fogR = Math.round(Math.min(255, env.fogColor[0] * 255));
+    const fogG = Math.round(Math.min(255, env.fogColor[1] * 255));
+    const fogB = Math.round(Math.min(255, env.fogColor[2] * 255));
+
+    const grad = ctx.createLinearGradient(vpX, vpY, vpX, vpY + vpH * 0.62);
+    grad.addColorStop(0, `rgb(${zenR},${zenG},${zenB})`);
+    grad.addColorStop(1, `rgb(${fogR},${fogG},${fogB})`);
+    ctx.fillStyle = grad;
     ctx.fillRect(vpX, vpY, vpW, vpH);
+
+    // Mountain silhouette along horizon
+    const horizonY = vpY + vpH * 0.48;
+    ctx.fillStyle = `rgba(${Math.round(fogR * 0.72)},${Math.round(fogG * 0.74)},${Math.round(fogB * 0.80)},0.65)`;
+    ctx.beginPath();
+    ctx.moveTo(vpX, horizonY + vpH * 0.12);
+    for (let s = 0; s <= 16; s++) {
+      const px = vpX + (s / 16) * vpW;
+      const py = horizonY - (Math.sin(s * 0.9 + car.yaw * 2) * 0.5 + 0.55) * vpH * 0.09;
+      ctx.lineTo(px, py);
+    }
+    ctx.lineTo(vpX + vpW, horizonY + vpH * 0.12);
+    ctx.closePath();
+    ctx.fill();
 
     let triCount = 0;
 
-    // 2. Project Stage Geometry within local visibility radius (145m)
     if (this.stageMeshData.length > 0) {
       composeTransformMat4(this.modelMat, 0, 0, 0, 0, 0, 0, 1, 1, 1);
       triCount = this.appendSoftwareMesh(
@@ -953,7 +1287,6 @@ export class RallyWebGLRenderer {
     }
 
     if (!isMirrorPass) {
-      // 3. Project Personal Best Ghost Car
       if (ghostSample && !isTitleFlyover && this.ghostCarData.length > 0) {
         composeTransformMat4(
           this.modelMat,
@@ -986,8 +1319,7 @@ export class RallyWebGLRenderer {
         );
       }
 
-      // 4. Project Player Car / Cockpit / Hood
-      if (isTitleFlyover || cameraMode === 'chase') {
+      if (isTitleFlyover || cameraMode === 'chase' || cameraMode === 'chase_far') {
         composeTransformMat4(
           this.modelMat,
           car.x,
@@ -1015,7 +1347,7 @@ export class RallyWebGLRenderer {
           env,
           hlPos,
           hlDir,
-          50.0
+          60.0
         );
 
         const sinY = Math.sin(car.yaw);
@@ -1048,7 +1380,7 @@ export class RallyWebGLRenderer {
             env,
             hlPos,
             hlDir,
-            50.0
+            60.0
           );
         }
       } else if (cameraMode === 'cockpit') {
@@ -1085,7 +1417,7 @@ export class RallyWebGLRenderer {
         const sinY = Math.sin(car.yaw);
         const cosY = Math.cos(car.yaw);
         const lx = -0.32;
-        const ly = 0.81 - Math.sin(car.pitch) * 0.36;
+        const ly = 0.74 - Math.sin(car.pitch) * 0.36;
         const lz = 0.36;
         const swX = car.x + lx * cosY + lz * sinY;
         const swY = car.y + ly;
@@ -1153,7 +1485,6 @@ export class RallyWebGLRenderer {
       }
     }
 
-    // 5. Project active 3D Particles
     this.particleMeshBuilder.clear();
     let activeParticles = 0;
     for (let i = 0; i < MAX_PARTICLES; i++) {
@@ -1161,25 +1492,25 @@ export class RallyWebGLRenderer {
       if (!p.active) continue;
       activeParticles++;
       const lifeRatio = 1.0 - p.age / p.maxAge;
-      const curSize = p.size * (1.0 + (1.0 - lifeRatio) * 1.35);
+      const curSize = p.size * (p.isStreak ? 1.0 : 0.75 + (1.0 - lifeRatio) * 0.9) * (0.45 + 0.55 * lifeRatio);
       this.particleMeshBuilder.addBox(
         p.x,
         p.y,
         p.z,
         curSize,
+        p.isStreak ? 0.52 : curSize,
         curSize,
-        curSize,
-        p.r * lifeRatio,
-        p.g * lifeRatio,
-        p.b * lifeRatio,
-        0
+        p.r,
+        p.g,
+        p.b,
+        6
       );
     }
     if (activeParticles > 0) {
       triCount = this.appendSoftwareMesh(
         this.particleMeshBuilder.getFloat32Array(),
         true,
-        0.72,
+        0.65,
         triCount,
         vpX,
         vpY,
@@ -1195,12 +1526,10 @@ export class RallyWebGLRenderer {
       );
     }
 
-    // 6. Sort visible triangles back-to-front (Painter's algorithm) and rasterize
     const refs = this.softTriRefs;
     for (let i = 0; i < triCount; i++) {
       refs[i] = this.softTriPool[i];
     }
-    // Insertion/quicksort slice on active [0..triCount)
     const activeSlice = refs.slice(0, triCount);
     activeSlice.sort((a, b) => b.depth - a.depth);
 
@@ -1229,7 +1558,7 @@ export class RallyWebGLRenderer {
     vpW: number,
     vpH: number,
     camX: number,
-    camY: number,
+    _camY: number,
     camZ: number,
     env: AtmosphereEnv,
     hlPos: [number, number, number],
@@ -1240,7 +1569,7 @@ export class RallyWebGLRenderer {
     const maxDistSq = maxDist * maxDist;
     const m = this.modelMat;
     const vp = this.viewProjMat;
-    const stride = FLOATS_PER_VERTEX * 3; // 30 floats per triangle
+    const stride = FLOATS_PER_VERTEX * 3;
 
     for (let base = 0; base <= data.length - stride; base += stride) {
       if (triIdx >= MAX_SOFT_TRIS) break;
@@ -1271,33 +1600,24 @@ export class RallyWebGLRenderer {
         const tx0 = m[0] * x0 + m[4] * y0 + m[8] * z0 + m[12];
         const ty0 = m[1] * x0 + m[5] * y0 + m[9] * z0 + m[13];
         const tz0 = m[2] * x0 + m[6] * y0 + m[10] * z0 + m[14];
-        x0 = tx0;
-        y0 = ty0;
-        z0 = tz0;
+        x0 = tx0; y0 = ty0; z0 = tz0;
 
         const tx1 = m[0] * x1 + m[4] * y1 + m[8] * z1 + m[12];
         const ty1 = m[1] * x1 + m[5] * y1 + m[9] * z1 + m[13];
         const tz1 = m[2] * x1 + m[6] * y1 + m[10] * z1 + m[14];
-        x1 = tx1;
-        y1 = ty1;
-        z1 = tz1;
+        x1 = tx1; y1 = ty1; z1 = tz1;
 
         const tx2 = m[0] * x2 + m[4] * y2 + m[8] * z2 + m[12];
         const ty2 = m[1] * x2 + m[5] * y2 + m[9] * z2 + m[13];
         const tz2 = m[2] * x2 + m[6] * y2 + m[10] * z2 + m[14];
-        x2 = tx2;
-        y2 = ty2;
-        z2 = tz2;
+        x2 = tx2; y2 = ty2; z2 = tz2;
 
         const tnx = m[0] * nx + m[4] * ny + m[8] * nz;
         const tny = m[1] * nx + m[5] * ny + m[9] * nz;
         const tnz = m[2] * nx + m[6] * ny + m[10] * nz;
-        nx = tnx;
-        ny = tny;
-        nz = tnz;
+        nx = tnx; ny = tny; nz = tnz;
       }
 
-      // Clip-space w (= view-space depth)
       let w0 = vp[3] * x0 + vp[7] * y0 + vp[11] * z0 + vp[15];
       let w1 = vp[3] * x1 + vp[7] * y1 + vp[11] * z1 + vp[15];
       let w2 = vp[3] * x2 + vp[7] * y2 + vp[11] * z2 + vp[15];
@@ -1305,7 +1625,6 @@ export class RallyWebGLRenderer {
       const nearW = 0.25;
       if (w0 < nearW && w1 < nearW && w2 < nearW) continue;
 
-      // If 1 or 2 vertices are behind nearW, interpolate them in 3D onto the w = nearW plane
       if (w0 < nearW || w1 < nearW || w2 < nearW) {
         const fx = w0 >= nearW ? x0 : w1 >= nearW ? x1 : x2;
         const fy = w0 >= nearW ? y0 : w1 >= nearW ? y1 : y2;
@@ -1337,14 +1656,11 @@ export class RallyWebGLRenderer {
 
       const cx0 = (vp[0] * x0 + vp[4] * y0 + vp[8] * z0 + vp[12]) / w0;
       const cy0 = (vp[1] * x0 + vp[5] * y0 + vp[9] * z0 + vp[13]) / w0;
-
       const cx1 = (vp[0] * x1 + vp[4] * y1 + vp[8] * z1 + vp[12]) / w1;
       const cy1 = (vp[1] * x1 + vp[5] * y1 + vp[9] * z1 + vp[13]) / w1;
-
       const cx2 = (vp[0] * x2 + vp[4] * y2 + vp[8] * z2 + vp[12]) / w2;
       const cy2 = (vp[1] * x2 + vp[5] * y2 + vp[9] * z2 + vp[13]) / w2;
 
-      // Frustum guard
       if (
         (cx0 < -1.35 && cx1 < -1.35 && cx2 < -1.35) ||
         (cx0 > 1.35 && cx1 > 1.35 && cx2 > 1.35) ||
@@ -1361,7 +1677,6 @@ export class RallyWebGLRenderer {
       const sx2 = vpX + (cx2 * 0.5 + 0.5) * vpW;
       const sy2 = vpY + (0.5 - cy2 * 0.5) * vpH;
 
-      // Compute lighting at triangle centroid
       const baseR = data[base + 6];
       const baseG = data[base + 7];
       const baseB = data[base + 8];
@@ -1374,8 +1689,11 @@ export class RallyWebGLRenderer {
       let litG = baseG;
       let litB = baseB;
 
-      if (matType > 2.5 && matType < 3.5) {
-        // Emissive
+      if (matType > 5.5) {
+        litR = baseR;
+        litG = baseG;
+        litB = baseB;
+      } else if (matType > 2.5 && matType < 3.5) {
         litR = baseR * 1.25;
         litG = baseG * 1.25;
         litB = baseB * 1.25;
@@ -1417,7 +1735,6 @@ export class RallyWebGLRenderer {
       tri.sy1 = sy1;
       tri.sx2 = sx2;
       tri.sy2 = sy2;
-      // Add slight priority bias for non-identity models (cockpit/steering wheel/car) so cockpit stays in front
       tri.depth = isIdentityModel ? avgW : avgW * 0.45;
       tri.r = Math.max(0, Math.min(255, Math.round(finalR * 255)));
       tri.g = Math.max(0, Math.min(255, Math.round(finalG * 255)));
@@ -1433,57 +1750,74 @@ export class RallyWebGLRenderer {
     timeOfDay: TimeOfDay,
     car: CarPhysicsState
   ): AtmosphereEnv {
-    let sunDir: [number, number, number] = [0.42, 0.78, 0.45];
-    let sunColor: [number, number, number] = [1.0, 0.96, 0.90];
-    let skyAmb: [number, number, number] = [0.48, 0.56, 0.68];
+    let sunDir: [number, number, number] = [0.38, 0.56, 0.73];
+    let sunColor: [number, number, number] = [1.05, 0.98, 0.88];
+    let skyZenith: [number, number, number] = [0.21, 0.44, 0.78];
+    let skyAmb: [number, number, number] = [0.50, 0.58, 0.70];
     let gndAmb: [number, number, number] = [0.22, 0.24, 0.20];
-    let fogColor: [number, number, number] = [0.62, 0.72, 0.84];
-    let fogDensity = 0.0045;
+    let fogColor: [number, number, number] = [0.68, 0.78, 0.90];
+    let fogDensity = 0.0042;
+    let cloudDensity = 0.35;
+    let isNight = 0.0;
     let headlightIntensity = 0.0;
 
     if (timeOfDay === 'dusk') {
-      sunDir = [0.82, 0.22, -0.52];
-      sunColor = [1.18, 0.62, 0.28];
-      skyAmb = [0.44, 0.34, 0.48];
-      gndAmb = [0.18, 0.14, 0.16];
-      fogColor = [0.76, 0.45, 0.32];
-      fogDensity = 0.0055;
-      headlightIntensity = 0.65;
+      sunDir = [0.65, 0.19, 0.73];
+      sunColor = [1.25, 0.62, 0.26];
+      skyZenith = [0.18, 0.22, 0.46];
+      skyAmb = [0.46, 0.36, 0.50];
+      gndAmb = [0.19, 0.14, 0.16];
+      fogColor = [0.84, 0.50, 0.34];
+      fogDensity = 0.0052;
+      cloudDensity = 0.45;
+      headlightIntensity = 0.68;
     } else if (timeOfDay === 'night') {
-      sunDir = [-0.25, 0.85, -0.45];
-      sunColor = [0.07, 0.10, 0.18];
-      skyAmb = [0.04, 0.06, 0.11];
+      sunDir = [-0.28, 0.52, 0.81];
+      sunColor = [0.16, 0.22, 0.36];
+      skyZenith = [0.02, 0.04, 0.09];
+      skyAmb = [0.05, 0.08, 0.14];
       gndAmb = [0.02, 0.03, 0.05];
-      fogColor = [0.03, 0.05, 0.09];
-      fogDensity = 0.0095;
-      headlightIntensity = 1.35;
+      fogColor = [0.04, 0.07, 0.13];
+      fogDensity = 0.0088;
+      cloudDensity = 0.25;
+      isNight = 1.0;
+      headlightIntensity = 1.4;
     }
 
     if (weather === 'rain') {
-      fogDensity *= 1.55;
+      fogDensity *= 1.45;
+      cloudDensity = 0.88;
       sunColor = [sunColor[0] * 0.55, sunColor[1] * 0.58, sunColor[2] * 0.65];
       if (timeOfDay === 'day') {
-        fogColor = [0.38, 0.43, 0.49];
-        skyAmb = [0.34, 0.38, 0.44];
+        skyZenith = [0.24, 0.31, 0.41];
+        fogColor = [0.46, 0.52, 0.59];
+        skyAmb = [0.38, 0.43, 0.50];
       }
-      headlightIntensity = Math.max(headlightIntensity, 0.55);
+      headlightIntensity = Math.max(headlightIntensity, 0.58);
     } else if (weather === 'fog') {
-      fogDensity = 0.0185;
-      if (timeOfDay !== 'night') {
-        fogColor = [0.68, 0.71, 0.75];
-      }
-      headlightIntensity = Math.max(headlightIntensity, 0.75);
-    } else if (weather === 'snow') {
-      fogDensity = 0.0085;
+      fogDensity = 0.0165;
+      cloudDensity = 0.92;
       if (timeOfDay === 'day') {
-        fogColor = [0.78, 0.83, 0.90];
-        skyAmb = [0.64, 0.70, 0.80];
+        skyZenith = [0.54, 0.60, 0.68];
+        fogColor = [0.74, 0.78, 0.82];
+      } else if (timeOfDay === 'dusk') {
+        skyZenith = [0.32, 0.30, 0.44];
+        fogColor = [0.76, 0.58, 0.50];
+      }
+      headlightIntensity = Math.max(headlightIntensity, 0.78);
+    } else if (weather === 'snow') {
+      fogDensity = 0.0078;
+      cloudDensity = 0.78;
+      if (timeOfDay === 'day') {
+        skyZenith = [0.48, 0.62, 0.82];
+        fogColor = [0.82, 0.87, 0.94];
+        skyAmb = [0.66, 0.72, 0.82];
       }
     }
 
     if (headlightIntensity > 0 && car.damage.lights > 0.05) {
       let dmgMult = Math.max(0.14, 1.0 - car.damage.lights * 0.78);
-      if (car.damage.lights > 0.45 && Math.sin(performance.now() * 0.037) > 0.65) {
+      if (car.damage.lights > 0.45 && Math.sin(this.elapsedRenderSec * 37.0) > 0.65) {
         dmgMult *= 0.25;
       }
       headlightIntensity *= dmgMult;
@@ -1492,10 +1826,13 @@ export class RallyWebGLRenderer {
     return {
       sunDir,
       sunColor,
+      skyZenith,
       skyAmb,
       gndAmb,
       fogColor,
       fogDensity,
+      cloudDensity,
+      isNight,
       headlightIntensity,
     };
   }
@@ -1521,44 +1858,50 @@ export class RallyWebGLRenderer {
     const cosY = Math.cos(car.yaw);
 
     if (isTitleFlyover) {
-      const orbitAngle = car.yaw + 0.55 + Math.sin(flyoverTimeSec * 0.32) * 0.65;
-      const dist = 6.2 + Math.cos(flyoverTimeSec * 0.25) * 1.2;
+      // Orbit around rear-quarter of WRC car so the Start Truss Arch + Alpine mountain horizon are framed ahead!
+      const orbitAngle = car.yaw + Math.PI + 0.52 * Math.sin(flyoverTimeSec * 0.34);
+      const dist = 6.1 + Math.cos(flyoverTimeSec * 0.26) * 0.9;
       const eyeX = car.x + Math.sin(orbitAngle) * dist;
-      const eyeY = car.y + 2.15 + Math.sin(flyoverTimeSec * 0.4) * 0.45;
+      const eyeY = car.y + 2.05 + Math.sin(flyoverTimeSec * 0.42) * 0.32;
       const eyeZ = car.z + Math.cos(orbitAngle) * dist;
       return {
         eyeX,
         eyeY,
         eyeZ,
-        lookX: car.x + sinY * 1.4,
-        lookY: car.y + 0.85,
-        lookZ: car.z + cosY * 1.4,
+        lookX: car.x + sinY * 6.5,
+        lookY: car.y + 1.25,
+        lookZ: car.z + cosY * 6.5,
         upX: 0,
         upY: 1,
         upZ: 0,
       };
     }
 
+    const shakeSq = this.camTrauma * this.camTrauma;
+    const traumaRoll = shakeSq * 0.055 * Math.sin(this.elapsedRenderSec * 43.0);
+    const traumaPitch = shakeSq * 0.28 * Math.cos(this.elapsedRenderSec * 51.0);
+
     const bumpVib =
       (car.wheels[0].compression - car.wheels[1].compression) * 0.08 +
-      car.wheels[0].bottomedOutImpact * 0.04 * Math.sin(performance.now() * 0.08);
+      car.wheels[0].bottomedOutImpact * 0.04 * Math.sin(this.elapsedRenderSec * 65.0) +
+      traumaRoll;
 
     if (cameraMode === 'cockpit') {
       const localX = -0.32;
-      const localY = 1.07 - Math.max(0, car.wheels[0].compression - 0.08) * 0.35;
-      const localZ = 0.04;
+      const localY = 1.08 - Math.max(0, car.wheels[0].compression - 0.08) * 0.32;
+      const localZ = 0.06;
 
       const eyeX = car.x + localX * cosY + localZ * sinY;
       const eyeY = car.y + localY;
       const eyeZ = car.z - localX * sinY + localZ * cosY;
 
-      const lookDist = 25.0;
-      const lookYaw = car.yaw + car.steerAngleRad * 0.14;
+      const lookDist = 26.0;
+      const lookYaw = car.yaw + car.steerAngleRad * 0.15;
       const lookX = eyeX + Math.sin(lookYaw) * lookDist;
-      const lookY = eyeY - Math.sin(car.pitch * 1.35) * lookDist;
+      const lookY = eyeY - Math.sin(car.pitch * 1.3) * lookDist + traumaPitch;
       const lookZ = eyeZ + Math.cos(lookYaw) * lookDist;
 
-      const rollAngle = car.roll * 1.25 + bumpVib;
+      const rollAngle = car.roll * 1.2 + bumpVib;
       const upX = Math.sin(rollAngle) * cosY;
       const upY = Math.cos(rollAngle);
       const upZ = -Math.sin(rollAngle) * sinY;
@@ -1573,7 +1916,7 @@ export class RallyWebGLRenderer {
 
       const lookDist = 30.0;
       const lookX = eyeX + sinY * lookDist;
-      const lookY = eyeY - Math.sin(car.pitch * 1.25) * lookDist - 0.35;
+      const lookY = eyeY - Math.sin(car.pitch * 1.25) * lookDist - 0.32 + traumaPitch;
       const lookZ = eyeZ + cosY * lookDist;
 
       const rollAngle = car.roll * 1.15 + bumpVib;
@@ -1590,9 +1933,12 @@ export class RallyWebGLRenderer {
       };
     }
 
-    const targetDist = 5.45 + Math.min(0.85, Math.abs(car.forwardSpeedMs) * 0.022);
+    const isFar = cameraMode === 'chase_far';
+    const baseDist = isFar ? 7.65 : 5.35;
+    const baseHeight = isFar ? 2.85 : 2.05;
+    const targetDist = baseDist + Math.min(0.9, Math.abs(car.forwardSpeedMs) * 0.024);
     const targetX = car.x - sinY * targetDist;
-    const targetY = car.y + 2.08 + Math.max(0, -car.pitch * 1.5);
+    const targetY = car.y + baseHeight + Math.max(0, -car.pitch * 1.5);
     const targetZ = car.z - cosY * targetDist;
 
     if (!this.chaseCamInitialized) {
@@ -1601,22 +1947,23 @@ export class RallyWebGLRenderer {
       this.chaseCamZ = targetZ;
       this.chaseCamInitialized = true;
     } else {
-      const damp = 1.0 - Math.exp(-11.5 * dt);
+      const damp = 1.0 - Math.exp(-(isFar ? 9.5 : 12.0) * dt);
       this.chaseCamX += (targetX - this.chaseCamX) * damp;
       this.chaseCamY += (targetY - this.chaseCamY) * damp;
       this.chaseCamZ += (targetZ - this.chaseCamZ) * damp;
     }
 
+    const chaseRoll = car.roll * 0.42 + traumaRoll;
     return {
       eyeX: this.chaseCamX,
       eyeY: this.chaseCamY,
       eyeZ: this.chaseCamZ,
-      lookX: car.x + sinY * 4.5,
-      lookY: car.y + 0.92 - Math.sin(car.pitch) * 3.5,
-      lookZ: car.z + cosY * 4.5,
-      upX: Math.sin(car.roll * 0.45) * cosY,
+      lookX: car.x + sinY * 5.2,
+      lookY: car.y + 0.95 - Math.sin(car.pitch) * 3.5 + traumaPitch,
+      lookZ: car.z + cosY * 5.2,
+      upX: Math.sin(chaseRoll) * cosY,
       upY: 1,
-      upZ: -Math.sin(car.roll * 0.45) * sinY,
+      upZ: -Math.sin(chaseRoll) * sinY,
     };
   }
 
@@ -1628,8 +1975,21 @@ export class RallyWebGLRenderer {
   }
 
   private drawPlayerCar(car: CarPhysicsState): void {
-    if (!this.gl || !this.carChassisBuffer || !this.wheelBuffer) return;
+    const gl = this.gl;
+    if (!gl || !this.carChassisBuffer || !this.wheelBuffer) return;
 
+    // 1. Ground contact shadow when wheels are near road surface
+    if (this.contactShadowBuffer && car.airborneTimeSec < 0.25) {
+      gl.depthMask(false);
+      gl.uniform1f(this.uAlphaLoc, 0.46);
+      composeTransformMat4(this.modelMat, car.x, car.y, car.z, car.yaw, 0, 0, 1, 1, 1);
+      gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
+      this.bindAndDrawBuffer(this.contactShadowBuffer, this.contactShadowVertexCount);
+      gl.uniform1f(this.uAlphaLoc, 1.0);
+      gl.depthMask(true);
+    }
+
+    // 2. WRC Widebody Chassis
     const sprungY = car.y + 0.04;
     composeTransformMat4(
       this.modelMat,
@@ -1643,9 +2003,34 @@ export class RallyWebGLRenderer {
       1,
       1
     );
-    this.gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
+    gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
     this.bindAndDrawBuffer(this.carChassisBuffer, this.carChassisVertexCount);
 
+    // 3. Dynamic High-Intensity Brake Light Strip when braking
+    if (car.brake > 0.05 && this.brakeGlowBuffer) {
+      this.bindAndDrawBuffer(this.brakeGlowBuffer, this.brakeGlowVertexCount);
+    }
+
+    // 4. Dynamic Twin Anti-Lag Exhaust Flame Cones on gear shifts / high-boost liftoff
+    if (car.backfireTrigger > 0.03 && this.exhaustBackfireBuffer) {
+      const flickerScale = 0.75 + Math.sin(this.elapsedRenderSec * 90.0) * 0.3;
+      composeTransformMat4(
+        this.modelMat,
+        car.x,
+        sprungY,
+        car.z,
+        car.yaw,
+        car.pitch,
+        car.roll,
+        1,
+        1,
+        flickerScale
+      );
+      gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
+      this.bindAndDrawBuffer(this.exhaustBackfireBuffer, this.exhaustBackfireVertexCount);
+    }
+
+    // 5. Independent 4 Wheels with Suspension Compression & Steering Angle
     const sinY = Math.sin(car.yaw);
     const cosY = Math.cos(car.yaw);
     const wheelPositions: Array<{ lx: number; lz: number; isFront: boolean; wIdx: number }> = [
@@ -1663,7 +2048,7 @@ export class RallyWebGLRenderer {
       const wYaw = car.yaw + (wp.isFront ? car.steerAngleRad : 0);
 
       composeTransformMat4(this.modelMat, wx, wy, wz, wYaw, this.wheelSpinAngle, 0, 1, 1, 1);
-      this.gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
+      gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
       this.bindAndDrawBuffer(this.wheelBuffer, this.wheelVertexCount);
     }
   }
@@ -1727,7 +2112,7 @@ export class RallyWebGLRenderer {
     const sinY = Math.sin(car.yaw);
     const cosY = Math.cos(car.yaw);
     const lx = -0.32;
-    const ly = 0.81 - Math.sin(car.pitch) * 0.36;
+    const ly = 0.74 - Math.sin(car.pitch) * 0.36;
     const lz = 0.36;
 
     const swX = car.x + lx * cosY + lz * sinY;
@@ -1753,41 +2138,60 @@ export class RallyWebGLRenderer {
 
   private drawParticles(): void {
     if (!this.gl || !this.particleBuffer) return;
-    this.particleMeshBuilder.clear();
+    const gl = this.gl;
+    gl.depthMask(false);
+    composeTransformMat4(this.modelMat, 0, 0, 0, 0, 0, 0, 1, 1, 1);
+    gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
 
-    let activeCount = 0;
+    // Pass A: Soft low-opacity wheel dust/snow/spray puffs
+    this.particleMeshBuilder.clear();
+    let puffCount = 0;
     for (let i = 0; i < MAX_PARTICLES; i++) {
       const p = this.particles[i];
-      if (!p.active) continue;
-      activeCount++;
+      if (!p.active || p.isStreak) continue;
+      puffCount++;
       const lifeRatio = 1.0 - p.age / p.maxAge;
-      const curSize = p.size * (1.0 + (1.0 - lifeRatio) * 1.35);
+      const curSize = p.size * (0.72 + (1.0 - lifeRatio) * 0.65) * (0.35 + 0.65 * lifeRatio);
       this.particleMeshBuilder.addBox(
         p.x,
         p.y,
         p.z,
         curSize,
+        curSize * 0.58,
         curSize,
-        curSize,
-        p.r * lifeRatio,
-        p.g * lifeRatio,
-        p.b * lifeRatio,
-        0
+        p.r,
+        p.g,
+        p.b,
+        6
       );
     }
+    if (puffCount > 0) {
+      const arr = this.particleMeshBuilder.getFloat32Array();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+      gl.uniform1f(this.uAlphaLoc, 0.25);
+      this.bindAndDrawBuffer(this.particleBuffer, arr.length / FLOATS_PER_VERTEX);
+    }
 
-    if (activeCount === 0) return;
+    // Pass B: Crisp thin weather rain streaks
+    this.particleMeshBuilder.clear();
+    let streakCount = 0;
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const p = this.particles[i];
+      if (!p.active || !p.isStreak) continue;
+      streakCount++;
+      this.particleMeshBuilder.addBox(p.x, p.y, p.z, p.size, 0.52, p.size, p.r, p.g, p.b, 6);
+    }
+    if (streakCount > 0) {
+      const arr = this.particleMeshBuilder.getFloat32Array();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+      gl.uniform1f(this.uAlphaLoc, 0.46);
+      this.bindAndDrawBuffer(this.particleBuffer, arr.length / FLOATS_PER_VERTEX);
+    }
 
-    const gl = this.gl;
-    const arr = this.particleMeshBuilder.getFloat32Array();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
-
-    composeTransformMat4(this.modelMat, 0, 0, 0, 0, 0, 0, 1, 1, 1);
-    gl.uniformMatrix4fv(this.uModelLoc, false, this.modelMat);
-    gl.uniform1f(this.uAlphaLoc, 0.72);
-    this.bindAndDrawBuffer(this.particleBuffer, arr.length / FLOATS_PER_VERTEX);
     gl.uniform1f(this.uAlphaLoc, 1.0);
+    gl.depthMask(true);
   }
 
   private bindAndDrawBuffer(buffer: WebGLBuffer, vertexCount: number): void {

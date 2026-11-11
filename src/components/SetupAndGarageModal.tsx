@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { REPAIR_COSTS_MIN } from '../game/physics.ts';
 import {
+  REPAIR_COSTS_MIN,
+  applyDrivingPreset,
+  getDrivingPreset,
+} from '../game/physics.ts';
+import type {
   DamageState,
   DrivetrainType,
   InputSettings,
@@ -758,16 +762,44 @@ export const SetupAndGarageModal: React.FC<SetupAndGarageModalProps> = ({
                 </div>
               </div>
 
-              {/* Co-Driver & Mechanical Assists (All Assists OFF by Default) */}
+              {/* Co-Driver & Mechanical Assists + Quick Sport/Pro Preset Switch */}
               <div className="p-4 bg-[#131820] border border-slate-800 rounded space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-slate-100">
-                      驾驶辅助与路书开关 (默认全关：纯机械硬核手感)
+                      换挡模式预设与驾驶辅助 (Transmission &amp; Assists)
                     </div>
                     <p className="text-xs text-slate-400">
-                      物理引擎无任何隐藏车身稳定系统（ESP）。开启下列选项仅用于新手过渡。
+                      物理引擎无任何隐藏车身稳定系统（ESP）。可一键切换「运动序列挡」或「硬核手排+离合」，赛段中也可按 G 键即时切换。
                     </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateInputSettings(applyDrivingPreset(inputSettings, 'sport'))
+                      }
+                      className={`px-3 py-1.5 text-xs font-bold rounded border transition-colors whitespace-nowrap ${
+                        getDrivingPreset(inputSettings) === 'sport'
+                          ? 'bg-[#f59e0b] text-black border-[#f59e0b]'
+                          : 'bg-[#0b0e13] text-slate-300 border-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      运动序列挡 (自动换挡+防熄火)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateInputSettings(applyDrivingPreset(inputSettings, 'pro'))
+                      }
+                      className={`px-3 py-1.5 text-xs font-bold rounded border transition-colors whitespace-nowrap ${
+                        getDrivingPreset(inputSettings) === 'pro'
+                          ? 'bg-[#f59e0b] text-black border-[#f59e0b]'
+                          : 'bg-[#0b0e13] text-slate-300 border-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      硬核手排 (手动 Q/E + Shift 离合)
+                    </button>
                   </div>
                 </div>
 
@@ -785,23 +817,23 @@ export const SetupAndGarageModal: React.FC<SetupAndGarageModalProps> = ({
                     },
                     {
                       key: 'autoGearbox' as const,
-                      label: '自动换挡辅助 (Auto Gearbox)',
-                      desc: '默认关闭（建议手动 Q/E 掌控转速与发动机制动）',
+                      label: '智能序列自动换挡 (Auto Gearbox)',
+                      desc: '开启时仍可随时按 Q/E 人工干预抢挡并自动倒车',
                     },
                     {
                       key: 'autoClutch' as const,
                       label: '自动离合防熄火 (Auto Clutch)',
-                      desc: '默认关闭（关闭时陡坡/低转不踩 Shift 离合会熄火）',
+                      desc: '关闭时陡坡/低转不踩 Shift 离合会导致引擎熄火',
                     },
                     {
                       key: 'absAssist' as const,
                       label: '防抱死刹车辅助 (ABS)',
-                      desc: '默认关闭（关闭时重刹锁死前轮会失去转向能力）',
+                      desc: '关闭时重刹锁死前轮会失去入弯转向能力',
                     },
                     {
                       key: 'tcsAssist' as const,
                       label: '牵引力控制辅助 (TCS)',
-                      desc: '默认关闭（关闭时可自由靠油门控制甩尾滑移角）',
+                      desc: '关闭时可自由靠油门深浅控制甩尾滑移角',
                     },
                   ].map((item) => {
                     const checked = inputSettings[item.key];

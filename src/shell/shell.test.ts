@@ -15,8 +15,8 @@ const SHELL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SHELL_DIR, '..', '..');
 const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 
-test('APP_REGISTRY registers chrono-stage and ds-stage with valid metadata and existing paths', () => {
-  assert.ok(APP_REGISTRY.length >= 2);
+test('APP_REGISTRY registers lucky-landlord and chrono-stage with valid metadata and existing paths', () => {
+  assert.equal(APP_REGISTRY.length, 2);
   const seenIds = new Set<string>();
 
   for (const app of APP_REGISTRY) {
@@ -47,19 +47,21 @@ test('APP_REGISTRY registers chrono-stage and ds-stage with valid metadata and e
     }
   }
 
+  assert.equal(getAppById('lucky-landlord')?.kind, 'react-lazy');
   assert.equal(getAppById('chrono-stage')?.kind, 'react-lazy');
-  assert.equal(getAppById('ds-stage')?.kind, 'iframe');
+  assert.equal(getAppById('ds-stage'), null);
   assert.equal(getAppById('unknown-app'), null);
 });
 
 test('router parses query, hash, and path app routes safely', () => {
   assert.equal(parseAppIdFromLocation('', '', '/', VALID_IDS), null);
   assert.equal(parseAppIdFromLocation('?app=chrono-stage', '', '/', VALID_IDS), 'chrono-stage');
-  assert.equal(parseAppIdFromLocation('?app=DS-STAGE', '', '/gaistudio/', VALID_IDS), 'ds-stage');
-  assert.equal(parseAppIdFromLocation('', '#/apps/ds-stage', '/gaistudio/', VALID_IDS), 'ds-stage');
+  assert.equal(parseAppIdFromLocation('?app=LUCKY-LANDLORD', '', '/gaistudio/', VALID_IDS), 'lucky-landlord');
+  assert.equal(parseAppIdFromLocation('', '#/apps/lucky-landlord', '/gaistudio/', VALID_IDS), 'lucky-landlord');
   assert.equal(parseAppIdFromLocation('', '#/app/chrono-stage?autostart=1', '/', VALID_IDS), 'chrono-stage');
-  assert.equal(parseAppIdFromLocation('', '#ds-stage', '/', VALID_IDS), 'ds-stage');
+  assert.equal(parseAppIdFromLocation('', '#lucky-landlord', '/', VALID_IDS), 'lucky-landlord');
   assert.equal(parseAppIdFromLocation('', '', '/app/chrono-stage', VALID_IDS), 'chrono-stage');
+  assert.equal(parseAppIdFromLocation('?app=ds-stage', '', '/', VALID_IDS), null);
   assert.equal(parseAppIdFromLocation('?app=nonexistent', '', '/', VALID_IDS), null);
 });
 
@@ -69,15 +71,15 @@ test('router builds portable URLs for root (/) and subpath (/gaistudio/) origins
     '/?app=chrono-stage',
   );
   assert.equal(
-    buildAppUrl('https://jerryliu369.github.io/gaistudio/', 'ds-stage', VALID_IDS),
-    '/gaistudio/?app=ds-stage',
+    buildAppUrl('https://jerryliu369.github.io/gaistudio/', 'lucky-landlord', VALID_IDS),
+    '/gaistudio/?app=lucky-landlord',
   );
   assert.equal(
-    buildAppUrl('http://127.0.0.1:3000/app/chrono-stage', 'ds-stage', VALID_IDS),
-    '/?app=ds-stage',
+    buildAppUrl('http://127.0.0.1:3000/app/chrono-stage', 'lucky-landlord', VALID_IDS),
+    '/?app=lucky-landlord',
   );
   assert.equal(
-    buildHomeUrl('https://jerryliu369.github.io/gaistudio/?app=ds-stage&stage=kettle', VALID_IDS),
+    buildHomeUrl('https://jerryliu369.github.io/gaistudio/?app=chrono-stage&autostart=1', VALID_IDS),
     '/gaistudio/',
   );
   assert.equal(
@@ -87,28 +89,17 @@ test('router builds portable URLs for root (/) and subpath (/gaistudio/) origins
 });
 
 test('buildIframeEntryUrl resolves static sub-apps cleanly on both root and /gaistudio/ subpath', () => {
+  const mockIds = [...VALID_IDS, 'demo-static'];
   assert.equal(
-    buildIframeEntryUrl('apps/ds-stage/index.html', 'http://127.0.0.1:3000/?app=ds-stage', VALID_IDS),
-    'http://127.0.0.1:3000/apps/ds-stage/index.html',
+    buildIframeEntryUrl('apps/demo-static/index.html', 'http://127.0.0.1:3000/?app=demo-static', mockIds),
+    'http://127.0.0.1:3000/apps/demo-static/index.html',
   );
   assert.equal(
     buildIframeEntryUrl(
-      'apps/ds-stage/index.html',
-      'https://jerryliu369.github.io/gaistudio/?app=ds-stage&stage=kettle&auto=1',
-      VALID_IDS,
+      'apps/demo-static/index.html',
+      'https://jerryliu369.github.io/gaistudio/?app=demo-static&stage=1',
+      mockIds,
     ),
-    'https://jerryliu369.github.io/gaistudio/apps/ds-stage/index.html?stage=kettle&auto=1',
-  );
-  assert.equal(
-    buildIframeEntryUrl(
-      'apps/ds-stage/index.html',
-      'https://jerryliu369.github.io/gaistudio/#/apps/ds-stage?stage=kettle',
-      VALID_IDS,
-    ),
-    'https://jerryliu369.github.io/gaistudio/apps/ds-stage/index.html?stage=kettle',
-  );
-  assert.equal(
-    buildIframeEntryUrl('apps/ds-stage/index.html', 'http://127.0.0.1:3000/app/ds-stage', VALID_IDS),
-    'http://127.0.0.1:3000/apps/ds-stage/index.html',
+    'https://jerryliu369.github.io/gaistudio/apps/demo-static/index.html?stage=1',
   );
 });

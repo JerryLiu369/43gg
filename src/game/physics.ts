@@ -2,6 +2,7 @@ import { sampleStageAtWorldPos } from './stages.ts';
 import type {
   CarPhysicsState,
   DamageState,
+  DrivingAssistPreset,
   InputSettings,
   MistakeRecord,
   StageDefinition,
@@ -37,12 +38,44 @@ export const DEFAULT_INPUT_SETTINGS: InputSettings = {
   pacenoteLeadScale: 1.0,
   pacenoteAudioEnabled: true,
   pacenoteVisualEnabled: true,
-  // Mandatory requirement: all assists OFF by default
+  // Pure Pro Manual simulation profile (all assists OFF)
   autoGearbox: false,
   autoClutch: false,
   absAssist: false,
   tcsAssist: false,
 };
+
+export const SPORT_INPUT_SETTINGS: InputSettings = {
+  ...DEFAULT_INPUT_SETTINGS,
+  autoGearbox: true,
+  autoClutch: true,
+  absAssist: false,
+  tcsAssist: false,
+};
+
+export function getDrivingPreset(settings: InputSettings): DrivingAssistPreset {
+  return settings.autoGearbox && settings.autoClutch ? 'sport' : 'pro';
+}
+
+export function applyDrivingPreset(
+  current: InputSettings,
+  preset: DrivingAssistPreset
+): InputSettings {
+  if (preset === 'sport') {
+    return {
+      ...current,
+      autoGearbox: true,
+      autoClutch: true,
+    };
+  }
+  return {
+    ...current,
+    autoGearbox: false,
+    autoClutch: false,
+    absAssist: false,
+    tcsAssist: false,
+  };
+}
 
 export interface RawControlsInput {
   steer: number; // -1 (left) to +1 (right)
@@ -552,13 +585,41 @@ export function stepCarPhysics(
     state.shiftCooldownSec = Math.max(0, state.shiftCooldownSec - dt);
   }
 
-  // Optional auto-gearbox assist (OFF by default)
+  // Optional sequential auto-gearbox assist (with instant manual Q/E override & smart auto-reverse)
   let wantShiftUp = rawInput.shiftUpJustPressed;
   let wantShiftDown = rawInput.shiftDownJustPressed;
-  if (inputSettings.autoGearbox && state.shiftCooldownSec <= 0) {
-    if (state.gear >= 1 && state.gear < 6 && state.rpm > 7150 && state.throttle > 0.3 && state.wheels[2].isGrounded) {
+  if (
+    inputSettings.autoGearbox &&
+    state.shiftCooldownSec <= 0 &&
+    !wantShiftUp &&
+    !wantShiftDown
+  ) {
+    if (state.gear <= 0 && state.throttle > 0.2 && state.forwardSpeedMs > -1.5) {
+      state.gear = 1;
+      state.shiftCooldownSec = 0.12;
+    } else if (
+      state.gear >= 1 &&
+      state.forwardSpeedMs < 0.65 &&
+      state.brake > 0.65 &&
+      state.throttle < 0.08
+    ) {
+      state.gear = -1;
+      state.shiftCooldownSec = 0.25;
+    } else if (
+      state.gear >= 1 &&
+      state.gear < 6 &&
+      state.rpm > 7180 &&
+      state.throttle > 0.25 &&
+      state.forwardSpeedMs >=
+        ([0, 11.2, 17.2, 23.6, 30.5, 38.0][state.gear] || 12) / tuning.finalDriveRatio &&
+      (state.wheels[2].isGrounded || state.wheels[3].isGrounded)
+    ) {
       wantShiftUp = true;
-    } else if (state.gear > 1 && state.rpm < 3350 && state.forwardSpeedMs < state.gear * 11) {
+    } else if (
+      state.gear > 1 &&
+      state.rpm < 3650 &&
+      state.forwardSpeedMs < (state.gear - 1) * 12.2 + 2.5
+    ) {
       wantShiftDown = true;
     }
   }
@@ -578,10 +639,10 @@ export function stepCarPhysics(
       state.damage.gearbox = Math.min(1, state.damage.gearbox + 0.04);
     }
     state.gear = nextGear;
-    state.shiftCooldownSec = 0.12 + state.damage.gearbox * 0.14;
-    if (state.turboBoostBar > 0.55) {
+    state.shiftCooldownSec = 0.11 + state.damage.gearbox * 0.14;
+    if (state.turboBoostBar > 0.5) {
       state.bovVentTrigger = 0.28;
-      state.backfireTrigger = 0.18;
+      state.backfireTrigger = 0.22;
     }
   } else if (wantShiftDown && state.gear > -1) {
     // Prevent shifting into Reverse while moving forward fast
@@ -589,9 +650,9 @@ export function stepCarPhysics(
       state.missedShiftCrunch = 0.35;
     } else {
       state.gear = state.gear - 1;
-      state.shiftCooldownSec = 0.11 + state.damage.gearbox * 0.14;
-      if (state.rpm > 4500) {
-        state.backfireTrigger = 0.22;
+      state.shiftCooldownSec = 0.10 + state.damage.gearbox * 0.14;
+      if (state.rpm > 4300) {
+        state.backfireTrigger = 0.24;
       }
     }
   }

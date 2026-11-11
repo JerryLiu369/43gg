@@ -4,6 +4,8 @@ export type AppRuntimeKind = 'react-lazy' | 'iframe';
 
 export type AppAccent = 'amber' | 'cyan' | 'emerald' | 'rose';
 
+export type AppCategory = 'strategy' | 'racing';
+
 export interface WorkspaceAppEntry {
   /** Stable slug used in URL routing (`?app=<id>`) and directory naming */
   id: string;
@@ -15,8 +17,10 @@ export interface WorkspaceAppEntry {
   description: string;
   /** Stack badge shown on the card */
   techLabel: string;
-  /** Compact feature badges */
+  /** Compact feature descriptors */
   tags: string[];
+  /** Functional domain category for directory filtering */
+  category: AppCategory;
   /** Visual accent token */
   accent: AppAccent;
   /** Runtime isolation strategy */
@@ -38,30 +42,30 @@ export interface WorkspaceAppEntry {
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
   {
+    id: 'lucky-landlord',
+    title: '吉星包租公',
+    subtitle: '桌面收租构筑游戏',
+    description: '四乘五账本控盘、格子装修与三连升星构筑。',
+    techLabel: '策略构筑',
+    tags: ['桌面策略'],
+    category: 'strategy',
+    accent: 'rose',
+    kind: 'react-lazy',
+    loader: () => import('./lucky-landlord/LuckyLandlordApp.tsx'),
+    sourceDir: 'src/apps/lucky-landlord',
+  },
+  {
     id: 'chrono-stage',
     title: 'CHRONO STAGE',
-    subtitle: '硬核 3D 点对点拉力模拟 · React 懒加载应用',
-    description:
-      '对标拟真手感的四轮独立悬挂与连续滑移率轮胎物理，含手自序列挡、半联动离合、车内后视镜、语音/屏幕路书与 4 条多气象赛段。',
-    techLabel: 'React 19 · TypeScript · WebGL',
-    tags: ['120Hz Physics', '4 Stages', 'Service Park', 'Gamepad & Touch'],
+    subtitle: '3D 拟真世界拉力锦标赛',
+    description: '六站世界赛段、WRC 锦标赛模式、四轮悬挂物理与手自一体序列排挡。',
+    techLabel: '3D 竞速',
+    tags: ['拟真竞速'],
+    category: 'racing',
     accent: 'amber',
     kind: 'react-lazy',
     loader: () => import('./chrono-stage/ChronoStageApp.tsx'),
     sourceDir: 'src/apps/chrono-stage',
-  },
-  {
-    id: 'ds-stage',
-    title: 'STAGE',
-    subtitle: '纯静态程序化拉力赛 · Iframe 隔离沙盒',
-    description:
-      '零构建原生 JS 与 WebGL 1.0 点对点计时赛，曲率语法生成 6 条赛段、240Hz 固定步长物理、13 部位独立损伤维修与幽灵车回放。',
-    techLabel: 'Vanilla JS · WebGL 1.0 · Iframe',
-    tags: ['240Hz Physics', '6 Stages', 'Procedural Audio', 'Ghost Replay'],
-    accent: 'cyan',
-    kind: 'iframe',
-    entryPath: 'apps/ds-stage/index.html',
-    sourceDir: 'apps/ds-stage',
   },
 ];
 

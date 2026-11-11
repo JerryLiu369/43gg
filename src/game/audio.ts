@@ -1,4 +1,4 @@
-import { CarPhysicsState, PacenoteItem } from './types.ts';
+import type { CarPhysicsState, PacenoteItem } from './types.ts';
 
 export class RallyAudioEngine {
   private ctx: AudioContext | null = null;
@@ -539,7 +539,7 @@ export class RallyAudioEngine {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(note.calloutSpeechZh);
         utter.lang = 'zh-CN';
-        utter.rate = 1.25; // Urgent, crisp rally co-driver cadence
+        utter.rate = 1.25;
         utter.pitch = 1.02;
         utter.volume = 0.9;
         window.speechSynthesis.speak(utter);
@@ -547,5 +547,61 @@ export class RallyAudioEngine {
         // Ignore speech synthesis errors in headless environments
       }
     }
+  }
+
+  public playLaunchBeep(isGo: boolean): void {
+    if (this.isMuted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = isGo ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(isGo ? 1046.5 : 523.25, now);
+    const dur = isGo ? 0.28 : 0.12;
+    gain.gain.setValueAtTime(isGo ? 0.18 : 0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(now);
+    osc.stop(now + dur + 0.01);
+  }
+
+  public playSplitChime(ahead: boolean): void {
+    if (this.isMuted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const freqs = ahead ? [659.25, 880] : [523.25, 440];
+    freqs.forEach((f, idx) => {
+      if (!this.ctx || !this.masterGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      const t0 = now + idx * 0.065;
+      osc.frequency.setValueAtTime(f, t0);
+      gain.gain.setValueAtTime(0.1, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.11);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t0);
+      osc.stop(t0 + 0.12);
+    });
+  }
+
+  public playFinishFanfare(completed: boolean): void {
+    if (this.isMuted || !this.ctx || !this.masterGain || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const notes = completed ? [523.25, 659.25, 783.99, 1046.5] : [392.0, 311.13, 261.63];
+    notes.forEach((f, idx) => {
+      if (!this.ctx || !this.masterGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      const t0 = now + idx * 0.085;
+      osc.frequency.setValueAtTime(f, t0);
+      gain.gain.setValueAtTime(0.12, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t0);
+      osc.stop(t0 + 0.24);
+    });
   }
 }

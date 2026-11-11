@@ -10,8 +10,8 @@
 
 | 应用标识 (`id`) | 名称 | 隔离方式 | 目录位置 | 直接访问路由 | 说明文档 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整资源销毁 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [中文游戏手册](docs/chrono-stage_zh.md) |
-| `ds-stage` | `STAGE` | 原生静态 HTML + JS + WebGL 1.0 `<iframe>` 隔离沙盒 | `apps/ds-stage/` | `/?app=ds-stage` | [项目说明](apps/ds-stage/README.md) |
+| `lucky-landlord` | `吉星包租公` | `React.lazy` 按需懒加载 + 本地自动存档与音频释放 | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | 游戏内全图鉴与规则提示 |
+| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整释放 WebGL/音频/监听 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [中文游戏手册](docs/chrono-stage_zh.md) |
 
 ---
 
@@ -23,6 +23,7 @@ gaistudio/
 │   ├── App.tsx                  # 统一 React 外壳：路由分发、顶部返回导航条、应用视口
 │   ├── apps/
 │   │   ├── registry.ts          # 唯一清晰的小应用注册清单
+│   │   ├── lucky-landlord/      # 吉星包租公（策略收租构筑卡牌）
 │   │   └── chrono-stage/        # CHRONO STAGE 懒加载 React 入口
 │   ├── shell/
 │   │   ├── HomeHub.tsx          # 桌面与移动端自适应首页应用大厅
@@ -31,10 +32,8 @@ gaistudio/
 │   │   ├── router.ts            # 兼容根路径 `/` 与 `/gaistudio/` 子路径的路由工具
 │   │   └── shell.test.ts        # 注册表与路由单元测试
 │   ├── components/              # CHRONO STAGE 弹窗与 SVG 路书组件
-│   ├── game/                    # CHRONO STAGE 物理、赛道、音频、输入与单元测试
-│   └── render/                  # CHRONO STAGE WebGL 3D 渲染器
-├── apps/
-│   └── ds-stage/                # 纯静态零构建拉力游戏（iframe 沙盒运行）
+│   ├── game/                    # CHRONO STAGE 120Hz 物理、6 大赛段、WRC 锦标赛与单元测试
+│   └── render/                  # CHRONO STAGE WebGL 3D 大气山脉与赛段渲染器
 ├── docs/
 │   └── chrono-stage_zh.md       # CHRONO STAGE 完整中文驾驶手册
 ├── scripts/
@@ -67,8 +66,7 @@ npm test             # 运行物理引擎与外壳注册表/路由单元测试
 npm run build        # 构建生产产物 dist/（含根外壳与 apps/* 纯静态运行时资源）
 npm run preview      # 本地预览 dist/ 构建产物
 npm run apps:list    # 列出工作区外壳与各小应用
-npm run apps:check   # 执行 .env 安全检查、tsc、单元测试、vite build 及 apps/* 语法资源校验
-npm run dev:ds       # 可选：单独静态预览 apps/ds-stage（端口 3001）
+npm run apps:check   # 执行 .env 安全检查、tsc、单元测试与 vite build 全量校验
 ```
 
 ---

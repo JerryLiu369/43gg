@@ -1,4 +1,4 @@
-import { RawControlsInput } from './physics.ts';
+import type { RawControlsInput } from './physics.ts';
 
 export class InputController {
   private keysDown = new Set<string>();
@@ -21,28 +21,42 @@ export class InputController {
   // Gamepad previous button states for edge detection
   private prevGpButtons: boolean[] = [];
 
-  // Callbacks for global shortcuts (Camera toggle, Pause, Reset)
+  // Callbacks for global shortcuts (Camera, Pause, Transmission, Mute)
   public onToggleCamera?: () => void;
   public onTogglePause?: () => void;
+  public onToggleTransmission?: () => void;
+  public onToggleMute?: () => void;
 
   private boundKeyDown: (e: KeyboardEvent) => void;
   private boundKeyUp: (e: KeyboardEvent) => void;
   private boundBlur: () => void;
+  private boundVisChange: () => void;
 
   constructor() {
     this.boundKeyDown = this.handleKeyDown.bind(this);
     this.boundKeyUp = this.handleKeyUp.bind(this);
     this.boundBlur = this.clearAll.bind(this);
+    this.boundVisChange = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.clearAll();
+      }
+    };
 
     window.addEventListener('keydown', this.boundKeyDown);
     window.addEventListener('keyup', this.boundKeyUp);
     window.addEventListener('blur', this.boundBlur);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.boundVisChange);
+    }
   }
 
   public dispose(): void {
     window.removeEventListener('keydown', this.boundKeyDown);
     window.removeEventListener('keyup', this.boundKeyUp);
     window.removeEventListener('blur', this.boundBlur);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.boundVisChange);
+    }
     this.clearAll();
   }
 
@@ -79,6 +93,10 @@ export class InputController {
         this.onToggleCamera?.();
       } else if (code === 'Escape' || code === 'KeyP') {
         this.onTogglePause?.();
+      } else if (code === 'KeyG') {
+        this.onToggleTransmission?.();
+      } else if (code === 'KeyM') {
+        this.onToggleMute?.();
       }
     }
     this.keysDown.add(code);
