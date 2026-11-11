@@ -11,7 +11,9 @@ export type WeatherType = 'clear' | 'rain' | 'fog' | 'snow';
 export type TimeOfDay = 'day' | 'dusk' | 'night';
 export type DrivetrainType = 'AWD' | 'RWD' | 'FWD';
 export type TireCompound = 'gravel' | 'tarmac_dry' | 'tarmac_wet' | 'snow';
-export type CameraMode = 'cockpit' | 'hood' | 'chase';
+export type CameraMode = 'cockpit' | 'hood' | 'chase' | 'chase_far';
+export type DrivingAssistPreset = 'sport' | 'pro';
+export type RallyEventMode = 'single' | 'championship';
 
 export interface TuningSetup {
   name: string;
@@ -47,7 +49,7 @@ export interface InputSettings {
   pacenoteLeadScale: number; // 0.6 (Late) to 1.5 (Early)
   pacenoteAudioEnabled: boolean;
   pacenoteVisualEnabled: boolean;
-  /** Optional mechanical assists - ALL FALSE BY DEFAULT for pure DiRT Rally 2.0 feel */
+  /** Optional mechanical assists */
   autoGearbox: boolean;
   autoClutch: boolean;
   absAssist: boolean;
@@ -205,7 +207,11 @@ export interface RoadsideProp {
     | 'bridge_parapet'
     | 'stone_wall'
     | 'chevron_sign'
+    | 'brake_board'
+    | 'spectator_tent'
     | 'marshal_hut'
+    | 'start_arch'
+    | 'split_arch'
     | 'finish_arch';
   collisionRadius: number;
   hardness: number; // 0.3 (bush/snowbank) to 1.0 (solid tree/rock/wall)
@@ -272,4 +278,50 @@ export interface StageRecord {
   drivetrain: DrivetrainType;
   weather: WeatherType;
   timestamp: number;
+}
+
+export interface SplitNotification {
+  sector: 1 | 2;
+  splitTimeSec: number;
+  deltaSec: number;
+  referenceLabel: 'PB' | 'PAR';
+}
+
+export interface LaunchControlState {
+  active: boolean;
+  countdownSec: number;
+  boostReady: boolean;
+  bannerText: string;
+  bannerTone: 'amber' | 'emerald' | 'rose';
+}
+
+export interface ChampionshipStandingEntry {
+  driverId: string;
+  driverCode: string;
+  driverName: string;
+  nationality: string;
+  carName: string;
+  isPlayer: boolean;
+  totalTimeSec: number;
+  lastStageTimeSec: number;
+  retiredCount: number;
+}
+
+export interface ChampionshipStageHistory {
+  stageId: string;
+  stageCode: string;
+  stageNameZh: string;
+  playerTimeSec: number;
+  playerRank: number;
+  completed: boolean;
+}
+
+export interface ChampionshipProgress {
+  currentStageIdx: number; // 0..stageOrderIds.length - 1
+  stageOrderIds: string[];
+  completedCount: number;
+  isFinished: boolean;
+  serviceParkDue: boolean;
+  standings: ChampionshipStandingEntry[];
+  history: ChampionshipStageHistory[];
 }

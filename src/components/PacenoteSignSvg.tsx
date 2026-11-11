@@ -1,5 +1,5 @@
 import React from 'react';
-import { PacenoteItem } from '../game/types.ts';
+import type { PacenoteItem } from '../game/types.ts';
 
 export const PacenoteSignSvg: React.FC<{ note: PacenoteItem; size?: number }> = ({
   note,

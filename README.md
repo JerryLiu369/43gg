@@ -10,8 +10,8 @@
 
 | App ID | Title | Runtime Isolation | Location | Route | Documentation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `chrono-stage` | `CHRONO STAGE` | Lazy-loaded React module (`React.lazy`) with lifecycle teardown | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [Manual (Chinese)](docs/chrono-stage_zh.md) |
-| `ds-stage` | `STAGE` | Isolated static HTML + Vanilla JS + WebGL 1.0 `<iframe>` sandbox | `apps/ds-stage/` | `/?app=ds-stage` | [Project README (Chinese)](apps/ds-stage/README.md) |
+| `lucky-landlord` | `吉星包租公` | Lazy-loaded React module (`React.lazy`) with localStorage auto-save & audio teardown | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | Built-in Compendium |
+| `chrono-stage` | `CHRONO STAGE` | Lazy-loaded React module (`React.lazy`) with WebGL/Audio lifecycle teardown | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [Manual (Chinese)](docs/chrono-stage_zh.md) |
 
 ---
 
@@ -23,6 +23,7 @@ gaistudio/
 │   ├── App.tsx                  # Unified shell router, Home Hub / active app viewport & top bar
 │   ├── apps/
 │   │   ├── registry.ts          # Single project registration entry for all mini-apps
+│   │   ├── lucky-landlord/      # 吉星包租公 (Tabletop slot-building roguelike)
 │   │   └── chrono-stage/        # CHRONO STAGE lazy-loaded React app entry
 │   ├── shell/
 │   │   ├── HomeHub.tsx          # Responsive Home Hub launcher (desktop + mobile)
@@ -31,10 +32,8 @@ gaistudio/
 │   │   ├── router.ts            # Portable URL routing (?app=..., #/apps/..., subpath-safe)
 │   │   └── shell.test.ts        # Registry and router unit tests
 │   ├── components/              # CHRONO STAGE UI modals & SVG pacenote signs
-│   ├── game/                    # CHRONO STAGE physics, stages, audio, input & tests
-│   └── render/                  # CHRONO STAGE WebGL 3D renderer
-├── apps/
-│   └── ds-stage/                # Self-contained static WebGL rally game (iframe sandbox)
+│   ├── game/                    # CHRONO STAGE 120Hz physics, 6 stages, WRC championship & tests
+│   └── render/                  # CHRONO STAGE WebGL 3D atmospheric & terrain renderer
 ├── docs/
 │   └── chrono-stage_zh.md       # CHRONO STAGE manual (Chinese)
 ├── scripts/
@@ -67,8 +66,7 @@ npm test             # Run physics + shell/registry unit tests
 npm run build        # Build production dist/ (root shell + bundled static apps/*)
 npm run preview      # Preview production dist/ locally
 npm run apps:list    # List discovered shell and mini-apps
-npm run apps:check   # Validate .env hygiene, tsc, unit tests, vite build, and static apps
-npm run dev:ds       # Optional standalone static server for apps/ds-stage on port 3001
+npm run apps:check   # Validate .env hygiene, tsc, unit tests, and vite build
 ```
 
 ---

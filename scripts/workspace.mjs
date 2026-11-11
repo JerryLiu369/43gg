@@ -258,10 +258,10 @@ function cmdCheck(argv) {
 
   runBin(
     process.execPath,
-    ['--test', 'src/game/physics.test.ts', 'src/shell/shell.test.ts'],
+    ['--test', 'src/game/physics.test.ts', 'src/shell/shell.test.ts', 'src/apps/lucky-landlord/engine.test.ts'],
     ROOT_DIR,
   );
-  console.log('   OK: unit tests passed (physics + shell/registry)');
+  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord)');
 
   if (!skipBuild) {
     const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');

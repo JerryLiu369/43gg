@@ -1,9 +1,9 @@
-import { DEFAULT_INPUT_SETTINGS, DEFAULT_TUNING } from './physics.ts';
-import { InputSettings, StageRecord, TuningSetup } from './types.ts';
+import { SPORT_INPUT_SETTINGS, DEFAULT_TUNING } from './physics.ts';
+import type { InputSettings, StageRecord, TuningSetup } from './types.ts';
 
 const RECORDS_KEY = 'chrono_rally_stage_records_v1';
 const TUNING_PRESETS_KEY = 'chrono_rally_tuning_presets_v1';
-const INPUT_SETTINGS_KEY = 'chrono_rally_input_settings_v1';
+const INPUT_SETTINGS_KEY = 'chrono_rally_input_settings_v2';
 
 export function loadStageRecords(): Record<string, StageRecord> {
   try {
@@ -118,10 +118,10 @@ export function saveCustomTuningPreset(preset: TuningSetup): TuningSetup[] {
 export function loadInputSettings(): InputSettings {
   try {
     const raw = localStorage.getItem(INPUT_SETTINGS_KEY);
-    if (!raw) return { ...DEFAULT_INPUT_SETTINGS };
-    return { ...DEFAULT_INPUT_SETTINGS, ...(JSON.parse(raw) as Partial<InputSettings>) };
+    if (!raw) return { ...SPORT_INPUT_SETTINGS };
+    return { ...SPORT_INPUT_SETTINGS, ...(JSON.parse(raw) as Partial<InputSettings>) };
   } catch {
-    return { ...DEFAULT_INPUT_SETTINGS };
+    return { ...SPORT_INPUT_SETTINGS };
   }
 }
 

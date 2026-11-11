@@ -9,13 +9,16 @@ import {
 } from './physics.ts';
 import { getStageById } from './stages.ts';
 import { loadStageRecords, saveStageRecord } from './storage.ts';
-import {
+import type {
   CameraMode,
   CarPhysicsState,
+  DamageState,
   GhostSample,
   InputSettings,
+  LaunchControlState,
   MistakeRecord,
   PacenoteItem,
+  SplitNotification,
   StageDefinition,
   StageRecord,
   TimeOfDay,
@@ -43,6 +46,7 @@ export interface HudDomRefs {
   gearEl: HTMLElement | null;
   rpmTextEl: HTMLElement | null;
   rpmBarEl: HTMLElement | null;
+  rpmLedContainerEl: HTMLElement | null;
   shiftLightEl: HTMLElement | null;
   boostTextEl: HTMLElement | null;
   stageTimeEl: HTMLElement | null;
@@ -78,6 +82,12 @@ const SURFACE_LABELS_ZH: Record<string, string> = {
   offtrack: '赛道外草坡 (Off-Track)',
 };
 
+export interface ResetStageOptions {
+  withCountdown?: boolean;
+  preserveDamage?: DamageState;
+  serviceMinutesLeft?: number;
+}
+
 export class RallySimulationEngine {
   private renderer: RallyWebGLRenderer;
   public input: InputController;
@@ -105,6 +115,13 @@ export class RallySimulationEngine {
   private isHeadless: boolean;
   private lastHeadlessRenderMs = 0;
 
+  // WRC 3-2-1-GO! Start-Line Launch Control State
+  private countdownSec = 0;
+  private lastCountdownInt = 0;
+  private launchBannerTimerSec = 0;
+  private launchBannerText = '';
+  private launchBannerTone: 'amber' | 'emerald' | 'rose' = 'amber';
+
   // Sector timing & Ghost recording
   private sectorTimesSec: [number, number, number] = [0, 0, 0];
   private sector1Recorded = false;
@@ -122,12 +139,12 @@ export class RallySimulationEngine {
   // Service park remaining repair minutes (45 min budget)
   private serviceMinutesLeft = 45;
 
-  // Low-frequency callbacks to React UI shell
   public hudRefs: HudDomRefs = {
     speedEl: null,
     gearEl: null,
     rpmTextEl: null,
     rpmBarEl: null,
+    rpmLedContainerEl: null,
     shiftLightEl: null,
     boostTextEl: null,
     stageTimeEl: null,
@@ -150,8 +167,12 @@ export class RallySimulationEngine {
     sectorTimes: [number, number, number],
     serviceMins: number
   ) => void;
+  public onSplitNotification?: (split: SplitNotification) => void;
+  public onLaunchControlUpdate?: (state: LaunchControlState) => void;
   public onStageFinish?: (summary: StageFinishSummary) => void;
   public onRequestPauseToggle?: () => void;
+  public onRequestTransmissionToggle?: () => void;
+  public onRequestMuteToggle?: () => void;
   public onCameraModeChanged?: (mode: CameraMode) => void;
 
   private lastReactSyncTime = 0;
@@ -185,6 +206,12 @@ export class RallySimulationEngine {
     };
     this.input.onTogglePause = () => {
       this.onRequestPauseToggle?.();
+    };
+    this.input.onToggleTransmission = () => {
+      this.onRequestTransmissionToggle?.();
+    };
+    this.input.onToggleMute = () => {
+      this.onRequestMuteToggle?.();
     };
 
     this.currCarState = createInitialCarState(this.stage);
@@ -249,14 +276,15 @@ export class RallySimulationEngine {
   public configureStageAndWeather(
     stageId: string,
     weather: WeatherType,
-    timeOfDay: TimeOfDay
+    timeOfDay: TimeOfDay,
+    options?: ResetStageOptions
   ): void {
     this.stage = getStageById(stageId);
     this.weather = weather;
     this.timeOfDay = timeOfDay;
     this.renderer.setStage(this.stage);
     this.loadBestForCurrentStage();
-    this.resetStageRun(false);
+    this.resetStageRun(false, options);
   }
 
   public setTuning(tuning: TuningSetup): void {
@@ -276,7 +304,7 @@ export class RallySimulationEngine {
   }
 
   public cycleCameraMode(): CameraMode {
-    const order: CameraMode[] = ['cockpit', 'hood', 'chase'];
+    const order: CameraMode[] = ['cockpit', 'hood', 'chase', 'chase_far'];
     const next = order[(order.indexOf(this.cameraMode) + 1) % order.length];
     this.setCameraMode(next);
     return next;
@@ -290,9 +318,15 @@ export class RallySimulationEngine {
     return this.serviceMinutesLeft;
   }
 
-  /**
-   * Repairs a damaged zone in the Service Park, consuming limited service time.
-   */
+  public setServiceMinutesLeft(mins: number): void {
+    this.serviceMinutesLeft = Math.max(0, Math.min(60, mins));
+    this.onDamageOrSectorUpdate?.(
+      this.currCarState,
+      this.sectorTimesSec,
+      this.serviceMinutesLeft
+    );
+  }
+
   public repairSubsystem(
     zone: 'steering' | 'engine' | 'gearbox' | 'suspension' | 'tires' | 'lights',
     costMin: number
@@ -302,6 +336,8 @@ export class RallySimulationEngine {
 
     this.serviceMinutesLeft -= costMin;
     this.currCarState.damage[zone] = 0;
+    this.currCarState.damage.isTerminal = false;
+    this.currCarState.damage.terminalReason = '';
     if (zone === 'tires') {
       this.currCarState.tireDirtiness = 0;
     }
@@ -313,9 +349,6 @@ export class RallySimulationEngine {
     return true;
   }
 
-  /**
-   * Recover car back onto road center with a strict +15.0s Marshal Recovery Time Penalty!
-   */
   public recoverCarToRoadWithPenalty(): void {
     const seg = this.stage.segments[this.currCarState.currentSegmentIndex] || this.stage.segments[0];
     this.currCarState.x = seg.x;
@@ -352,11 +385,16 @@ export class RallySimulationEngine {
     this.prevCarState = cloneCarState(this.currCarState);
   }
 
-  /**
-   * Resets the current stage run from the start line (no free mid-stage rewind).
-   */
-  public resetStageRun(startPlayingImmediately: boolean): void {
-    this.currCarState = createInitialCarState(this.stage);
+  public resetStageRun(startPlayingImmediately: boolean, options?: ResetStageOptions): void {
+    const fresh = createInitialCarState(this.stage);
+    if (options?.preserveDamage) {
+      fresh.damage = {
+        ...options.preserveDamage,
+        isTerminal: false,
+        terminalReason: '',
+      };
+    }
+    this.currCarState = fresh;
     this.prevCarState = cloneCarState(this.currCarState);
     this.renderCarState = cloneCarState(this.currCarState);
     this.accumulatorSec = 0;
@@ -371,7 +409,19 @@ export class RallySimulationEngine {
     this.triggeredNoteIds.clear();
     this.activePacenote = null;
     this.nextPacenote = null;
-    this.serviceMinutesLeft = 45;
+    this.lastReactSyncTime = 0;
+
+    if (options?.serviceMinutesLeft !== undefined) {
+      this.serviceMinutesLeft = options.serviceMinutesLeft;
+    } else if (!options?.preserveDamage) {
+      this.serviceMinutesLeft = 45;
+    }
+
+    const useCountdown = Boolean(options?.withCountdown && startPlayingImmediately);
+    this.countdownSec = useCountdown ? 2.6 : 0;
+    this.lastCountdownInt = useCountdown ? 3 : 0;
+    this.launchBannerTimerSec = 0;
+    this.launchBannerText = '';
 
     this.updatePacenoteLookahead();
     this.onDamageOrSectorUpdate?.(
@@ -382,7 +432,31 @@ export class RallySimulationEngine {
 
     if (startPlayingImmediately) {
       this.setPhase('playing');
+      if (useCountdown) {
+        this.audio.playLaunchBeep(false);
+        this.emitLaunchControlState();
+      } else {
+        this.onLaunchControlUpdate?.({
+          active: false,
+          countdownSec: 0,
+          boostReady: false,
+          bannerText: '',
+          bannerTone: 'amber',
+        });
+      }
     }
+  }
+
+  private emitLaunchControlState(): void {
+    const boostReady =
+      this.currCarState.rpm >= 3600 && this.currCarState.turboBoostBar >= 0.65;
+    this.onLaunchControlUpdate?.({
+      active: this.countdownSec > 0 || this.launchBannerTimerSec > 0,
+      countdownSec: Math.max(0, this.countdownSec),
+      boostReady,
+      bannerText: this.launchBannerText,
+      bannerTone: this.launchBannerTone,
+    });
   }
 
   private loadBestForCurrentStage(): void {
@@ -393,56 +467,125 @@ export class RallySimulationEngine {
   private updateAndRender(dt: number): void {
     if (this.phase === 'playing') {
       const rawControls = this.input.sample(dt);
-      this.accumulatorSec += dt;
 
-      // Fixed 120Hz physics step loop (deterministic regardless of display frame rate!)
-      let subSteps = 0;
-      while (this.accumulatorSec >= FIXED_DT && subSteps < 10) {
-        this.prevCarState = cloneCarState(this.currCarState);
-        this.stageTimeSec += FIXED_DT;
+      // Handle Start-Line 3-2-1-GO! Launch Control sequence
+      if (this.countdownSec > 0) {
+        this.countdownSec = Math.max(0, this.countdownSec - dt);
+        const curInt = Math.ceil(this.countdownSec);
 
-        stepCarPhysics(
-          this.currCarState,
-          rawControls,
-          this.stage,
-          this.tuning,
-          this.inputSettings,
-          this.weather,
-          this.stageTimeSec,
-          this.mistakes,
-          FIXED_DT
-        );
+        // Allow driver to spool anti-lag turbo boost on the start line while holding Throttle!
+        const thr = rawControls.throttle;
+        const targetRpm = 1100 + thr * 4450 + (thr > 0.65 ? Math.sin(performance.now() * 0.09) * 260 : 0);
+        this.currCarState.throttle = thr;
+        this.currCarState.brake = 1.0;
+        this.currCarState.handbrake = 1.0;
+        this.currCarState.rpm += (targetRpm - this.currCarState.rpm) * Math.min(1, 9.5 * dt);
+        if (thr > 0.55) {
+          this.currCarState.turboBoostBar = Math.min(
+            1.45,
+            this.currCarState.turboBoostBar + 1.8 * dt
+          );
+          if (Math.random() < 0.25) {
+            this.currCarState.backfireTrigger = 0.14;
+          }
+        } else {
+          this.currCarState.turboBoostBar = Math.max(
+            -0.2,
+            this.currCarState.turboBoostBar - 1.5 * dt
+          );
+        }
+        this.currCarState.backfireTrigger = Math.max(0, this.currCarState.backfireTrigger - dt);
 
-        // Clear one-shot shift/ignition flags after first physics substep consumes them
-        rawControls.shiftUpJustPressed = false;
-        rawControls.shiftDownJustPressed = false;
-        rawControls.ignitionJustPressed = false;
+        if (curInt > 0 && curInt !== this.lastCountdownInt) {
+          this.lastCountdownInt = curInt;
+          this.audio.playLaunchBeep(false);
+        }
 
-        this.accumulatorSec -= FIXED_DT;
-        subSteps++;
-      }
+        if (this.countdownSec <= 0) {
+          this.audio.playLaunchBeep(true);
+          this.currCarState.brake = 0;
+          this.currCarState.handbrake = 0;
 
-      const alpha = this.accumulatorSec / FIXED_DT;
-      this.renderCarState = interpolateCarState(this.prevCarState, this.currCarState, alpha);
+          if (this.currCarState.rpm >= 3600 && this.currCarState.turboBoostBar >= 0.65) {
+            // Perfect Anti-Lag Launch Boost!
+            const sinY = Math.sin(this.currCarState.yaw);
+            const cosY = Math.cos(this.currCarState.yaw);
+            const launchSpeed = 6.4;
+            this.currCarState.vx = sinY * launchSpeed;
+            this.currCarState.vz = cosY * launchSpeed;
+            this.currCarState.forwardSpeedMs = launchSpeed;
+            this.currCarState.turboBoostBar = 1.65;
+            this.currCarState.backfireTrigger = 0.34;
+            this.launchBannerText = 'GO! · 完美涡轮弹射起步 (PERFECT LAUNCH)';
+            this.launchBannerTone = 'emerald';
+          } else {
+            this.launchBannerText = 'GO! · 赛段计时开始';
+            this.launchBannerTone = 'amber';
+          }
+          this.launchBannerTimerSec = 1.35;
+        }
 
-      // Update audio, particles, pacenotes, sector splits, and ghost telemetry
-      this.audio.update(this.renderCarState);
-      this.renderer.updateParticles(this.renderCarState, this.weather, dt);
-      this.checkSectorSplitsAndFinish();
-      this.recordGhostSample();
-      this.updatePacenoteLookahead();
-      this.updateHudDomDirect(this.renderCarState);
+        this.renderCarState = cloneCarState(this.currCarState);
+        this.audio.update(this.renderCarState);
+        this.renderer.updateParticles(this.renderCarState, this.weather, dt);
+        this.updateHudDomDirect(this.renderCarState);
+        this.emitLaunchControlState();
+      } else {
+        if (this.launchBannerTimerSec > 0) {
+          this.launchBannerTimerSec = Math.max(0, this.launchBannerTimerSec - dt);
+          if (this.launchBannerTimerSec <= 0) {
+            this.launchBannerText = '';
+            this.emitLaunchControlState();
+          }
+        }
 
-      if (this.stageTimeSec - this.lastReactSyncTime > 0.25) {
-        this.lastReactSyncTime = this.stageTimeSec;
-        this.onDamageOrSectorUpdate?.(
-          this.currCarState,
-          this.sectorTimesSec,
-          this.serviceMinutesLeft
-        );
+        this.accumulatorSec += dt;
+
+        let subSteps = 0;
+        while (this.accumulatorSec >= FIXED_DT && subSteps < 10) {
+          this.prevCarState = cloneCarState(this.currCarState);
+          this.stageTimeSec += FIXED_DT;
+
+          stepCarPhysics(
+            this.currCarState,
+            rawControls,
+            this.stage,
+            this.tuning,
+            this.inputSettings,
+            this.weather,
+            this.stageTimeSec,
+            this.mistakes,
+            FIXED_DT
+          );
+
+          rawControls.shiftUpJustPressed = false;
+          rawControls.shiftDownJustPressed = false;
+          rawControls.ignitionJustPressed = false;
+
+          this.accumulatorSec -= FIXED_DT;
+          subSteps++;
+        }
+
+        const alpha = this.accumulatorSec / FIXED_DT;
+        this.renderCarState = interpolateCarState(this.prevCarState, this.currCarState, alpha);
+
+        this.audio.update(this.renderCarState);
+        this.renderer.updateParticles(this.renderCarState, this.weather, dt);
+        this.checkSectorSplitsAndFinish();
+        this.recordGhostSample();
+        this.updatePacenoteLookahead();
+        this.updateHudDomDirect(this.renderCarState);
+
+        if (this.stageTimeSec - this.lastReactSyncTime > 0.25) {
+          this.lastReactSyncTime = this.stageTimeSec;
+          this.onDamageOrSectorUpdate?.(
+            this.currCarState,
+            this.sectorTimesSec,
+            this.serviceMinutesLeft
+          );
+        }
       }
     } else {
-      // Title flyover or Paused / Gameover ambient camera
       this.flyoverTimeSec += dt;
       this.renderer.updateParticles(this.renderCarState, this.weather, dt);
     }
@@ -468,15 +611,39 @@ export class RallySimulationEngine {
     if (!this.sector1Recorded && d >= this.stage.sectorSplitsM[0]) {
       this.sector1Recorded = true;
       this.sectorTimesSec[0] = totalTime;
+      const pbS1 = this.personalBestRecord?.sectorTimesSec?.[0] || 0;
+      const refS1 = pbS1 > 0 ? pbS1 : this.stage.targetParTimeSec / 3;
+      const delta = totalTime - refS1;
+      this.audio.playSplitChime(delta <= 0);
+      this.onSplitNotification?.({
+        sector: 1,
+        splitTimeSec: totalTime,
+        deltaSec: delta,
+        referenceLabel: pbS1 > 0 ? 'PB' : 'PAR',
+      });
     }
 
     if (!this.sector2Recorded && d >= this.stage.sectorSplitsM[1]) {
       this.sector2Recorded = true;
       this.sectorTimesSec[1] = totalTime - this.sectorTimesSec[0];
+      const pbCum2 =
+        this.personalBestRecord && this.personalBestRecord.sectorTimesSec[0] > 0
+          ? this.personalBestRecord.sectorTimesSec[0] + this.personalBestRecord.sectorTimesSec[1]
+          : 0;
+      const refCum2 = pbCum2 > 0 ? pbCum2 : (this.stage.targetParTimeSec * 2) / 3;
+      const delta = totalTime - refCum2;
+      this.audio.playSplitChime(delta <= 0);
+      this.onSplitNotification?.({
+        sector: 2,
+        splitTimeSec: totalTime,
+        deltaSec: delta,
+        referenceLabel: pbCum2 > 0 ? 'PB' : 'PAR',
+      });
     }
 
     // Check Terminal Damage Retirement
     if (this.currCarState.damage.isTerminal) {
+      this.audio.playFinishFanfare(false);
       this.setPhase('gameover');
       this.onStageFinish?.({
         stage: this.stage,
@@ -516,6 +683,7 @@ export class RallySimulationEngine {
         this.personalBestRecord = newRecord;
       }
 
+      this.audio.playFinishFanfare(true);
       this.setPhase('gameover');
       this.onStageFinish?.({
         stage: this.stage,
@@ -572,14 +740,9 @@ export class RallySimulationEngine {
     return null;
   }
 
-  /**
-   * Adaptive speed-compensated co-driver pacenote lookahead.
-   * Faster speeds automatically trigger pacenotes earlier so the driver always has braking margin!
-   */
   private updatePacenoteLookahead(): void {
     const d = this.currCarState.distanceAlongStageM;
     const speedMs = Math.max(12, Math.abs(this.currCarState.forwardSpeedMs));
-    // Lookahead = ~4.8 seconds of travel at current speed, scaled by user lead preference
     const adaptiveLookaheadM =
       Math.max(85, Math.min(260, speedMs * 4.9)) * this.inputSettings.pacenoteLeadScale;
 
@@ -587,7 +750,7 @@ export class RallySimulationEngine {
     let foundNext: PacenoteItem | null = null;
 
     for (const note of this.stage.pacenotes) {
-      if (note.cornerDistanceM + 35 < d) continue; // Already passed corner
+      if (note.cornerDistanceM + 35 < d) continue;
       if (note.cornerDistanceM - d <= adaptiveLookaheadM) {
         if (!foundActive) {
           foundActive = note;
@@ -596,7 +759,6 @@ export class RallySimulationEngine {
           break;
         }
       } else if (!foundActive) {
-        // Upcoming note even if slightly beyond lookahead window so HUD is never blank on start
         if (note.cornerDistanceM - d <= adaptiveLookaheadM + 90) {
           foundActive = note;
         }
@@ -638,6 +800,29 @@ export class RallySimulationEngine {
         car.rpm > 7150 ? '#ef4444' : car.rpm > 5800 ? '#f59e0b' : '#10b981';
     }
 
+    // Segmented 12-LED WRC Shift Cluster
+    if (refs.rpmLedContainerEl) {
+      const children = refs.rpmLedContainerEl.children;
+      const litCount = Math.round(Math.min(1, Math.max(0, (car.rpm - 1200) / 6500)) * children.length);
+      const isFlash = car.rpm > 7350 && Math.floor(performance.now() / 65) % 2 === 0;
+      for (let i = 0; i < children.length; i++) {
+        const el = children[i] as HTMLElement;
+        if (i < litCount) {
+          el.style.backgroundColor = isFlash
+            ? '#38bdf8'
+            : i >= 9
+              ? '#ef4444'
+              : i >= 5
+                ? '#f59e0b'
+                : '#10b981';
+          el.style.opacity = '1';
+        } else {
+          el.style.backgroundColor = '#1e293b';
+          el.style.opacity = '0.45';
+        }
+      }
+    }
+
     if (refs.shiftLightEl) {
       refs.shiftLightEl.style.opacity = car.rpm > 7150 ? '1' : '0.15';
     }
@@ -652,10 +837,9 @@ export class RallySimulationEngine {
       refs.stageTimeEl.textContent = formatRallyTime(totalSec);
     }
 
-    // Live delta vs Personal Best Ghost (or Target Par Time)
     if (refs.deltaTimeEl) {
       const progressFrac = Math.max(0.001, car.distanceAlongStageM / this.stage.lengthM);
-      let refTimeAtDist = this.stage.targetParTimeSec * progressFrac;
+      const refTimeAtDist = this.stage.targetParTimeSec * progressFrac;
       const ghost = this.samplePersonalBestGhostAtTime(this.stageTimeSec);
       if (ghost && this.personalBestRecord) {
         const distDiff = car.distanceAlongStageM - ghost.d;

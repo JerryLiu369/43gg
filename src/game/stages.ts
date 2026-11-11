@@ -966,6 +966,445 @@ const STAGE_BLUEPRINTS: StageBlueprint[] = [
       },
     ],
   },
+  // ============================================================================
+  // STAGE 5: FINLAND — Ouninpohja Flying Crests & Birch Forest Gravel (4.10 km)
+  // ============================================================================
+  {
+    id: 'finland_jumps',
+    code: 'SS05',
+    nameZh: '千湖奥宁波亚飞跳 · 芬兰',
+    nameEn: 'Jyväskylä Ouninpohja Crests',
+    country: '芬兰 · 于韦斯屈莱 (Finland)',
+    lengthM: 4100,
+    primarySurface: 'gravel',
+    surfaceMixLabel: '92% 高速金色硬砂石 / 8% 湖畔木桥与湿滑泥槽',
+    defaultWeather: 'clear',
+    defaultTimeOfDay: 'day',
+    recommendedTire: 'gravel',
+    defaultWidthM: 7.4,
+    elevationGainM: 118,
+    descriptionZh:
+      '向芬兰千湖拉力传奇赛段致敬：五挡与六挡全油门的金色白桦林道、连续盲坡腾空飞跳（Yellow House Jump），落地前必须在空中提前对准下一弯心。',
+    targetParTimeSec: 156,
+    seed: 50509,
+    features: [
+      {
+        startM: 120,
+        endM: 300,
+        curvature: 0.008,
+        slope: 0.045,
+        scenery: 'crest',
+        note: {
+          type: 'right_6',
+          severity: 6,
+          direction: 'right',
+          modifier: '全油盲坡',
+          calloutTextZh: '右 6 全油上盲坡 · 保持正中',
+          calloutSpeechZh: '右六全油上盲坡，保持正中',
+        },
+      },
+      {
+        startM: 370,
+        endM: 520,
+        curvature: 0.0,
+        slope: -0.085,
+        scenery: 'crest',
+        note: {
+          type: 'jump',
+          severity: 0,
+          direction: 'center',
+          modifier: '黄屋大跳坡',
+          calloutTextZh: '大跳坡腾空！落地稳住方向接左 5',
+          calloutSpeechZh: '注意大跳坡腾空，落地接左五',
+        },
+      },
+      {
+        startM: 600,
+        endM: 860,
+        curvature: -0.011,
+        slope: 0.02,
+        camberRad: 0.06,
+        note: {
+          type: 'left_5',
+          severity: 5,
+          direction: 'left',
+          modifier: '内倾借力',
+          calloutTextZh: '左 5 高速长弯 · 借正倾角全油',
+          calloutSpeechZh: '左五高速长弯全油',
+        },
+      },
+      {
+        startM: 960,
+        endM: 1130,
+        curvature: 0.024,
+        slope: -0.02,
+        widthM: 6.4,
+        note: {
+          type: 'right_3',
+          severity: 3,
+          direction: 'right',
+          modifier: '勿切大石',
+          calloutTextZh: '右 3 中速收紧 · 勿切内侧卧石',
+          calloutSpeechZh: '右三收紧，勿切内侧大石',
+        },
+      },
+      {
+        startM: 1240,
+        endM: 1410,
+        curvature: -0.004,
+        slope: 0.072,
+        scenery: 'crest',
+        note: {
+          type: 'crest',
+          severity: 0,
+          direction: 'center',
+          modifier: '双连跳坡',
+          calloutTextZh: '全油上坡顶 · 连续二次飞跳',
+          calloutSpeechZh: '全油上坡顶，连续飞跳',
+        },
+      },
+      {
+        startM: 1420,
+        endM: 1580,
+        curvature: 0.005,
+        slope: -0.088,
+        scenery: 'crest',
+        note: {
+          type: 'jump',
+          severity: 0,
+          direction: 'center',
+          calloutTextZh: '二次腾空长跳 · 落地重刹接左 2',
+          calloutSpeechZh: '二次长跳，落地重刹接左二',
+        },
+      },
+      {
+        startM: 1680,
+        endM: 1850,
+        curvature: -0.032,
+        slope: 0.0,
+        widthM: 6.2,
+        scenery: 'village',
+        note: {
+          type: 'square_left',
+          severity: 2,
+          direction: 'left',
+          modifier: '谷仓路口',
+          calloutTextZh: '左直角路口 · 绕木谷仓出弯全油',
+          calloutSpeechZh: '左直角路口，出弯全油',
+        },
+      },
+      {
+        startM: 1980,
+        endM: 2150,
+        curvature: 0.0,
+        slope: -0.015,
+        widthM: 4.9,
+        scenery: 'bridge',
+        surface: 'tarmac_dirty',
+        note: {
+          type: 'narrow_bridge',
+          severity: 0,
+          direction: 'center',
+          modifier: '窄木桥',
+          calloutTextZh: '高速通过湖湾窄木桥 · 车身摆直',
+          calloutSpeechZh: '高速通过窄木桥，车身摆直',
+        },
+      },
+      {
+        startM: 2260,
+        endM: 2560,
+        curvature: 0.014,
+        slope: 0.03,
+        scenery: 'lake',
+        note: {
+          type: 'right_4',
+          severity: 4,
+          direction: 'right',
+          calloutTextZh: '右 4 沿湖快弯 · 接左 4 连携摆尾',
+          calloutSpeechZh: '右四沿湖快弯，接左四',
+        },
+      },
+      {
+        startM: 2620,
+        endM: 2900,
+        curvature: -0.015,
+        slope: -0.025,
+        note: {
+          type: 'left_4',
+          severity: 4,
+          direction: 'left',
+          calloutTextZh: '左 4 顺畅衔接 · 准备坡顶飞跳',
+          calloutSpeechZh: '左四顺畅衔接，准备飞跳',
+        },
+      },
+      {
+        startM: 3020,
+        endM: 3200,
+        curvature: 0.004,
+        slope: -0.078,
+        scenery: 'crest',
+        note: {
+          type: 'jump',
+          severity: 0,
+          direction: 'center',
+          modifier: '飞跳进林',
+          calloutTextZh: '高速坡顶腾空 · 落地接右 2 回头弯',
+          calloutSpeechZh: '高速坡顶腾空，落地接右二',
+        },
+      },
+      {
+        startM: 3320,
+        endM: 3500,
+        curvature: 0.036,
+        slope: 0.015,
+        widthM: 6.5,
+        note: {
+          type: 'hairpin_right',
+          severity: 1,
+          direction: 'right',
+          modifier: '手刹抛甩',
+          calloutTextZh: '右发卡弯 · 拉手刹横滑出弯冲刺',
+          calloutSpeechZh: '右发卡弯，拉手刹出弯冲刺',
+        },
+      },
+      {
+        startM: 3620,
+        endM: 3880,
+        curvature: -0.008,
+        slope: -0.01,
+        note: {
+          type: 'left_6',
+          severity: 6,
+          direction: 'left',
+          calloutTextZh: '左 6 六挡极速冲刺 · 直奔终点拱门',
+          calloutSpeechZh: '左六极速冲刺终点',
+        },
+      },
+      {
+        startM: 3940,
+        endM: 4100,
+        curvature: 0.0,
+        slope: 0.0,
+        note: {
+          type: 'finish',
+          severity: 0,
+          direction: 'center',
+          calloutTextZh: '全油冲过千湖赛段终点线',
+          calloutSpeechZh: '冲过终点',
+        },
+      },
+    ],
+  },
+  // ============================================================================
+  // STAGE 6: CHINA — Balang Mountain Cloud Switchbacks (3.95 km)
+  // ============================================================================
+  {
+    id: 'sichuan_cloud_pass',
+    code: 'SS06',
+    nameZh: '巴蜀云海天路 · 中国',
+    nameEn: 'Balang Cloud Pass Switchbacks',
+    country: '中国 · 川西巴朗山 (China)',
+    lengthM: 3950,
+    primarySurface: 'tarmac',
+    surfaceMixLabel: '62% 高山柏油盘山路 / 28% 碎石塌方混合段 / 10% 云雾湿滑古桥',
+    defaultWeather: 'fog',
+    defaultTimeOfDay: 'dusk',
+    recommendedTire: 'tarmac_wet',
+    defaultWidthM: 6.3,
+    elevationGainM: 265,
+    descriptionZh:
+      '海拔四千米的川西云海盘山天路：暮色云雾缭绕下连续五道天险回头弯攀升，柏油路面穿插高山碎石落石区与悬崖石拱桥，极其考验循迹刹车与重心转移。',
+    targetParTimeSec: 174,
+    seed: 60888,
+    features: [
+      {
+        startM: 130,
+        endM: 340,
+        curvature: -0.018,
+        slope: 0.068,
+        scenery: 'cliff',
+        note: {
+          type: 'left_4',
+          severity: 4,
+          direction: 'left',
+          modifier: '盘山陡升',
+          calloutTextZh: '左 4 沿崖陡坡攀升 · 外侧深谷护栏',
+          calloutSpeechZh: '左四沿崖攀升，注意外侧护栏',
+        },
+      },
+      {
+        startM: 440,
+        endM: 610,
+        curvature: 0.041,
+        slope: 0.075,
+        widthM: 6.8,
+        scenery: 'cliff',
+        note: {
+          type: 'hairpin_right',
+          severity: 1,
+          direction: 'right',
+          modifier: '天路一弯',
+          calloutTextZh: '右 1 发卡上坡回头弯 · 保持涡轮正压',
+          calloutSpeechZh: '右一发卡上坡回头弯',
+        },
+      },
+      {
+        startM: 730,
+        endM: 910,
+        curvature: -0.040,
+        slope: 0.072,
+        widthM: 6.8,
+        scenery: 'cliff',
+        surface: 'tarmac_dirty',
+        note: {
+          type: 'hairpin_left',
+          severity: 1,
+          direction: 'left',
+          modifier: '天路二弯 · 碎石',
+          calloutTextZh: '左 1 发卡弯 · 路面带落石浮砂',
+          calloutSpeechZh: '左一发卡弯，注意落石浮砂',
+        },
+      },
+      {
+        startM: 1030,
+        endM: 1310,
+        curvature: 0.015,
+        slope: 0.045,
+        surface: 'gravel',
+        scenery: 'cliff',
+        note: {
+          type: 'surface_change',
+          severity: 4,
+          direction: 'right',
+          modifier: '转砂石施工段',
+          calloutTextZh: '进入高山砂石混合路面 · 右 4 长弯',
+          calloutSpeechZh: '进入砂石混合路面，右四长弯',
+        },
+      },
+      {
+        startM: 1420,
+        endM: 1600,
+        curvature: 0.0,
+        slope: 0.015,
+        widthM: 4.7,
+        scenery: 'bridge',
+        surface: 'tarmac_dirty',
+        note: {
+          type: 'narrow_bridge',
+          severity: 0,
+          direction: 'center',
+          modifier: '云谷石拱桥',
+          calloutTextZh: '窄石拱桥横跨云谷 · 对准桥心切勿擦墙',
+          calloutSpeechZh: '通过云谷窄石桥，切勿擦墙',
+        },
+      },
+      {
+        startM: 1710,
+        endM: 1930,
+        curvature: -0.025,
+        slope: 0.055,
+        scenery: 'village',
+        widthM: 5.5,
+        note: {
+          type: 'left_3',
+          severity: 3,
+          direction: 'left',
+          modifier: '藏寨石墙',
+          calloutTextZh: '左 3 穿行高山石寨 · 路窄贴内线',
+          calloutSpeechZh: '左三穿行石寨，路窄贴内',
+        },
+      },
+      {
+        startM: 2050,
+        endM: 2230,
+        curvature: 0.042,
+        slope: 0.065,
+        scenery: 'cliff',
+        widthM: 6.6,
+        note: {
+          type: 'hairpin_right',
+          severity: 1,
+          direction: 'right',
+          modifier: '天路三弯',
+          calloutTextZh: '右 1 悬崖发卡弯 · 循迹重刹入弯',
+          calloutSpeechZh: '右一悬崖发卡弯，重刹入弯',
+        },
+      },
+      {
+        startM: 2360,
+        endM: 2620,
+        curvature: -0.013,
+        slope: 0.04,
+        scenery: 'crest',
+        note: {
+          type: 'left_5',
+          severity: 5,
+          direction: 'left',
+          modifier: '云海垭口盲弯',
+          calloutTextZh: '左 5 冲上云海垭口盲坡 · 接下坡急弯',
+          calloutSpeechZh: '左五冲上垭口盲坡，准备下坡',
+        },
+      },
+      {
+        startM: 2740,
+        endM: 2940,
+        curvature: 0.028,
+        slope: -0.062,
+        surface: 'tarmac_dirty',
+        scenery: 'cliff',
+        note: {
+          type: 'right_2',
+          severity: 2,
+          direction: 'right',
+          modifier: '陡下坡防抱死',
+          calloutTextZh: '右 2 陡下坡湿滑急弯 · 严禁前轮抱死',
+          calloutSpeechZh: '右二陡下坡急弯，小心抱死',
+        },
+      },
+      {
+        startM: 3060,
+        endM: 3240,
+        curvature: -0.039,
+        slope: -0.045,
+        scenery: 'cliff',
+        widthM: 6.6,
+        note: {
+          type: 'hairpin_left',
+          severity: 1,
+          direction: 'left',
+          modifier: '天路终弯',
+          calloutTextZh: '左 1 最后下坡发卡弯 · 出弯全油下山',
+          calloutSpeechZh: '左一最后发卡弯，出弯全油',
+        },
+      },
+      {
+        startM: 3360,
+        endM: 3680,
+        curvature: 0.010,
+        slope: -0.03,
+        note: {
+          type: 'right_5',
+          severity: 5,
+          direction: 'right',
+          calloutTextZh: '右 5 高速下山长弯 · 全油冲刺',
+          calloutSpeechZh: '右五高速下山全油',
+        },
+      },
+      {
+        startM: 3780,
+        endM: 3950,
+        curvature: 0.0,
+        slope: 0.0,
+        note: {
+          type: 'finish',
+          severity: 0,
+          direction: 'center',
+          calloutTextZh: '全油冲过巴朗山垭口终点线',
+          calloutSpeechZh: '冲过终点',
+        },
+      },
+    ],
+  },
 ];
 
 function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
@@ -1081,23 +1520,109 @@ function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
   }
 
   // Generate Roadside Obstacles & Landmarks along segments
-  // Start marshal hut at d = 15m
-  if (segments.length > 4) {
-    const s0 = segments[3];
+  const s1Split = Math.round(bp.lengthM / 3);
+  const s2Split = Math.round((bp.lengthM * 2) / 3);
+
+  // Start Marshal Hut at d = 15m & Spanning WRC Start Gantry Arch at d = 25m (frames spawn vista!)
+  if (segments.length > 8) {
+    const sHut = segments[3];
     props.push({
-      x: s0.x - s0.normalX * (s0.widthM * 0.5 + 5.4),
-      y: s0.y,
-      z: s0.z - s0.normalZ * (s0.widthM * 0.5 + 5.4),
-      yaw: Math.atan2(s0.tangentX, s0.tangentZ),
+      x: sHut.x - sHut.normalX * (sHut.widthM * 0.5 + 5.2),
+      y: sHut.y,
+      z: sHut.z - sHut.normalZ * (sHut.widthM * 0.5 + 5.2),
+      yaw: Math.atan2(sHut.tangentX, sHut.tangentZ),
       scale: 1.0,
       type: 'marshal_hut',
       collisionRadius: 2.0,
       hardness: 0.9,
       side: 'left',
     });
+
+    const sArch = segments[5];
+    props.push({
+      x: sArch.x,
+      y: sArch.y,
+      z: sArch.z,
+      yaw: Math.atan2(sArch.tangentX, sArch.tangentZ),
+      scale: 1.0,
+      type: 'start_arch',
+      collisionRadius: 0,
+      hardness: 0,
+      side: 'left',
+    });
   }
 
-  for (let i = 4; i < segments.length - 4; i += 2) {
+  // Sector 1 & Sector 2 Intermediate Split Gantry Arches
+  for (const splitDist of [s1Split, s2Split]) {
+    const splitIdx = Math.min(segments.length - 8, Math.max(8, Math.round(splitDist / stepM)));
+    const spSeg = segments[splitIdx];
+    if (spSeg) {
+      props.push({
+        x: spSeg.x,
+        y: spSeg.y,
+        z: spSeg.z,
+        yaw: Math.atan2(spSeg.tangentX, spSeg.tangentZ),
+        scale: 1.0,
+        type: 'split_arch',
+        collisionRadius: 0,
+        hardness: 0,
+        side: 'left',
+      });
+    }
+  }
+
+  // Dedicated Brake Marker Boards (70m & 35m) & Spectator Tents before tight corners / jumps
+  for (const feat of bp.features) {
+    if (!feat.note) continue;
+    if (feat.note.severity === 1 || feat.note.severity === 2) {
+      const outerSide: 'left' | 'right' = feat.curvature >= 0 ? 'left' : 'right';
+      const outerSign = outerSide === 'right' ? 1 : -1;
+      for (const leadM of [70, 35]) {
+        const bIdx = Math.max(6, Math.round((feat.startM - leadM) / stepM));
+        const bSeg = segments[bIdx];
+        if (bSeg) {
+          const offset = bSeg.widthM * 0.5 + 1.25;
+          props.push({
+            x: bSeg.x + bSeg.normalX * outerSign * offset,
+            y: bSeg.y,
+            z: bSeg.z + bSeg.normalZ * outerSign * offset,
+            yaw: Math.atan2(bSeg.tangentX, bSeg.tangentZ),
+            scale: leadM === 70 ? 1.1 : 0.95,
+            type: 'brake_board',
+            collisionRadius: 0.4,
+            hardness: 0.3,
+            side: outerSide,
+          });
+        }
+      }
+    }
+
+    if (feat.note.severity === 1 || feat.note.type === 'jump') {
+      const tentIdx = Math.min(
+        segments.length - 10,
+        Math.max(8, Math.round((feat.startM + 20) / stepM))
+      );
+      const tSeg = segments[tentIdx];
+      if (tSeg && tSeg.sceneryType !== 'bridge') {
+        const tentSide: 'left' | 'right' = feat.curvature >= 0 ? 'right' : 'left';
+        const tentSign = tentSide === 'right' ? 1 : -1;
+        const offset = tSeg.widthM * 0.5 + 5.6;
+        props.push({
+          x: tSeg.x + tSeg.normalX * tentSign * offset,
+          y: tSeg.y,
+          z: tSeg.z + tSeg.normalZ * tentSign * offset,
+          yaw: Math.atan2(tSeg.tangentX, tSeg.tangentZ),
+          scale: 1.0,
+          type: 'spectator_tent',
+          collisionRadius: 0,
+          hardness: 0,
+          side: tentSide,
+        });
+      }
+    }
+  }
+
+  for (let i = 6; i < segments.length - 4; i += 2) {
     const seg = segments[i];
     const halfW = seg.widthM * 0.5;
     const segYaw = Math.atan2(seg.tangentX, seg.tangentZ);
@@ -1199,12 +1724,12 @@ function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
 
     // Forest trees & boulders along the verges
     for (const side of ['left', 'right'] as const) {
-      if (rand() < 0.52) {
+      if (rand() < 0.54) {
         const sign = side === 'right' ? 1 : -1;
-        const offset = halfW + 2.1 + rand() * 8.5;
+        const offset = halfW + 2.2 + rand() * 9.5;
         const treeType =
-          bp.primarySurface === 'snow'
-            ? rand() < 0.6
+          bp.primarySurface === 'snow' || bp.id === 'finland_jumps'
+            ? rand() < 0.55
               ? 'birch_tree'
               : 'pine_tree'
             : rand() < 0.16
@@ -1215,7 +1740,7 @@ function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
           y: seg.y - (offset - halfW) * 0.04,
           z: seg.z + seg.normalZ * sign * offset,
           yaw: rand() * Math.PI * 2,
-          scale: 0.85 + rand() * 0.65,
+          scale: 0.85 + rand() * 0.68,
           type: treeType,
           collisionRadius: treeType === 'rock_outcrop' ? 1.2 : 0.75,
           hardness: 0.95,

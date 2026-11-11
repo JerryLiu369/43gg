@@ -5,10 +5,25 @@
     --font-display: 'Barlow Condensed', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
     --font-sans: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Noto Sans SC', ui-monospace, SFMono-Regular, monospace;
+
+    --bg-paper: #faf8f4;
+    --bg-card: #ffffff;
+    --bg-subtle: #f2efe9;
+    --border-hairline: #e4dfd5;
+    --border-strong: #cfc7b8;
+    --ink-primary: #1c1917;
+    --ink-secondary: #57534e;
+    --ink-muted: #78716c;
+    --accent-seal: #c2410c;
+    --accent-seal-hover: #9a3412;
   }
 
   * {
     box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   html,
@@ -18,9 +33,8 @@
     min-height: 100%;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
-    background-color: #090b0e;
-    color: #f1f5f9;
+    background-color: var(--bg-paper);
+    color: var(--ink-primary);
     font-family: var(--font-sans);
   }
 }
@@ -34,26 +48,43 @@
   font-variant-numeric: tabular-nums;
 }
 
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 .stroke-text {
   paint-order: stroke fill;
   -webkit-text-stroke: 3px rgba(5, 7, 10, 0.92);
 }
 
-/* Custom slim scrollbars for telemetry/setup panels */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Restrained warm stone scrollbars for paper surfaces */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: #f2efe9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cfc7b8;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #a89f8f;
 }
