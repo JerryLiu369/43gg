@@ -1,96 +1,100 @@
-# CHRONO STAGE // 纯点对点硬核拉力模拟 (Point-to-Point Stage Rally Simulator)
+**English** | [README_zh.md (Chinese)](./README_zh.md)
 
-对标《DiRT Rally 2.0》驾驶物理与路感反馈的纯三维点对点（Point-to-Point）传统拉力赛模拟游戏。单人、无对手车、纯对表跑，你在赛道上唯一要打败的是时间。
+# gaistudio — Multi-Project Workspace for Google AI Studio
 
----
+This repository serves as a unified private workspace for organizing Google AI Studio web apps and prototypes under a single GitHub repository.
 
-## 一、操作方式 (Controls)
-
-支持 **键盘渐进式模拟输入**、**手柄线性扳机与摇杆（Gamepad API）** 以及 **手机/平板触控布局**：
-
-| 功能 | 键盘按键 | 手柄按键 (Xbox / PlayStation) | 触屏控制 |
-| :--- | :--- | :--- | :--- |
-| **线性油门** | `W` 或 `↑`（支持轻点羽化与长按） | `RT / R2`（线性扳机） | 右下角「油门」踏板 |
-| **线性刹车** | `S` 或 `↓`（支持循迹刹车） | `LT / L2`（线性扳机） | 右下角「刹车」踏板 |
-| **渐进转向** | `A / D` 或 `← / →`（短按微调、反打快速回中） | 左摇杆 `Left Stick X` | 左下角线性触控滑条 |
-| **序列式升挡** | `E` / `X` / `.` | `RB / R1` 或 `A / Cross` | 左下角「升挡 (E)」 |
-| **序列式降挡** | `Q` / `Z` / `,` | `X / Square` | 左下角「降挡 (Q)」 |
-| **机械手刹 (锁后轮)** | `Space` (空格键) | `B / Circle` | 右下角「手刹」按钮 |
-| **手动离合 / 半联动** | `Left Shift` / `Right Shift` / `K` | `LB / L1` | 调校台可设自动离合 |
-| **熄火重新点火** | `I` 或 `Enter`（或踩离合给油） | 起步给油自动点火 | 点火触发 |
-| **切换视角 (3套)** | `C`（座舱默认 / 车头 / 追尾） | `Y / Triangle` | 右上角「视角 [C]」按钮 |
-| **救援复位 (+15s罚时)** | 界面右上角按钮 | 界面右上角按钮 | 右上角「救援复位 +15s」 |
-| **暂停与维修调校** | `Esc` 或 `P` | `Start / Options` | 右上角暂停图标 |
-
-> **硬核机械默认设定**：所有辅助（自动换挡、自动离合、ABS、TCS）**默认全部关闭**，无任何隐藏的电子稳定系统（ESP）。若在陡坡或低转速重刹未踩离合导致熄火，可踩住 `Shift`（离合）配合油门重新半联动起步。
+To remain compatible with Google AI Studio's repository-root sync entry and the existing GitHub Pages deployment (`/` and `/ds/`), the repository root hosts the default active workspace (`CHRONO STAGE`), while additional or archived small projects live self-contained under `apps/<project-slug>/`.
 
 ---
 
-## 二、赛段列表（路面特性与默认天气）
+## Project Catalog
 
-每条赛段均为 3.7 km – 4.0 km 的完整点对点长赛段，包含三个分段计时点（Sector 1 / 2 / 3）、海拔起伏、盲坡跳、发夹弯、窄桥、石头村庄窄巷与自然边界障碍：
-
-1. **SS01 · 哈弗伦林道 · 威尔士 (Hafren Forest Sweet Lamb, 3.8 km)**
-   - **核心路面**：78% 湿润高抓地砂石 + 14% 涉水泥水坑 + 8% 4.5m 极窄木桥
-   - **默认天气/时段**：降雨湿滑 (Rain) · 正午 (Day)
-   - **特点**：起伏盲坡顶（Crest）接大跳坡、涉水低洼（高流体阻力与短暂水滑）、连续森林 S 弯。
-2. **SS02 · 图里尼山口 · 摩纳哥 (Col de Turini Dusk Ascent, 4.0 km)**
-   - **核心路面**：62% 山地高抓地柏油 + 26% 前车切弯带脏的砂石柏油（Dirty Tarmac）+ 12% 高海拔背阴暗冰（Black Ice）
-   - **默认天气/时段**：晴朗 (Clear) · 黄昏低角度夕阳侧光 (Dusk)
-   - **特点**：拥有极窄的 4.6m 石头村庄巷道、石拱窄桥、悬崖发夹弯，以及考验“脏路效应”与山顶暗冰过渡的混合抓地路面。
-3. **SS03 · 瓦尔mland 冰湖 · 瑞典 (Vargasen & Colin’s Crest, 3.9 km)**
-   - **核心路面**：68% 压实雪道 (Snow) + 32% 冰湖镜面纯冰层 (Pure Ice)
-   - **默认天气/时段**：风雪严寒 (Snow) · 正午 (Day)
-   - **特点**：包含著名的“科林飞跳（Colin’s Crest）”长距离飞跃与白桦林高速节奏弯，必须依赖雪地钉胎与提前重心转移建立滑移角。
-4. **SS04 · 维苏比暗夜暴雨 · 科西嘉 (Route de la Vésubie Night Storm, 3.7 km)**
-   - **核心路面**：54% 暴雨湿柏油 + 30% 泥石流落石脏路 + 16% 积水坑
-   - **默认天气/时段**：降雨湿滑 (Rain) · 暗夜射灯 (Night)
-   - **特点**：全黑雨夜山路，视野完全依赖车头拉力射灯锥与弯道外侧的反光诱导标（Chevron Sign）。一旦撞坏前车灯，车灯将变暗闪烁，进入极高风险的盲驾状态。
+| Slug | Path | Stack / Type | Local Run Command | Docs & Pages Route |
+| :--- | :--- | :--- | :--- | :--- |
+| `chrono-stage` | `.` (repository root) | React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + WebGL 3D Rally Simulator | `npm run dev` | [Manual (Chinese)](docs/chrono-stage_zh.md) · Pages `/` |
+| `ds-stage` | `apps/ds-stage/` | Zero-build static HTML + Vanilla JS + WebGL 1.0 Rally Simulator (mirrored from `ds-stage` branch) | `npm run dev:ds` or open `apps/ds-stage/index.html` | [Project README (Chinese)](apps/ds-stage/README.md) · Pages `/ds/` |
 
 ---
 
-## 三、调校参数含义与手感影响 (Setup & Tuning Guide)
+## Directory Layout
 
-1. **驱动形式 (Drivetrain: AWD / RWD / FWD)**
-   - **AWD 全时四驱**：靠重心转移入弯，出弯车头有拉拽牵引，容错相对均衡。
-   - **RWD 经典后驱**：出弯给油极易产生动力过度转向（Power Oversteer），必须在车头回正前精细控制油门深度。
-   - **FWD 竞技前驱**：给油以推头（转向不足）为主，入弯需利用收油重心前移（Liftoff Oversteer）或左脚点刹让车尾摆动。
-2. **主减速比 / 齿比 (Final Drive Ratio: 0.82x – 1.22x)**
-   - 调大（密齿比）：各挡位转速攀升更快，适合多发夹弯与陡坡（如摩纳哥、科西嘉）；调小（疏齿比）：提高尾速，适合高速赛段（如瑞典、威尔士）。
-3. **前后悬挂弹簧刚度 (Front / Rear Spring Rate: 26 – 74 kN/m)**
-   - 遵循真实横向载荷转移规律：**前软后硬**会增加后轴侧倾载荷转移，让车尾更灵活易甩尾；**前硬后软**让车头支撑更扎实但更倾向于推头。烂路与多跳坡赛段宜整体偏软以吸收颠簸。
-4. **悬挂有效行程与车高 (Suspension Travel: 140 – 280 mm)**
-   - 决定过坎与大跳坡落地时的缓冲余量。若行程过短，跳坡落地会直接撞击限位块（Bump Stop 触底冲击），造成瞬时抓地丧失并加剧悬挂损伤。
-5. **避震阻尼刚度 (Damper Stiffness: 0.60x – 1.45x)**
-   - 控制车身俯仰与侧倾的收敛速度。偏硬响应干脆（适合柏油），偏软贴地性更好（适合碎石与雪道）。
-6. **中央差速器前后扭矩分配 (AWD Torque Split) 与锁止率 (Diff Lock)**
-   - 后轮扭矩占比越高（如 38% 前 / 62% 后），出弯越偏向后驱甩尾特性；提高差速器锁止率可增强冰雪与松散砂石路面的直道牵引力。
-7. **前后刹车平衡 (Front Brake Bias: 50% – 76%)**
-   - 偏前（66%+）重刹时车身更稳定但容易推头；偏后（52%–56%）在带方向循迹刹车时更容易让车尾摆动入弯。
-8. **轮胎配方 (Compound) 与冷态胎压 (Tire Pressure PSI)**
-   - 必须匹配路面（砂石胎、干地柏油胎、湿地排水胎、北欧雪地钉胎）。松散路面降低胎压（18–23 PSI）可增大接地印迹；柏油路面提高胎压（29–33 PSI）可强化胎壁支撑。
-
----
-
-## 四、核心拉力驾驶技巧提示 (Driving Tips)
-
-1. **学会用刹车和油门“转向”（重心转移）**：
-   - 入弯前若死踩油门直接打方向，前轮载荷不足必然推头冲出赛道。正确做法是在入弯前重刹（或收油），让重心压向前轮获得转向咬合力，顺势带入弯心。
-2. **砂石与冰雪路面的救车过渡区（反打 + 油门配比）**：
-   - 当听到轮胎摩擦声加剧、车尾开始外摆时，切勿惊慌死踩刹车（死踩刹车会彻底锁死车轮导致打转）。立即**朝甩尾方向反打方向盘**，同时如果是四驱/前驱车请**保持 50%–70% 油门**把车头拉出弯道；如果是后驱车则需**温柔收油至 30% 左右**等待后轮恢复侧向抓地。
-3. **大跳坡（Jump / Crest）前务必摆正车身并提前轻点刹车**：
-   - 腾空期间车轮无法提供任何转向力。若带着侧滑角起跳，落地冲击极易导致翻滚或撞树。
-4. **发夹弯与陡坡起步（手刹 + 离合半联动）**：
-   - 遇到 1 级发夹弯（Hairpin），入弯前降入 1 挡或 2 挡，打方向同时短促拉一下手刹（`Space`）让后轮锁死甩尾，车头对准出弯点后立即松手刹给油。若在陡坡转速跌破 1000 RPM，请按住 `Shift`（离合）拉高转速以防熄火。
-5. **警惕“脏路效应”（Dirty Road）**：
-   - 如果四轮冲上路肩草坡或砂石区，轮胎会附着泥沙（左上角出现脏胎提示），回到干净柏油路后的前几百米抓地力会明显下降，需预留更大刹车距离。
+```text
+gaistudio/
+├── apps/
+│   └── ds-stage/          # Self-contained static app (STAGE)
+├── docs/
+│   └── chrono-stage_zh.md # Preserved full Chinese manual for root CHRONO STAGE
+├── scripts/
+│   └── workspace.mjs      # Zero-dependency helper CLI (list, serve, check, stage-pages)
+├── src/                   # Root default app source (CHRONO STAGE)
+├── index.html             # Root default app entry
+├── metadata.json          # Google AI Studio app metadata
+├── package.json           # Root dependencies and workspace helper scripts
+├── vite.config.ts         # Vite config (base: '/gaistudio/')
+├── .env.example           # Placeholder environment variables (never store real keys)
+├── .gitignore             # Ignores node_modules/, dist/, .env*, etc. across root and apps/*
+├── README.md              # English workspace guide (this file)
+└── README_zh.md           # Chinese workspace guide
+```
 
 ---
 
-## 五、工程架构与合理简化说明 (Simplifications)
+## Quick Start & Commands
 
-为保证纯前端零外部素材、100% 程序化生成与 60fps 稳定帧率，本项目的工程权衡与简化如下：
-1. **碰撞体与路面几何**：赛道采用 5 米步长的三维样条曲线（含曲率、坡度、横向倾角 Camber 与宽度变化），路边树木、岩石、桥栏、石墙采用圆柱体/包围盒刚体冲量碰撞，确保绝不穿模或卡死在模型内部，但未做车壳钣金的逐顶点网格破碎变形。
-2. **空气动力学与地面效应**：气动阻力与尾翼下压力按速度平方整体作用于整车质心，未做前后翼独立风洞流场模拟。
-3. **轮胎热力学**：完整模拟了轮胎配方匹配、胎压、附着泥沙“脏胎”衰减与累计磨损损伤，简化了胎面内外侧实时温度梯度分布。
-4. **音频与语音**：全部引擎多谐波、涡轮泄压（BOV）、回火放炮、底盘飞石敲击、轮胎滑移尖叫均由 Web Audio API 实时合成；领航员语音优先调用浏览器内置 `speechSynthesis` 中文语音并叠加无线电提示音。
+Run from the repository root:
+
+```bash
+npm install          # Install root dependencies
+npm run dev          # Start the root app (CHRONO STAGE) on port 3000
+npm run dev:ds       # Serve apps/ds-stage locally on http://127.0.0.1:3001/
+npm run typecheck    # Run TypeScript check (tsc --noEmit)
+npm test             # Run root physics & stage unit tests
+npm run build        # Build the root app into dist/
+npm run apps:list    # List all discovered projects in the workspace
+npm run apps:check   # Check env rules, root typecheck/tests/build, and all apps/* assets & JS syntax
+npm run build:pages  # Stage combined dist/ (/ + /ds/) matching gh-pages layout (local build only)
+```
+
+---
+
+## Google AI Studio Sync Boundaries & Recommended Workflows
+
+Verified against official Google documentation ([Sync your AI Studio apps with GitHub](https://aistudio.google.com/learn/sync-your-ai-studio-apps-with-github) and [Build apps in Google AI Studio](https://ai.google.dev/gemini-api/docs/aistudio-build-mode)):
+
+- **Platform Boundary**: Google AI Studio Build mode two-way GitHub sync operates strictly at the **repository root level** (one AI Studio workspace synced to one GitHub repository root on `main`). Official docs do **not** provide a subdirectory selector (`apps/<slug>/`), branch selector, or conflict-free binding of multiple separate AI Studio sessions to different folders in one repository. Moreover, importing an existing repo and initiating sync may prompt AI Studio to force-push root compatibility edits.
+- **Practical Workflows in One Repository**:
+
+### Workflow A (Recommended for Many Small Apps): Export ZIP from AI Studio -> Commit under `apps/<project-slug>/`
+
+1. Build and iterate on a small app in Google AI Studio, then download its ZIP export.
+2. Locally run `git pull origin main`.
+3. Extract the project into `apps/<project-slug>/` (e.g., `apps/json-diff-tool/`), keeping dependencies, assets, and docs self-contained.
+4. Run `npm run apps:check`, add an entry to the Project Catalog tables in `README.md` and `README_zh.md`, then commit and push.
+
+### Workflow B (Active Root Slot + Archive Rotation)
+
+If you bind `JerryLiu369/gaistudio` directly in AI Studio Settings -> GitHub:
+
+1. Treat the **repository root** as the single active AI Studio two-way sync slot (`CHRONO STAGE` currently).
+2. Always **Pull before editing** and **Push promptly**; avoid blind force-pushes that could overwrite repository history or `apps/`.
+3. When switching the active root slot to a new app, archive the finished root project into `apps/<project-slug>/` locally and commit/push first before replacing root files.
+
+---
+
+## Adding a New Small Project & Secrets Rules
+
+1. **Naming**: Place each app under `apps/<project-slug>/` using lowercase kebab-case (e.g., `apps/pomodoro-timer/`).
+2. **Self-Contained Assets**: Keep each project's `index.html`, `src/`, `assets/`, `public/`, and optional `package.json` / `metadata.json` inside its own folder. Prefer relative paths (or configure `base` appropriately) if you intend to host under a subpath.
+3. **Secrets & `.env` Hygiene**:
+   - **Never** commit `.env` files or real API keys to Git.
+   - Commit `.env.example` with placeholder values only (`GEMINI_API_KEY="MY_GEMINI_API_KEY"`), and keep real credentials in local `.env` (already excluded recursively across root and `apps/*` by `.gitignore`).
+
+---
+
+## Branches & GitHub Pages Visibility
+
+- `main`: Default multi-project workspace branch.
+- `ds-stage`: Preserved historical branch for `STAGE` (also mirrored under `apps/ds-stage/` on `main`).
+- `gh-pages`: Legacy static deployment branch (`/` serves `CHRONO STAGE`; `/ds/` serves `STAGE`).
+- **Visibility Notice**: Although `JerryLiu369/gaistudio` is a **private** repository, its currently enabled GitHub Pages site (`https://jerryliu369.github.io/gaistudio/`) is **publicly accessible** (`public: true`). Do not deploy sensitive data to `gh-pages`.
