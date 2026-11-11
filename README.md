@@ -1,5 +1,8 @@
 **English** | [README_zh.md (Chinese)](./README_zh.md)
 
+> **Live WebApp:** [https://jerryliu369.github.io/gaistudio/](https://jerryliu369.github.io/gaistudio/) (auto-deployed from `main` via GitHub Actions)  
+> Direct App Links: [Lucky Landlord](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
+
 # gaistudio — Unified React WebApp Workspace
 
 `gaistudio` is a single unified React 19 + Vite 8 + TypeScript + Tailwind CSS 4 web application shell that hosts multiple isolated mini-apps under one entry point and one development/preview origin.
@@ -10,7 +13,7 @@
 
 | App ID | Title | Runtime Isolation | Location | Route | Documentation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `lucky-landlord` | `吉星包租公` | Lazy-loaded React module (`React.lazy`) with localStorage auto-save & audio teardown | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | Built-in Compendium |
+| `lucky-landlord` | `Lucky Landlord` | Lazy-loaded React module (`React.lazy`) with localStorage auto-save & audio teardown | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | Built-in Compendium |
 | `chrono-stage` | `CHRONO STAGE` | Lazy-loaded React module (`React.lazy`) with WebGL/Audio lifecycle teardown | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [Manual (Chinese)](docs/chrono-stage_zh.md) |
 
 ---
@@ -23,7 +26,7 @@ gaistudio/
 │   ├── App.tsx                  # Unified shell router, Home Hub / active app viewport & top bar
 │   ├── apps/
 │   │   ├── registry.ts          # Single project registration entry for all mini-apps
-│   │   ├── lucky-landlord/      # 吉星包租公 (Tabletop slot-building roguelike)
+│   │   ├── lucky-landlord/      # Lucky Landlord (Tabletop slot-building roguelike)
 │   │   └── chrono-stage/        # CHRONO STAGE lazy-loaded React app entry
 │   ├── shell/
 │   │   ├── HomeHub.tsx          # Responsive Home Hub launcher (desktop + mobile)
@@ -102,7 +105,8 @@ Based on Google's official documentation ([Sync your AI Studio apps with GitHub]
 ## Visibility, Branches & Secrets
 
 - `main`: Private source repository workspace (`JerryLiu369/gaistudio`, `private: true`).
-- `ds-stage`: Preserved historical standalone branch for `STAGE` (also stored under `apps/ds-stage/` on `main`).
-- `gh-pages`: Public static deployment branch (`public: true` via GitHub Pages at `https://jerryliu369.github.io/gaistudio/`).
-- **Intentional Split Visibility**: Keeping source code **Private** while serving the compiled static WebApp **Publicly** on GitHub Pages is an intentional configuration. `gh-pages` only receives pure compiled runtime files from `dist/` (`.nojekyll`, `index.html`, `assets/`, `apps/*` runtime assets) — never `src/`, `.env*`, credentials, or `.aistudio/` temporary media.
+- `ds-stage`: Preserved historical standalone branch for `STAGE`.
+- `gh-pages`: Preserved historical deployment branch. It is **no longer** the GitHub Pages publishing source.
+- **Automated GitHub Pages Deployment (`main` -> Pages)**: Pushing to `main` automatically triggers [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) (`build_type: workflow`), which runs `npm run apps:check` (`.env` hygiene check, TypeScript typecheck, unit tests, and `vite build`) and publishes `./dist` to `https://jerryliu369.github.io/gaistudio/` (manual runs are also supported via `workflow_dispatch`).
+- **Intentional Split Visibility**: Keeping source code **Private** (`private: true`) while serving the compiled static WebApp **Publicly** (`public: true`) on GitHub Pages is an intentional configuration. Only compiled runtime assets inside `./dist` (`index.html`, `assets/`, and optional `apps/*` static runtime files) are deployed — never `src/`, `.env*`, credentials, or `.aistudio/` temporary files.
 - **Secrets**: Never commit real `.env` files or API keys anywhere in the repository; keep placeholders only in `.env.example`.
