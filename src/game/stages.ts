@@ -9,1472 +9,324 @@ import type {
   WeatherType,
 } from './types.ts';
 
-interface BlueprintFeature {
-  startM: number;
-  endM: number;
-  curvature: number; // rad/m (+ right turn, - left turn)
-  slope: number; // dy/ds
-  widthM?: number;
+interface FeatureBlueprint {
+  len: number;
+  /**
+   * Right-handed Three.js coordinate system:
+   * At yaw = 0, forward = (0, 0, -1), right = (+1, 0, 0).
+   * curvature > 0 => curves RIGHT on screen (yaw increases).
+   * curvature < 0 => curves LEFT on screen (yaw decreases).
+   */
+  curvature: number;
+  slope: number; // -0.11 .. +0.11
   surface?: SurfaceType;
+  widthM?: number;
   camberRad?: number;
-  scenery?: 'forest' | 'cliff' | 'village' | 'bridge' | 'lake' | 'crest';
-  note?: {
-    type: PacenoteItem['type'];
-    severity: PacenoteItem['severity'];
-    direction: PacenoteItem['direction'];
-    modifier?: string;
-    calloutTextZh: string;
-    calloutSpeechZh: string;
-  };
+  roughness?: number;
+  scenery?: StageSegment['sceneryType'];
+  crest?: boolean;
+  jump?: boolean;
+  narrowBridge?: boolean;
+  waterSplash?: boolean;
+  dontCut?: boolean;
+  caution?: boolean;
 }
 
-interface StageBlueprint {
+interface StageMetaSeed {
   id: string;
   code: string;
   nameZh: string;
   nameEn: string;
   country: string;
-  lengthM: number;
   primarySurface: SurfaceType;
   surfaceMixLabel: string;
   defaultWeather: WeatherType;
   defaultTimeOfDay: TimeOfDay;
   recommendedTire: TireCompound;
-  elevationGainM: number;
   descriptionZh: string;
-  targetParTimeSec: number;
-  defaultWidthM: number;
-  seed: number;
-  features: BlueprintFeature[];
+  seedOffset: number;
 }
 
-function seededRandom(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function deterministicHash(seed: number): number {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function getSurfaceRoughness(surface: SurfaceType): number {
-  switch (surface) {
-    case 'gravel':
-      return 0.036;
-    case 'tarmac':
-      return 0.008;
-    case 'tarmac_dirty':
-      return 0.022;
-    case 'snow':
-      return 0.028;
-    case 'ice':
-      return 0.012;
-    case 'water_puddle':
-      return 0.032;
-    case 'offtrack':
-      return 0.095;
+function classifyCornerSeverity(
+  absCurvature: number,
+  arcAngleRad: number,
+): 1 | 2 | 3 | 4 | 5 | 6 | 0 {
+  if (absCurvature < 0.0038 || arcAngleRad < 0.11) return 0;
+  if (absCurvature >= 0.036 || (absCurvature >= 0.028 && arcAngleRad >= 1.75)) return 1;
+  if (absCurvature >= 0.025) return 2;
+  if (absCurvature >= 0.017) return 3;
+  if (absCurvature >= 0.011) return 4;
+  if (absCurvature >= 0.0068) return 5;
+  return 6;
+}
+
+function tooCloseToEarlierRoad(
+  xs: number[],
+  zs: number[],
+  cx: number,
+  cz: number,
+  skipRecentPoints: number,
+  minClearanceM: number,
+): boolean {
+  const end = xs.length - skipRecentPoints;
+  if (end <= 0) return false;
+  const minSq = minClearanceM * minClearanceM;
+  for (let i = 0; i < end; i += 2) {
+    const dx = cx - xs[i];
+    const dz = cz - zs[i];
+    if (dx * dx + dz * dz < minSq) {
+      return true;
+    }
   }
+  return false;
 }
 
-const STAGE_BLUEPRINTS: StageBlueprint[] = [
-  {
-    id: 'wales_gravel',
-    code: 'SS01',
-    nameZh: '哈弗伦林道 · 威尔士',
-    nameEn: 'Hafren Forest Sweet Lamb',
-    country: 'UK · Wales',
-    lengthM: 3800,
-    primarySurface: 'gravel',
-    surfaceMixLabel: '78% 湿润砂石 · 14% 泥水坑 · 8% 窄木桥',
-    defaultWeather: 'rain',
-    defaultTimeOfDay: 'day',
-    recommendedTire: 'gravel',
-    elevationGainM: 148,
-    descriptionZh:
-      '经典英伦高抓地湿砂石林道。包含高速起伏盲坡、涉水低洼、连续 S 弯、林间窄木桥与山脊回头弯，极其考验重心转移与提前钟摆入弯。',
-    targetParTimeSec: 235,
-    defaultWidthM: 7.4,
-    seed: 1042,
-    features: [
-      {
-        startM: 110,
-        endM: 250,
-        curvature: 0.0065,
-        slope: 0.03,
-        camberRad: -0.04,
-        note: {
-          type: 'right_5',
-          severity: 5,
-          direction: 'right',
-          calloutTextZh: '右 5 长弯 · 上坡全油',
-          calloutSpeechZh: '右五长弯，上坡全油',
-        },
-      },
-      {
-        startM: 290,
-        endM: 420,
-        curvature: -0.011,
-        slope: 0.055,
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          modifier: '盲坡顶 (Crest)',
-          calloutTextZh: '左 4 过盲坡顶 · 保持内线',
-          calloutSpeechZh: '左四过盲坡顶，保持内线',
-        },
-      },
-      {
-        startM: 430,
-        endM: 520,
-        curvature: 0.0,
-        slope: -0.075,
-        scenery: 'crest',
-        note: {
-          type: 'jump',
-          severity: 0,
-          direction: 'center',
-          modifier: '跳坡 (Big Jump)',
-          calloutTextZh: '大跳坡下坠 · 摆正车身！',
-          calloutSpeechZh: '注意，大跳坡下坠，摆正车身',
-        },
-      },
-      {
-        startM: 580,
-        endM: 760,
-        curvature: 0.0185,
-        slope: -0.02,
-        note: {
-          type: 'right_3',
-          severity: 3,
-          direction: 'right',
-          modifier: '收紧 (Tightens)',
-          calloutTextZh: '右 3 收紧成右 2 · 勿切内侧岩石',
-          calloutSpeechZh: '右三收紧成右二，勿切岩石',
-        },
-      },
-      {
-        startM: 810,
-        endM: 940,
-        curvature: 0.0,
-        slope: -0.01,
-        surface: 'water_puddle',
-        note: {
-          type: 'water_splash',
-          severity: 0,
-          direction: 'center',
-          modifier: '涉水 (Water Splash)',
-          calloutTextZh: '涉水坑积水 · 抓地骤降',
-          calloutSpeechZh: '前方涉水坑，抓地下降',
-        },
-      },
-      {
-        startM: 980,
-        endM: 1120,
-        curvature: -0.032,
-        slope: 0.04,
-        widthM: 6.4,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          modifier: '手刹 (Handbrake)',
-          calloutTextZh: '左 1 发夹弯上坡 · 拉手刹甩尾',
-          calloutSpeechZh: '左一发夹弯上坡，拉手刹',
-        },
-      },
-      {
-        startM: 1200,
-        endM: 1360,
-        curvature: 0.014,
-        slope: 0.02,
-        note: {
-          type: 'right_4',
-          severity: 4,
-          direction: 'right',
-          calloutTextZh: '右 4 接左 4 连续 S 弯',
-          calloutSpeechZh: '右四接左四连续S弯',
-        },
-      },
-      {
-        startM: 1365,
-        endM: 1520,
-        curvature: -0.015,
-        slope: -0.01,
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          calloutTextZh: '左 4 变宽出弯 · 接长直道',
-          calloutSpeechZh: '左四变宽，接长直道',
-        },
-      },
-      {
-        startM: 1620,
-        endM: 1750,
-        curvature: 0.0,
-        slope: 0.0,
-        widthM: 4.5,
-        surface: 'tarmac_dirty',
-        scenery: 'bridge',
-        note: {
-          type: 'narrow_bridge',
-          severity: 2,
-          direction: 'center',
-          modifier: '窄木桥 (4.5m)',
-          calloutTextZh: '警告！极窄木桥 · 严禁偏航',
-          calloutSpeechZh: '小心，极窄木桥，对准桥面',
-        },
-      },
-      {
-        startM: 1840,
-        endM: 2010,
-        curvature: 0.024,
-        slope: 0.05,
-        scenery: 'cliff',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          modifier: '外侧悬崖',
-          calloutTextZh: '右 2 急弯 · 外侧悬崖深沟',
-          calloutSpeechZh: '右二急弯，外侧悬崖',
-        },
-      },
-      {
-        startM: 2120,
-        endM: 2320,
-        curvature: -0.008,
-        slope: 0.06,
-        scenery: 'crest',
-        note: {
-          type: 'left_5',
-          severity: 5,
-          direction: 'left',
-          modifier: '双连跳坡',
-          calloutTextZh: '左 5 盲弯接小跳坡 · 全油通过',
-          calloutSpeechZh: '左五盲弯接小跳坡，全油',
-        },
-      },
-      {
-        startM: 2330,
-        endM: 2430,
-        curvature: 0.0,
-        slope: -0.065,
-        scenery: 'crest',
-      },
-      {
-        startM: 2520,
-        endM: 2710,
-        curvature: -0.021,
-        slope: -0.03,
-        widthM: 5.8,
-        note: {
-          type: 'left_2',
-          severity: 2,
-          direction: 'left',
-          modifier: '收紧 (Tightens)',
-          calloutTextZh: '下坡左 2 收紧 · 提前重刹！',
-          calloutSpeechZh: '下坡左二收紧，提前重刹',
-        },
-      },
-      {
-        startM: 2800,
-        endM: 2960,
-        curvature: 0.034,
-        slope: 0.01,
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          calloutTextZh: '右 1 发夹弯 · 绕木桩',
-          calloutSpeechZh: '右一发夹弯，绕木桩',
-        },
-      },
-      {
-        startM: 3060,
-        endM: 3250,
-        curvature: -0.013,
-        slope: 0.02,
-        surface: 'water_puddle',
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          modifier: '泥水车辙',
-          calloutTextZh: '左 4 泥水深车辙 · 稳住方向',
-          calloutSpeechZh: '左四泥水车辙，稳住方向',
-        },
-      },
-      {
-        startM: 3350,
-        endM: 3560,
-        curvature: 0.009,
-        slope: -0.02,
-        note: {
-          type: 'right_5',
-          severity: 5,
-          direction: 'right',
-          calloutTextZh: '右 5 高速冲刺 · 终点前 200 米',
-          calloutSpeechZh: '右五全油，准备冲线',
-        },
-      },
-      {
-        startM: 3650,
-        endM: 3800,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '全油冲过终点计时点 (Flying Finish)',
-          calloutSpeechZh: '全油冲线，到达终点',
-        },
-      },
-    ],
-  },
-  {
-    id: 'turini_tarmac',
-    code: 'SS02',
-    nameZh: '图里尼山口 · 摩纳哥',
-    nameEn: 'Col de Turini Dusk Ascent',
-    country: 'Monaco · Alpes-Maritimes',
-    lengthM: 4000,
-    primarySurface: 'tarmac',
-    surfaceMixLabel: '62% 山地柏油 · 26% 带脏砂石柏油 · 12% 山顶暗冰',
-    defaultWeather: 'clear',
-    defaultTimeOfDay: 'dusk',
-    recommendedTire: 'tarmac_dry',
-    elevationGainM: 225,
-    descriptionZh:
-      '黄昏低角度夕阳下的阿尔卑斯传奇山路。高抓地柏油路面夹杂前车切弯带出的脏砂石（抓地骤降），穿过狭窄石头村庄巷道、石拱桥与高海拔结冰发夹弯。',
-    targetParTimeSec: 240,
-    defaultWidthM: 6.8,
-    seed: 2088,
-    features: [
-      {
-        startM: 100,
-        endM: 280,
-        curvature: -0.009,
-        slope: 0.045,
-        note: {
-          type: 'left_5',
-          severity: 5,
-          direction: 'left',
-          calloutTextZh: '左 5 柏油上山 · 抓地良好',
-          calloutSpeechZh: '左五柏油上山，全油',
-        },
-      },
-      {
-        startM: 340,
-        endM: 510,
-        curvature: 0.022,
-        slope: 0.05,
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          modifier: '脏路砂石 (Dirty Tarmac)',
-          calloutTextZh: '右 2 路面带脏砂石 · 警惕推头！',
-          calloutSpeechZh: '右二路面有砂石，小心推头',
-        },
-      },
-      {
-        startM: 580,
-        endM: 760,
-        curvature: -0.035,
-        slope: 0.06,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          modifier: '悬崖石墙',
-          calloutTextZh: '左 1 上坡发夹弯 · 贴内侧石墙',
-          calloutSpeechZh: '左一上坡发夹弯，贴内侧',
-        },
-      },
-      {
-        startM: 860,
-        endM: 1120,
-        curvature: 0.012,
-        slope: 0.01,
-        widthM: 4.6,
-        scenery: 'village',
-        note: {
-          type: 'square_right',
-          severity: 2,
-          direction: 'right',
-          modifier: '村庄窄巷 (4.6m)',
-          calloutTextZh: '进入石头村庄窄巷 · 右直角弯',
-          calloutSpeechZh: '进村庄窄巷，右直角弯，路极窄',
-        },
-      },
-      {
-        startM: 1130,
-        endM: 1310,
-        curvature: -0.016,
-        slope: -0.02,
-        widthM: 4.8,
-        scenery: 'village',
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          modifier: '贴房角',
-          calloutTextZh: '左 3 穿出村庄 · 接石拱窄桥',
-          calloutSpeechZh: '左三出村庄，接石拱窄桥',
-        },
-      },
-      {
-        startM: 1360,
-        endM: 1490,
-        curvature: 0.0,
-        slope: 0.0,
-        widthM: 4.4,
-        scenery: 'bridge',
-        note: {
-          type: 'narrow_bridge',
-          severity: 2,
-          direction: 'center',
-          modifier: '石拱桥',
-          calloutTextZh: '古老石拱窄桥 · 两侧石护栏',
-          calloutSpeechZh: '通过石拱窄桥，小心护栏',
-        },
-      },
-      {
-        startM: 1580,
-        endM: 1820,
-        curvature: 0.016,
-        slope: 0.055,
-        surface: 'tarmac_dirty',
-        scenery: 'cliff',
-        note: {
-          type: 'right_3',
-          severity: 3,
-          direction: 'right',
-          modifier: '脏柏油 (Dirty)',
-          calloutTextZh: '右 3 长弯 · 满地砂石脏路',
-          calloutSpeechZh: '右三长弯，路面很脏',
-        },
-      },
-      {
-        startM: 1920,
-        endM: 2100,
-        curvature: -0.018,
-        slope: 0.06,
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          calloutTextZh: '左 3 接右 1 连续山脊回头弯',
-          calloutSpeechZh: '左三接右一发夹弯',
-        },
-      },
-      {
-        startM: 2150,
-        endM: 2320,
-        curvature: 0.036,
-        slope: 0.065,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          calloutTextZh: '右 1 陡坡发夹弯 · 半联动防熄火',
-          calloutSpeechZh: '右一陡坡发夹弯，小心低转熄火',
-        },
-      },
-      {
-        startM: 2450,
-        endM: 2720,
-        curvature: -0.012,
-        slope: 0.04,
-        surface: 'ice',
-        scenery: 'cliff',
-        note: {
-          type: 'surface_change',
-          severity: 2,
-          direction: 'left',
-          modifier: '背阴暗冰 (Black Ice)',
-          calloutTextZh: '警告！高海拔背阴暗冰 · 左 4 极滑',
-          calloutSpeechZh: '注意暗冰！左四路面结冰极滑',
-        },
-      },
-      {
-        startM: 2800,
-        endM: 3020,
-        curvature: 0.025,
-        slope: -0.04,
-        surface: 'ice',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          modifier: '冰面下坡',
-          calloutTextZh: '右 2 冰面下坡 · 轻点刹车切勿抱死',
-          calloutSpeechZh: '右二冰面下坡，轻踩刹车',
-        },
-      },
-      {
-        startM: 3120,
-        endM: 3420,
-        curvature: -0.015,
-        slope: -0.03,
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          calloutTextZh: '回到柏油 · 左 3 接右 4 高速弯',
-          calloutSpeechZh: '回到柏油，左三接右四',
-        },
-      },
-      {
-        startM: 3450,
-        endM: 3720,
-        curvature: 0.01,
-        slope: -0.01,
-        note: {
-          type: 'right_4',
-          severity: 4,
-          direction: 'right',
-          calloutTextZh: '右 4 变宽全油 · 冲向山口终点',
-          calloutSpeechZh: '右四变宽全油，准备冲线',
-        },
-      },
-      {
-        startM: 3820,
-        endM: 4000,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '全油冲线 · 图里尼山口计时点',
-          calloutSpeechZh: '冲过终点',
-        },
-      },
-    ],
-  },
-  {
-    id: 'sweden_snow',
-    code: 'SS03',
-    nameZh: '韦姆兰冰湖 · 瑞典',
-    nameEn: 'Vargasen & Colin’s Crest',
-    country: 'Sweden · Värmland',
-    lengthM: 3900,
-    primarySurface: 'snow',
-    surfaceMixLabel: '68% 压实雪道 · 32% 冰湖镜面冰层',
-    defaultWeather: 'snow',
-    defaultTimeOfDay: 'day',
-    recommendedTire: 'snow',
-    elevationGainM: 115,
-    descriptionZh:
-      '漫天风雪中的北欧高速冰雪赛段。包含著名的“科林飞跳（Colin’s Crest）”长距离飞跃、白桦林连续高速 S 弯与冰湖镜面纯冰区，必须提前利用丹麦钟摆建立滑移角。',
-    targetParTimeSec: 228,
-    defaultWidthM: 7.6,
-    seed: 3099,
-    features: [
-      {
-        startM: 100,
-        endM: 300,
-        curvature: 0.011,
-        slope: 0.02,
-        note: {
-          type: 'right_4',
-          severity: 4,
-          direction: 'right',
-          calloutTextZh: '右 4 雪道 · 顺雪墙滑移入弯',
-          calloutSpeechZh: '右四雪道，保持节奏',
-        },
-      },
-      {
-        startM: 320,
-        endM: 520,
-        curvature: -0.012,
-        slope: 0.03,
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          calloutTextZh: '左 4 接右 5 连续白桦林节奏弯',
-          calloutSpeechZh: '左四接右五连续弯',
-        },
-      },
-      {
-        startM: 560,
-        endM: 720,
-        curvature: 0.0,
-        slope: 0.075,
-        scenery: 'crest',
-        note: {
-          type: 'jump',
-          severity: 0,
-          direction: 'center',
-          modifier: '科林飞跳 (Colin’s Crest)',
-          calloutTextZh: '盲坡顶全油长飞跳 (Colin’s Crest)！',
-          calloutSpeechZh: '前方科林飞跳，对准正中全油起跳',
-        },
-      },
-      {
-        startM: 725,
-        endM: 880,
-        curvature: 0.0,
-        slope: -0.08,
-        scenery: 'crest',
-      },
-      {
-        startM: 940,
-        endM: 1160,
-        curvature: -0.022,
-        slope: -0.01,
-        note: {
-          type: 'left_2',
-          severity: 2,
-          direction: 'left',
-          calloutTextZh: '落地即刹！左 2 急弯雪墙',
-          calloutSpeechZh: '落地重刹，左二急弯',
-        },
-      },
-      {
-        startM: 1260,
-        endM: 1620,
-        curvature: 0.015,
-        slope: 0.0,
-        surface: 'ice',
-        scenery: 'lake',
-        note: {
-          type: 'surface_change',
-          severity: 3,
-          direction: 'right',
-          modifier: '冰湖镜面 (Pure Ice)',
-          calloutTextZh: '驶入冰湖镜面纯冰区 · 右 3 长飘移',
-          calloutSpeechZh: '进入冰湖纯冰面，右三长弯极滑',
-        },
-      },
-      {
-        startM: 1650,
-        endM: 1920,
-        curvature: -0.028,
-        slope: 0.0,
-        surface: 'ice',
-        scenery: 'lake',
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          modifier: '冰湖回头弯',
-          calloutTextZh: '左 1 冰面大回头 · 反打方向给油救车',
-          calloutSpeechZh: '左一冰面发夹弯，反打方向维持滑移',
-        },
-      },
-      {
-        startM: 2020,
-        endM: 2160,
-        curvature: 0.0,
-        slope: 0.02,
-        widthM: 4.8,
-        scenery: 'bridge',
-        note: {
-          type: 'narrow_bridge',
-          severity: 2,
-          direction: 'center',
-          modifier: '冰河木桥',
-          calloutTextZh: '窄桥跨越冰河 · 提前回正车头',
-          calloutSpeechZh: '前方冰河窄桥，提前回正车头',
-        },
-      },
-      {
-        startM: 2260,
-        endM: 2520,
-        curvature: 0.018,
-        slope: 0.04,
-        note: {
-          type: 'right_3',
-          severity: 3,
-          direction: 'right',
-          calloutTextZh: '右 3 上坡深雪车辙 · 接左 3',
-          calloutSpeechZh: '右三上坡深雪，接左三',
-        },
-      },
-      {
-        startM: 2540,
-        endM: 2780,
-        curvature: -0.018,
-        slope: -0.03,
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          calloutTextZh: '左 3 下坡接小跳坡',
-          calloutSpeechZh: '左三下坡接小跳坡',
-        },
-      },
-      {
-        startM: 2860,
-        endM: 3120,
-        curvature: 0.032,
-        slope: 0.01,
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          calloutTextZh: '右 1 森林发夹弯 · 勿撞外侧雪堆',
-          calloutSpeechZh: '右一发夹弯，勿撞雪堆',
-        },
-      },
-      {
-        startM: 3220,
-        endM: 3560,
-        curvature: -0.008,
-        slope: -0.02,
-        note: {
-          type: 'left_5',
-          severity: 5,
-          direction: 'left',
-          calloutTextZh: '左 5 高速全油冲刺段',
-          calloutSpeechZh: '左五全油冲刺',
-        },
-      },
-      {
-        startM: 3720,
-        endM: 3900,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '终点计时拱门 · 保持全油',
-          calloutSpeechZh: '冲过终点',
-        },
-      },
-    ],
-  },
-  {
-    id: 'corsica_night_storm',
-    code: 'SS04',
-    nameZh: '维苏比暗夜暴雨 · 科西嘉',
-    nameEn: 'Route de la Vésubie Night Storm',
-    country: 'France · Corsica',
-    lengthM: 3700,
-    primarySurface: 'tarmac',
-    surfaceMixLabel: '54% 暴雨湿柏油 · 30% 泥石流脏路 · 16% 积水坑',
-    defaultWeather: 'rain',
-    defaultTimeOfDay: 'night',
-    recommendedTire: 'tarmac_wet',
-    elevationGainM: 190,
-    descriptionZh:
-      '漆黑雨夜的万弯之岛魔鬼赛段。全靠车头拉力射灯与路边反光诱导标引路，一旦撞坏车灯将陷入极度危险的盲驾；路面遍布暴雨积水与山体滑坡带出的泥沙。',
-    targetParTimeSec: 238,
-    defaultWidthM: 6.4,
-    seed: 4177,
-    features: [
-      {
-        startM: 90,
-        endM: 260,
-        curvature: 0.014,
-        slope: -0.02,
-        note: {
-          type: 'right_4',
-          severity: 4,
-          direction: 'right',
-          calloutTextZh: '右 4 雨夜湿滑 · 盯紧反光路标',
-          calloutSpeechZh: '右四雨夜湿滑，注意反光路标',
-        },
-      },
-      {
-        startM: 310,
-        endM: 480,
-        curvature: -0.024,
-        slope: -0.04,
-        surface: 'water_puddle',
-        scenery: 'cliff',
-        note: {
-          type: 'left_2',
-          severity: 2,
-          direction: 'left',
-          modifier: '暴雨积水',
-          calloutTextZh: '左 2 弯心积水 · 谨防水滑失控',
-          calloutSpeechZh: '左二弯心有积水，小心水滑',
-        },
-      },
-      {
-        startM: 550,
-        endM: 740,
-        curvature: 0.035,
-        slope: -0.03,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          modifier: '悬崖盲弯',
-          calloutTextZh: '右 1 悬崖发夹弯 · 护栏外即深渊',
-          calloutSpeechZh: '右一悬崖发夹弯，小心护栏',
-        },
-      },
-      {
-        startM: 820,
-        endM: 1060,
-        curvature: -0.017,
-        slope: 0.03,
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          modifier: '落石脏路',
-          calloutTextZh: '左 3 泥沙落石区 · 抓地不均',
-          calloutSpeechZh: '左三泥沙脏路，抓地下降',
-        },
-      },
-      {
-        startM: 1120,
-        endM: 1320,
-        curvature: 0.021,
-        slope: 0.05,
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          calloutTextZh: '右 2 上坡收紧 · 保护前车灯勿撞岩壁',
-          calloutSpeechZh: '右二上坡收紧，保护车灯',
-        },
-      },
-      {
-        startM: 1400,
-        endM: 1540,
-        curvature: 0.0,
-        slope: 0.0,
-        widthM: 4.3,
-        scenery: 'bridge',
-        note: {
-          type: 'narrow_bridge',
-          severity: 2,
-          direction: 'center',
-          modifier: '暗夜窄桥 (4.3m)',
-          calloutTextZh: '暗夜峡谷极窄石桥 · 车灯对准桥心',
-          calloutSpeechZh: '前方极窄石桥，车灯对准桥心',
-        },
-      },
-      {
-        startM: 1620,
-        endM: 1880,
-        curvature: -0.014,
-        slope: 0.04,
-        scenery: 'village',
-        widthM: 4.9,
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          modifier: '古镇石巷',
-          calloutTextZh: '左 3 穿过夜间古镇窄巷',
-          calloutSpeechZh: '左三穿过夜间窄巷',
-        },
-      },
-      {
-        startM: 1960,
-        endM: 2150,
-        curvature: 0.0,
-        slope: 0.07,
-        scenery: 'crest',
-        note: {
-          type: 'crest',
-          severity: 0,
-          direction: 'center',
-          modifier: '暗夜盲坡跳',
-          calloutTextZh: '盲坡顶车灯照空 · 落地立刻接左 1',
-          calloutSpeechZh: '盲坡顶跳坡，落地立刻接左一',
-        },
-      },
-      {
-        startM: 2160,
-        endM: 2360,
-        curvature: -0.036,
-        slope: -0.05,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          calloutTextZh: '左 1 下坡急发夹 · 重刹配合手刹',
-          calloutSpeechZh: '左一下坡发夹弯，重刹拉手刹',
-        },
-      },
-      {
-        startM: 2460,
-        endM: 2740,
-        curvature: 0.015,
-        slope: -0.02,
-        surface: 'water_puddle',
-        note: {
-          type: 'right_3',
-          severity: 3,
-          direction: 'right',
-          calloutTextZh: '右 3 连续积水洼地 · 接左 4',
-          calloutSpeechZh: '右三积水洼地，接左四',
-        },
-      },
-      {
-        startM: 2780,
-        endM: 3040,
-        curvature: -0.012,
-        slope: 0.01,
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          calloutTextZh: '左 4 变宽 · 接右 2 最后回头弯',
-          calloutSpeechZh: '左四变宽，接右二',
-        },
-      },
-      {
-        startM: 3120,
-        endM: 3320,
-        curvature: 0.026,
-        slope: 0.02,
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          calloutTextZh: '右 2 出弯全油 · 直奔终点',
-          calloutSpeechZh: '右二出弯全油冲刺',
-        },
-      },
-      {
-        startM: 3520,
-        endM: 3700,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '全油冲过雨夜终点线',
-          calloutSpeechZh: '冲过终点',
-        },
-      },
-    ],
-  },
-  // ============================================================================
-  // STAGE 5: FINLAND — Ouninpohja Flying Crests & Birch Forest Gravel (4.10 km)
-  // ============================================================================
-  {
-    id: 'finland_jumps',
-    code: 'SS05',
-    nameZh: '千湖奥宁波亚飞跳 · 芬兰',
-    nameEn: 'Jyväskylä Ouninpohja Crests',
-    country: '芬兰 · 于韦斯屈莱 (Finland)',
-    lengthM: 4100,
-    primarySurface: 'gravel',
-    surfaceMixLabel: '92% 高速金色硬砂石 / 8% 湖畔木桥与湿滑泥槽',
-    defaultWeather: 'clear',
-    defaultTimeOfDay: 'day',
-    recommendedTire: 'gravel',
-    defaultWidthM: 7.4,
-    elevationGainM: 118,
-    descriptionZh:
-      '向芬兰千湖拉力传奇赛段致敬：五挡与六挡全油门的金色白桦林道、连续盲坡腾空飞跳（Yellow House Jump），落地前必须在空中提前对准下一弯心。',
-    targetParTimeSec: 156,
-    seed: 50509,
-    features: [
-      {
-        startM: 120,
-        endM: 300,
-        curvature: 0.008,
-        slope: 0.045,
-        scenery: 'crest',
-        note: {
-          type: 'right_6',
-          severity: 6,
-          direction: 'right',
-          modifier: '全油盲坡',
-          calloutTextZh: '右 6 全油上盲坡 · 保持正中',
-          calloutSpeechZh: '右六全油上盲坡，保持正中',
-        },
-      },
-      {
-        startM: 370,
-        endM: 520,
-        curvature: 0.0,
-        slope: -0.085,
-        scenery: 'crest',
-        note: {
-          type: 'jump',
-          severity: 0,
-          direction: 'center',
-          modifier: '黄屋大跳坡',
-          calloutTextZh: '大跳坡腾空！落地稳住方向接左 5',
-          calloutSpeechZh: '注意大跳坡腾空，落地接左五',
-        },
-      },
-      {
-        startM: 600,
-        endM: 860,
-        curvature: -0.011,
-        slope: 0.02,
-        camberRad: 0.06,
-        note: {
-          type: 'left_5',
-          severity: 5,
-          direction: 'left',
-          modifier: '内倾借力',
-          calloutTextZh: '左 5 高速长弯 · 借正倾角全油',
-          calloutSpeechZh: '左五高速长弯全油',
-        },
-      },
-      {
-        startM: 960,
-        endM: 1130,
-        curvature: 0.024,
-        slope: -0.02,
-        widthM: 6.4,
-        note: {
-          type: 'right_3',
-          severity: 3,
-          direction: 'right',
-          modifier: '勿切大石',
-          calloutTextZh: '右 3 中速收紧 · 勿切内侧卧石',
-          calloutSpeechZh: '右三收紧，勿切内侧大石',
-        },
-      },
-      {
-        startM: 1240,
-        endM: 1410,
-        curvature: -0.004,
-        slope: 0.072,
-        scenery: 'crest',
-        note: {
-          type: 'crest',
-          severity: 0,
-          direction: 'center',
-          modifier: '双连跳坡',
-          calloutTextZh: '全油上坡顶 · 连续二次飞跳',
-          calloutSpeechZh: '全油上坡顶，连续飞跳',
-        },
-      },
-      {
-        startM: 1420,
-        endM: 1580,
-        curvature: 0.005,
-        slope: -0.088,
-        scenery: 'crest',
-        note: {
-          type: 'jump',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '二次腾空长跳 · 落地重刹接左 2',
-          calloutSpeechZh: '二次长跳，落地重刹接左二',
-        },
-      },
-      {
-        startM: 1680,
-        endM: 1850,
-        curvature: -0.032,
-        slope: 0.0,
-        widthM: 6.2,
-        scenery: 'village',
-        note: {
-          type: 'square_left',
-          severity: 2,
-          direction: 'left',
-          modifier: '谷仓路口',
-          calloutTextZh: '左直角路口 · 绕木谷仓出弯全油',
-          calloutSpeechZh: '左直角路口，出弯全油',
-        },
-      },
-      {
-        startM: 1980,
-        endM: 2150,
-        curvature: 0.0,
-        slope: -0.015,
-        widthM: 4.9,
-        scenery: 'bridge',
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'narrow_bridge',
-          severity: 0,
-          direction: 'center',
-          modifier: '窄木桥',
-          calloutTextZh: '高速通过湖湾窄木桥 · 车身摆直',
-          calloutSpeechZh: '高速通过窄木桥，车身摆直',
-        },
-      },
-      {
-        startM: 2260,
-        endM: 2560,
-        curvature: 0.014,
-        slope: 0.03,
-        scenery: 'lake',
-        note: {
-          type: 'right_4',
-          severity: 4,
-          direction: 'right',
-          calloutTextZh: '右 4 沿湖快弯 · 接左 4 连携摆尾',
-          calloutSpeechZh: '右四沿湖快弯，接左四',
-        },
-      },
-      {
-        startM: 2620,
-        endM: 2900,
-        curvature: -0.015,
-        slope: -0.025,
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          calloutTextZh: '左 4 顺畅衔接 · 准备坡顶飞跳',
-          calloutSpeechZh: '左四顺畅衔接，准备飞跳',
-        },
-      },
-      {
-        startM: 3020,
-        endM: 3200,
-        curvature: 0.004,
-        slope: -0.078,
-        scenery: 'crest',
-        note: {
-          type: 'jump',
-          severity: 0,
-          direction: 'center',
-          modifier: '飞跳进林',
-          calloutTextZh: '高速坡顶腾空 · 落地接右 2 回头弯',
-          calloutSpeechZh: '高速坡顶腾空，落地接右二',
-        },
-      },
-      {
-        startM: 3320,
-        endM: 3500,
-        curvature: 0.036,
-        slope: 0.015,
-        widthM: 6.5,
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          modifier: '手刹抛甩',
-          calloutTextZh: '右发卡弯 · 拉手刹横滑出弯冲刺',
-          calloutSpeechZh: '右发卡弯，拉手刹出弯冲刺',
-        },
-      },
-      {
-        startM: 3620,
-        endM: 3880,
-        curvature: -0.008,
-        slope: -0.01,
-        note: {
-          type: 'left_6',
-          severity: 6,
-          direction: 'left',
-          calloutTextZh: '左 6 六挡极速冲刺 · 直奔终点拱门',
-          calloutSpeechZh: '左六极速冲刺终点',
-        },
-      },
-      {
-        startM: 3940,
-        endM: 4100,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '全油冲过千湖赛段终点线',
-          calloutSpeechZh: '冲过终点',
-        },
-      },
-    ],
-  },
-  // ============================================================================
-  // STAGE 6: CHINA — Balang Mountain Cloud Switchbacks (3.95 km)
-  // ============================================================================
-  {
-    id: 'sichuan_cloud_pass',
-    code: 'SS06',
-    nameZh: '巴蜀云海天路 · 中国',
-    nameEn: 'Balang Cloud Pass Switchbacks',
-    country: '中国 · 川西巴朗山 (China)',
-    lengthM: 3950,
-    primarySurface: 'tarmac',
-    surfaceMixLabel: '62% 高山柏油盘山路 / 28% 碎石塌方混合段 / 10% 云雾湿滑古桥',
-    defaultWeather: 'fog',
-    defaultTimeOfDay: 'dusk',
-    recommendedTire: 'tarmac_wet',
-    defaultWidthM: 6.3,
-    elevationGainM: 265,
-    descriptionZh:
-      '海拔四千米的川西云海盘山天路：暮色云雾缭绕下连续五道天险回头弯攀升，柏油路面穿插高山碎石落石区与悬崖石拱桥，极其考验循迹刹车与重心转移。',
-    targetParTimeSec: 174,
-    seed: 60888,
-    features: [
-      {
-        startM: 130,
-        endM: 340,
-        curvature: -0.018,
-        slope: 0.068,
-        scenery: 'cliff',
-        note: {
-          type: 'left_4',
-          severity: 4,
-          direction: 'left',
-          modifier: '盘山陡升',
-          calloutTextZh: '左 4 沿崖陡坡攀升 · 外侧深谷护栏',
-          calloutSpeechZh: '左四沿崖攀升，注意外侧护栏',
-        },
-      },
-      {
-        startM: 440,
-        endM: 610,
-        curvature: 0.041,
-        slope: 0.075,
-        widthM: 6.8,
-        scenery: 'cliff',
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          modifier: '天路一弯',
-          calloutTextZh: '右 1 发卡上坡回头弯 · 保持涡轮正压',
-          calloutSpeechZh: '右一发卡上坡回头弯',
-        },
-      },
-      {
-        startM: 730,
-        endM: 910,
-        curvature: -0.040,
-        slope: 0.072,
-        widthM: 6.8,
-        scenery: 'cliff',
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          modifier: '天路二弯 · 碎石',
-          calloutTextZh: '左 1 发卡弯 · 路面带落石浮砂',
-          calloutSpeechZh: '左一发卡弯，注意落石浮砂',
-        },
-      },
-      {
-        startM: 1030,
-        endM: 1310,
-        curvature: 0.015,
-        slope: 0.045,
-        surface: 'gravel',
-        scenery: 'cliff',
-        note: {
-          type: 'surface_change',
-          severity: 4,
-          direction: 'right',
-          modifier: '转砂石施工段',
-          calloutTextZh: '进入高山砂石混合路面 · 右 4 长弯',
-          calloutSpeechZh: '进入砂石混合路面，右四长弯',
-        },
-      },
-      {
-        startM: 1420,
-        endM: 1600,
-        curvature: 0.0,
-        slope: 0.015,
-        widthM: 4.7,
-        scenery: 'bridge',
-        surface: 'tarmac_dirty',
-        note: {
-          type: 'narrow_bridge',
-          severity: 0,
-          direction: 'center',
-          modifier: '云谷石拱桥',
-          calloutTextZh: '窄石拱桥横跨云谷 · 对准桥心切勿擦墙',
-          calloutSpeechZh: '通过云谷窄石桥，切勿擦墙',
-        },
-      },
-      {
-        startM: 1710,
-        endM: 1930,
-        curvature: -0.025,
-        slope: 0.055,
-        scenery: 'village',
-        widthM: 5.5,
-        note: {
-          type: 'left_3',
-          severity: 3,
-          direction: 'left',
-          modifier: '藏寨石墙',
-          calloutTextZh: '左 3 穿行高山石寨 · 路窄贴内线',
-          calloutSpeechZh: '左三穿行石寨，路窄贴内',
-        },
-      },
-      {
-        startM: 2050,
-        endM: 2230,
-        curvature: 0.042,
-        slope: 0.065,
-        scenery: 'cliff',
-        widthM: 6.6,
-        note: {
-          type: 'hairpin_right',
-          severity: 1,
-          direction: 'right',
-          modifier: '天路三弯',
-          calloutTextZh: '右 1 悬崖发卡弯 · 循迹重刹入弯',
-          calloutSpeechZh: '右一悬崖发卡弯，重刹入弯',
-        },
-      },
-      {
-        startM: 2360,
-        endM: 2620,
-        curvature: -0.013,
-        slope: 0.04,
-        scenery: 'crest',
-        note: {
-          type: 'left_5',
-          severity: 5,
-          direction: 'left',
-          modifier: '云海垭口盲弯',
-          calloutTextZh: '左 5 冲上云海垭口盲坡 · 接下坡急弯',
-          calloutSpeechZh: '左五冲上垭口盲坡，准备下坡',
-        },
-      },
-      {
-        startM: 2740,
-        endM: 2940,
-        curvature: 0.028,
-        slope: -0.062,
-        surface: 'tarmac_dirty',
-        scenery: 'cliff',
-        note: {
-          type: 'right_2',
-          severity: 2,
-          direction: 'right',
-          modifier: '陡下坡防抱死',
-          calloutTextZh: '右 2 陡下坡湿滑急弯 · 严禁前轮抱死',
-          calloutSpeechZh: '右二陡下坡急弯，小心抱死',
-        },
-      },
-      {
-        startM: 3060,
-        endM: 3240,
-        curvature: -0.039,
-        slope: -0.045,
-        scenery: 'cliff',
-        widthM: 6.6,
-        note: {
-          type: 'hairpin_left',
-          severity: 1,
-          direction: 'left',
-          modifier: '天路终弯',
-          calloutTextZh: '左 1 最后下坡发卡弯 · 出弯全油下山',
-          calloutSpeechZh: '左一最后发卡弯，出弯全油',
-        },
-      },
-      {
-        startM: 3360,
-        endM: 3680,
-        curvature: 0.010,
-        slope: -0.03,
-        note: {
-          type: 'right_5',
-          severity: 5,
-          direction: 'right',
-          calloutTextZh: '右 5 高速下山长弯 · 全油冲刺',
-          calloutSpeechZh: '右五高速下山全油',
-        },
-      },
-      {
-        startM: 3780,
-        endM: 3950,
-        curvature: 0.0,
-        slope: 0.0,
-        note: {
-          type: 'finish',
-          severity: 0,
-          direction: 'center',
-          calloutTextZh: '全油冲过巴朗山垭口终点线',
-          calloutSpeechZh: '冲过终点',
-        },
-      },
-    ],
-  },
-];
+function resolveSafeFeatureCurvature(
+  xs: number[],
+  zs: number[],
+  startX: number,
+  startZ: number,
+  startYaw: number,
+  proposedCurvature: number,
+  lenM: number,
+  stepM: number,
+): number {
+  let curv = Math.max(-0.036, Math.min(0.036, proposedCurvature));
+  const maxArcRad = 2.05; // <= 117 degrees per single turn
+  if (Math.abs(curv * lenM) > maxArcRad) {
+    curv = Math.sign(curv) * (maxArcRad / Math.max(lenM, 1));
+  }
 
-function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
-  const stepM = 5; // 5 meters per spline segment for high-fidelity 3D road & collision
-  const count = Math.floor(bp.lengthM / stepM) + 1;
-  const segments: StageSegment[] = [];
-  const props: RoadsideProp[] = [];
-  const pacenotes: PacenoteItem[] = [];
-  const rand = seededRandom(bp.seed);
+  // Keep stage strictly progressing down the valley (-Z, |yaw| <= 1.32 rad) so hairpins alternate cleanly without pinching
+  const maxValleyYaw = 1.32;
+  const projectedEndYaw = startYaw + curv * lenM;
+  if (Math.abs(projectedEndYaw) > maxValleyYaw) {
+    const flipped = -curv;
+    if (Math.abs(startYaw + flipped * lenM) <= maxValleyYaw) {
+      curv = flipped;
+    } else {
+      const targetYaw = -Math.sign(startYaw || 1) * Math.min(0.85, Math.abs(curv * lenM) * 0.65);
+      curv = Math.max(-0.036, Math.min(0.036, (targetYaw - startYaw) / Math.max(lenM, 25)));
+    }
+  }
 
-  let x = 0;
-  let y = 12;
-  let z = 0;
-  let yaw = 0;
-
-  for (let i = 0; i < count; i++) {
-    const d = i * stepM;
-    // Find matching feature or blend smoothly
-    let curvature = 0;
-    let slope = 0;
-    let widthM = bp.defaultWidthM;
-    let surface: SurfaceType = bp.primarySurface;
-    let camberRad = 0;
-    let scenery: StageSegment['sceneryType'] = 'forest';
-
-    // Gentle organic baseline weave so straights feel like real forest/mountain roads
-    curvature += Math.sin(d * 0.009) * 0.0014 + Math.cos(d * 0.021) * 0.0008;
-    slope += Math.sin(d * 0.007) * 0.012;
-
-    for (const feat of bp.features) {
-      const margin = 25;
-      if (d >= feat.startM - margin && d <= feat.endM + margin) {
-        // Smooth window envelope
-        let w = 1.0;
-        if (d < feat.startM) {
-          w = (d - (feat.startM - margin)) / margin;
-        } else if (d > feat.endM) {
-          w = ((feat.endM + margin) - d) / margin;
-        }
-        w = Math.max(0, Math.min(1, w * w * (3 - 2 * w)));
-
-        curvature += feat.curvature * w;
-        slope = slope * (1 - w) + feat.slope * w;
-        if (feat.widthM !== undefined) {
-          widthM = widthM * (1 - w) + feat.widthM * w;
-        }
-        if (feat.camberRad !== undefined) {
-          camberRad += feat.camberRad * w;
-        }
-        if (w > 0.45) {
-          if (feat.surface) surface = feat.surface;
-          if (feat.scenery) scenery = feat.scenery;
-        }
+  const candidates = [curv, -curv, curv * 0.55, -curv * 0.55, -startYaw * 0.015];
+  for (const cand of candidates) {
+    let tx = startX;
+    let tz = startZ;
+    let tyaw = startYaw;
+    const steps = Math.max(2, Math.round((lenM + 65) / stepM));
+    let safe = true;
+    for (let s = 0; s < steps; s++) {
+      const k = s * stepM <= lenM ? cand : 0;
+      const nextYaw = tyaw + k * stepM;
+      if (Math.abs(nextYaw) > 1.38) {
+        safe = false;
+        break;
+      }
+      const midYaw = (tyaw + nextYaw) * 0.5;
+      tx += Math.sin(midYaw) * stepM;
+      tz += -Math.cos(midYaw) * stepM;
+      tyaw = nextYaw;
+      if (tooCloseToEarlierRoad(xs, zs, tx, tz, 24, 52)) {
+        safe = false;
+        break;
       }
     }
+    if (safe) return cand;
+  }
 
-    // Natural banking on corners if not explicitly set
-    if (camberRad === 0) {
-      camberRad = -curvature * 1.4;
+  return Math.max(-0.018, Math.min(0.018, -startYaw * 0.02));
+}
+
+function buildProceduralStage(
+  meta: StageMetaSeed,
+  features: FeatureBlueprint[],
+): StageDefinition {
+  const stepM = 5;
+  const rawCurv: number[] = [];
+  const rawSlope: number[] = [];
+  const rawWidth: number[] = [];
+  const rawCamber: number[] = [];
+  const rawRough: number[] = [];
+  const rawSurface: SurfaceType[] = [];
+  const rawScenery: StageSegment['sceneryType'][] = [];
+  const rawFlags: FeatureBlueprint[] = [];
+
+  interface ResolvedFeature {
+    startIdx: number;
+    endIdx: number;
+    startDistM: number;
+    lenM: number;
+    curvature: number;
+    blueprint: FeatureBlueprint;
+  }
+  const resolvedFeatures: ResolvedFeature[] = [];
+
+  const previewXs: number[] = [0];
+  const previewZs: number[] = [0];
+  let pX = 0;
+  let pZ = 0;
+  let pYaw = 0;
+  let accumDistM = 0;
+
+  // Ensure every stage spans >= 3.8 km (760+ segments) so lengthM and finish arch always have full 3D road + 100m run-out
+  const expandedFeatures: FeatureBlueprint[] = [...features];
+  let featureSumM = expandedFeatures.reduce((acc, f) => acc + f.len, 0);
+  let srcIdx = 0;
+  while (featureSumM < 3680 && features.length > 0) {
+    const template = features[srcIdx % features.length];
+    expandedFeatures.push({
+      ...template,
+      curvature: -template.curvature,
+      slope: Math.max(-0.08, Math.min(0.08, -template.slope * 0.75)),
+    });
+    featureSumM += template.len;
+    srcIdx++;
+  }
+
+  // 90m straight start grid + features + 105m straight flying finish run-out
+  const fullFeatures: FeatureBlueprint[] = [
+    {
+      len: 90,
+      curvature: 0,
+      slope: 0.004,
+      surface: meta.primarySurface,
+      widthM: 9.0,
+      roughness: 0.06,
+      scenery: 'forest',
+    },
+    ...expandedFeatures,
+    {
+      len: 105,
+      curvature: 0,
+      slope: 0,
+      surface: meta.primarySurface,
+      widthM: 9.2,
+      roughness: 0.06,
+      scenery: 'forest',
+    },
+  ];
+
+  for (let fIdx = 0; fIdx < fullFeatures.length; fIdx++) {
+    const bp = fullFeatures[fIdx];
+    const isTerminal = fIdx === 0 || fIdx === fullFeatures.length - 1;
+    const safeCurv = isTerminal
+      ? 0
+      : resolveSafeFeatureCurvature(
+          previewXs,
+          previewZs,
+          pX,
+          pZ,
+          pYaw,
+          bp.curvature,
+          bp.len,
+          stepM,
+        );
+
+    const count = Math.max(2, Math.round(bp.len / stepM));
+    const startIdx = rawCurv.length;
+    const actualLenM = count * stepM;
+
+    for (let i = 0; i < count; i++) {
+      const midYaw = pYaw + safeCurv * stepM * 0.5;
+      pX += Math.sin(midYaw) * stepM;
+      pZ += -Math.cos(midYaw) * stepM;
+      pYaw += safeCurv * stepM;
+      previewXs.push(pX);
+      previewZs.push(pZ);
+
+      const defaultCamber =
+        Math.abs(safeCurv) > 0.005
+          ? Math.sign(safeCurv) * Math.min(0.08, Math.abs(safeCurv) * 2.0)
+          : 0;
+
+      rawCurv.push(safeCurv);
+      rawSlope.push(bp.slope);
+      rawWidth.push(bp.widthM ?? (bp.narrowBridge ? 6.2 : 8.6));
+      rawCamber.push(bp.camberRad !== undefined ? bp.camberRad : defaultCamber);
+      rawRough.push(bp.roughness ?? 0.14);
+      rawSurface.push(bp.surface ?? meta.primarySurface);
+      rawScenery.push(
+        bp.narrowBridge
+          ? 'bridge'
+          : bp.jump || bp.crest
+            ? 'crest'
+            : bp.scenery ?? 'forest',
+      );
+      rawFlags.push(bp);
     }
 
-    const tangentX = Math.sin(yaw);
-    const tangentZ = Math.cos(yaw);
-    const tangentY = slope;
+    resolvedFeatures.push({
+      startIdx,
+      endIdx: rawCurv.length - 1,
+      startDistM: accumDistM,
+      lenM: actualLenM,
+      curvature: safeCurv,
+      blueprint: bp,
+    });
+    accumDistM += actualLenM;
+  }
+
+  const n = rawCurv.length;
+  const smooth = (arr: number[], radius: number): number[] => {
+    const out = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      let sum = 0;
+      let wSum = 0;
+      for (let k = -radius; k <= radius; k++) {
+        const idx = Math.max(0, Math.min(n - 1, i + k));
+        const w = radius + 1 - Math.abs(k);
+        sum += arr[idx] * w;
+        wSum += w;
+      }
+      out[i] = sum / wSum;
+    }
+    return out;
+  };
+
+  const sCurv = smooth(rawCurv, 3);
+  const sSlope = smooth(rawSlope, 4);
+  const sWidth = smooth(rawWidth, 3);
+  const sCamber = smooth(rawCamber, 3);
+
+  const segments: StageSegment[] = [];
+  let x = 0;
+  let y = 24;
+  let z = 0;
+  let yaw = 0;
+  let minY = y;
+  let maxY = y;
+
+  for (let i = 0; i < n; i++) {
+    const k = i < 14 ? 0 : sCurv[i];
+    const bp = rawFlags[i];
+    let crestLift = 0;
+    if (bp.jump || bp.crest) {
+      const prevCrest = i > 0 && (rawFlags[i - 1].jump || rawFlags[i - 1].crest);
+      const nextCrest = i < n - 1 && (rawFlags[i + 1].jump || rawFlags[i + 1].crest);
+      if (prevCrest && nextCrest) {
+        crestLift = bp.jump ? 0.032 : 0.016;
+      }
+    }
+    const grade = Math.max(-0.12, Math.min(0.12, sSlope[i] + crestLift));
+
+    // Right-handed forward & right vectors in 3D space
+    const horiz = 1 / Math.hypot(1, grade);
+    const tangentX = Math.sin(yaw) * horiz;
+    const tangentY = grade * horiz;
+    const tangentZ = -Math.cos(yaw) * horiz;
     const normalX = Math.cos(yaw);
-    const normalZ = -Math.sin(yaw);
+    const normalZ = Math.sin(yaw);
 
     segments.push({
       index: i,
-      distanceM: d,
+      distanceM: i * stepM,
       x,
       y,
       z,
@@ -1483,418 +335,741 @@ function buildStageFromBlueprint(bp: StageBlueprint): StageDefinition {
       tangentZ,
       normalX,
       normalZ,
-      camberRad,
-      widthM,
-      surface,
-      curvature,
-      slope,
-      roughness: getSurfaceRoughness(surface),
-      sceneryType: scenery,
+      camberRad: sCamber[i],
+      widthM: sWidth[i],
+      surface: rawSurface[i],
+      curvature: k,
+      slope: grade,
+      roughness: rawRough[i],
+      sceneryType: rawScenery[i],
     });
 
-    // Advance along spline
-    yaw += curvature * stepM;
-    x += Math.sin(yaw) * stepM;
-    z += Math.cos(yaw) * stepM;
-    y += slope * stepM;
+    const midYaw = yaw + k * stepM * 0.5;
+    x += Math.sin(midYaw) * stepM;
+    z += -Math.cos(midYaw) * stepM;
+    y += grade * stepM;
+    yaw += k * stepM;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
   }
 
-  // Generate Pacenotes from features
-  for (let idx = 0; idx < bp.features.length; idx++) {
-    const feat = bp.features[idx];
-    if (!feat.note) continue;
-    const nextFeat = bp.features[idx + 1];
-    const distToNext = nextFeat ? Math.max(20, Math.round((nextFeat.startM - feat.endM) / 10) * 10) : undefined;
-    pacenotes.push({
-      id: `${bp.id}_note_${idx}`,
-      triggerDistanceM: Math.max(10, feat.startM - 135),
-      cornerDistanceM: feat.startM,
-      type: feat.note.type,
-      severity: feat.note.severity,
-      direction: feat.note.direction,
-      modifier: feat.note.modifier,
-      calloutTextZh: feat.note.calloutTextZh,
-      calloutSpeechZh: feat.note.calloutSpeechZh,
-      distanceLinkM: distToNext,
-    });
-  }
+  const lengthM = (n - 20) * stepM;
+  const finishSegIdx = Math.min(segments.length - 4, Math.floor(lengthM / stepM));
+  const sectorSplitsM: [number, number, number] = [
+    Math.round((lengthM / 3) / 10) * 10,
+    Math.round(((lengthM * 2) / 3) / 10) * 10,
+    lengthM,
+  ];
 
-  // Generate Roadside Obstacles & Landmarks along segments
-  const s1Split = Math.round(bp.lengthM / 3);
-  const s2Split = Math.round((bp.lengthM * 2) / 3);
+  // Build Pacenotes matching exact Right/Left visual geometry!
+  const pacenotes: PacenoteItem[] = [];
+  let noteSeq = 1;
+  for (let fIdx = 1; fIdx < resolvedFeatures.length - 1; fIdx++) {
+    const rf = resolvedFeatures[fIdx];
+    if (rf.startDistM >= lengthM - 45) break;
 
-  // Start Marshal Hut at d = 15m & Spanning WRC Start Gantry Arch at d = 25m (frames spawn vista!)
-  if (segments.length > 8) {
-    const sHut = segments[3];
-    props.push({
-      x: sHut.x - sHut.normalX * (sHut.widthM * 0.5 + 5.2),
-      y: sHut.y,
-      z: sHut.z - sHut.normalZ * (sHut.widthM * 0.5 + 5.2),
-      yaw: Math.atan2(sHut.tangentX, sHut.tangentZ),
-      scale: 1.0,
-      type: 'marshal_hut',
-      collisionRadius: 2.0,
-      hardness: 0.9,
-      side: 'left',
-    });
+    const absK = Math.abs(rf.curvature);
+    const arcRad = absK * rf.lenM;
+    const sev = classifyCornerSeverity(absK, arcRad);
+    const bp = rf.blueprint;
 
-    const sArch = segments[5];
-    props.push({
-      x: sArch.x,
-      y: sArch.y,
-      z: sArch.z,
-      yaw: Math.atan2(sArch.tangentX, sArch.tangentZ),
-      scale: 1.0,
-      type: 'start_arch',
-      collisionRadius: 0,
-      hardness: 0,
-      side: 'left',
-    });
-  }
-
-  // Sector 1 & Sector 2 Intermediate Split Gantry Arches
-  for (const splitDist of [s1Split, s2Split]) {
-    const splitIdx = Math.min(segments.length - 8, Math.max(8, Math.round(splitDist / stepM)));
-    const spSeg = segments[splitIdx];
-    if (spSeg) {
-      props.push({
-        x: spSeg.x,
-        y: spSeg.y,
-        z: spSeg.z,
-        yaw: Math.atan2(spSeg.tangentX, spSeg.tangentZ),
-        scale: 1.0,
-        type: 'split_arch',
-        collisionRadius: 0,
-        hardness: 0,
-        side: 'left',
-      });
+    if (sev === 0 && !bp.jump && !bp.crest && !bp.narrowBridge && !bp.waterSplash) {
+      continue;
     }
-  }
 
-  // Dedicated Brake Marker Boards (70m & 35m) & Spectator Tents before tight corners / jumps
-  for (const feat of bp.features) {
-    if (!feat.note) continue;
-    if (feat.note.severity === 1 || feat.note.severity === 2) {
-      const outerSide: 'left' | 'right' = feat.curvature >= 0 ? 'left' : 'right';
-      const outerSign = outerSide === 'right' ? 1 : -1;
-      for (const leadM of [70, 35]) {
-        const bIdx = Math.max(6, Math.round((feat.startM - leadM) / stepM));
-        const bSeg = segments[bIdx];
-        if (bSeg) {
-          const offset = bSeg.widthM * 0.5 + 1.25;
-          props.push({
-            x: bSeg.x + bSeg.normalX * outerSign * offset,
-            y: bSeg.y,
-            z: bSeg.z + bSeg.normalZ * outerSign * offset,
-            yaw: Math.atan2(bSeg.tangentX, bSeg.tangentZ),
-            scale: leadM === 70 ? 1.1 : 0.95,
-            type: 'brake_board',
-            collisionRadius: 0.4,
-            hardness: 0.3,
-            side: outerSide,
-          });
-        }
+    let direction: 'left' | 'right' | 'center' = 'center';
+    let type: PacenoteItem['type'] = 'straight';
+    let labelCore = '';
+    let speechCore = '';
+
+    if (sev >= 1) {
+      const isRight = rf.curvature > 0;
+      direction = isRight ? 'right' : 'left';
+      const dirZh = isRight ? '右' : '左';
+      if (sev === 1 && arcRad >= 1.75) {
+        type = isRight ? 'hairpin_right' : 'hairpin_left';
+        labelCore = `${dirZh}发卡弯`;
+        speechCore = `${dirZh}发卡弯`;
+      } else if (sev === 1 || (sev === 2 && rf.lenM <= 48 && arcRad >= 1.3)) {
+        type = isRight ? 'square_right' : 'square_left';
+        labelCore = `${dirZh}直角弯`;
+        speechCore = `${dirZh}直角`;
+      } else {
+        type = `${direction}_${sev}` as PacenoteItem['type'];
+        labelCore = `${dirZh} ${sev}`;
+        speechCore = `${dirZh}${sev}`;
       }
+    } else if (bp.jump) {
+      type = 'jump';
+      labelCore = '大飞跳';
+      speechCore = '坡顶大飞跳';
+    } else if (bp.narrowBridge) {
+      type = 'narrow_bridge';
+      labelCore = '窄桥通过';
+      speechCore = '注意窄桥';
+    } else if (bp.waterSplash) {
+      type = 'water_splash';
+      labelCore = '涉水浅滩';
+      speechCore = '注意涉水';
+    } else if (bp.crest) {
+      type = 'crest';
+      labelCore = '坡顶全油';
+      speechCore = '坡顶全油';
     }
 
-    if (feat.note.severity === 1 || feat.note.type === 'jump') {
-      const tentIdx = Math.min(
-        segments.length - 10,
-        Math.max(8, Math.round((feat.startM + 20) / stepM))
+    const mods: string[] = [];
+    if (bp.caution) mods.push('重刹注意');
+    if (bp.dontCut) mods.push('切勿切弯');
+    if (bp.narrowBridge && sev >= 1) mods.push('变窄过桥');
+    if ((bp.jump || bp.crest) && sev >= 1) mods.push('过坡顶');
+    if (rf.lenM >= 100 && sev >= 2) mods.push('长弯');
+
+    let distanceLinkM: number | undefined;
+    for (let look = fIdx + 1; look < resolvedFeatures.length - 1; look++) {
+      const nxt = resolvedFeatures[look];
+      const nxtSev = classifyCornerSeverity(
+        Math.abs(nxt.curvature),
+        Math.abs(nxt.curvature * nxt.lenM),
       );
-      const tSeg = segments[tentIdx];
-      if (tSeg && tSeg.sceneryType !== 'bridge') {
-        const tentSide: 'left' | 'right' = feat.curvature >= 0 ? 'right' : 'left';
-        const tentSign = tentSide === 'right' ? 1 : -1;
-        const offset = tSeg.widthM * 0.5 + 5.6;
-        props.push({
-          x: tSeg.x + tSeg.normalX * tentSign * offset,
-          y: tSeg.y,
-          z: tSeg.z + tSeg.normalZ * tentSign * offset,
-          yaw: Math.atan2(tSeg.tangentX, tSeg.tangentZ),
-          scale: 1.0,
-          type: 'spectator_tent',
-          collisionRadius: 0,
-          hardness: 0,
-          side: tentSide,
-        });
-      }
-    }
-  }
-
-  for (let i = 6; i < segments.length - 4; i += 2) {
-    const seg = segments[i];
-    const halfW = seg.widthM * 0.5;
-    const segYaw = Math.atan2(seg.tangentX, seg.tangentZ);
-
-    // Bridge parapets on both sides
-    if (seg.sceneryType === 'bridge') {
-      for (const side of ['left', 'right'] as const) {
-        const sign = side === 'right' ? 1 : -1;
-        const offset = halfW + 0.45;
-        props.push({
-          x: seg.x + seg.normalX * sign * offset,
-          y: seg.y,
-          z: seg.z + seg.normalZ * sign * offset,
-          yaw: segYaw,
-          scale: 1.0,
-          type: 'bridge_parapet',
-          collisionRadius: 0.85,
-          hardness: 1.0,
-          side,
-        });
-      }
-      continue;
-    }
-
-    // Village stone walls close to road edge
-    if (seg.sceneryType === 'village' && i % 4 === 0) {
-      for (const side of ['left', 'right'] as const) {
-        const sign = side === 'right' ? 1 : -1;
-        const offset = halfW + 0.9;
-        props.push({
-          x: seg.x + seg.normalX * sign * offset,
-          y: seg.y,
-          z: seg.z + seg.normalZ * sign * offset,
-          yaw: segYaw,
-          scale: 1.15,
-          type: 'stone_wall',
-          collisionRadius: 1.25,
-          hardness: 1.0,
-          side,
-        });
-      }
-      continue;
-    }
-
-    // Cliffside guardrails & rock outcrops
-    if (seg.sceneryType === 'cliff' && i % 4 === 0) {
-      const outerSide: 'left' | 'right' = seg.curvature >= 0 ? 'left' : 'right';
-      const innerSide: 'left' | 'right' = outerSide === 'left' ? 'right' : 'left';
-      const outerSign = outerSide === 'right' ? 1 : -1;
-      const innerSign = -outerSign;
-
-      // Guardrail on cliff side
-      props.push({
-        x: seg.x + seg.normalX * outerSign * (halfW + 0.75),
-        y: seg.y,
-        z: seg.z + seg.normalZ * outerSign * (halfW + 0.75),
-        yaw: segYaw,
-        scale: 1.0,
-        type: 'guardrail',
-        collisionRadius: 0.85,
-        hardness: 0.85,
-        side: outerSide,
-      });
-
-      // Jagged rock on mountain inside wall
-      if (rand() < 0.7) {
-        const rockOffset = halfW + 1.6 + rand() * 1.8;
-        props.push({
-          x: seg.x + seg.normalX * innerSign * rockOffset,
-          y: seg.y,
-          z: seg.z + seg.normalZ * innerSign * rockOffset,
-          yaw: segYaw + rand() * 3.14,
-          scale: 0.9 + rand() * 0.7,
-          type: 'rock_outcrop',
-          collisionRadius: 1.3,
-          hardness: 1.0,
-          side: innerSide,
-        });
+      if (nxtSev >= 1 || nxt.blueprint.jump || nxt.blueprint.narrowBridge) {
+        const gap = Math.round((nxt.startDistM - (rf.startDistM + rf.lenM)) / 10) * 10;
+        if (gap >= 20 && gap <= 240) distanceLinkM = gap;
+        break;
       }
     }
 
-    // Chevron reflective warning signs on tight corners (especially crucial at night!)
-    if (Math.abs(seg.curvature) > 0.016 && i % 6 === 0) {
-      const outerSide: 'left' | 'right' = seg.curvature > 0 ? 'left' : 'right';
-      const sign = outerSide === 'right' ? 1 : -1;
-      const offset = halfW + 1.35;
-      props.push({
-        x: seg.x + seg.normalX * sign * offset,
-        y: seg.y,
-        z: seg.z + seg.normalZ * sign * offset,
-        yaw: segYaw + (outerSide === 'left' ? 0.35 : -0.35),
-        scale: 1.0,
-        type: 'chevron_sign',
-        collisionRadius: 0.55,
-        hardness: 0.4,
-        side: outerSide,
-      });
-    }
-
-    // Forest trees & boulders along the verges
-    for (const side of ['left', 'right'] as const) {
-      if (rand() < 0.54) {
-        const sign = side === 'right' ? 1 : -1;
-        const offset = halfW + 2.2 + rand() * 9.5;
-        const treeType =
-          bp.primarySurface === 'snow' || bp.id === 'finland_jumps'
-            ? rand() < 0.55
-              ? 'birch_tree'
-              : 'pine_tree'
-            : rand() < 0.16
-              ? 'rock_outcrop'
-              : 'pine_tree';
-        props.push({
-          x: seg.x + seg.normalX * sign * offset,
-          y: seg.y - (offset - halfW) * 0.04,
-          z: seg.z + seg.normalZ * sign * offset,
-          yaw: rand() * Math.PI * 2,
-          scale: 0.85 + rand() * 0.68,
-          type: treeType,
-          collisionRadius: treeType === 'rock_outcrop' ? 1.2 : 0.75,
-          hardness: 0.95,
-          side,
-        });
-      }
-    }
-  }
-
-  // Finish arch at the end of the stage
-  const finishSeg = segments[segments.length - 6];
-  if (finishSeg) {
-    props.push({
-      x: finishSeg.x,
-      y: finishSeg.y,
-      z: finishSeg.z,
-      yaw: Math.atan2(finishSeg.tangentX, finishSeg.tangentZ),
-      scale: 1.0,
-      type: 'finish_arch',
-      collisionRadius: 0, // Arch spans across the road
-      hardness: 0,
-      side: 'center' as 'left',
+    const modifierStr = mods.length > 0 ? mods.join(' · ') : undefined;
+    pacenotes.push({
+      id: `${meta.id}_note_${noteSeq++}`,
+      triggerDistanceM: Math.max(10, rf.startDistM - 115),
+      cornerDistanceM: rf.startDistM,
+      type,
+      severity: sev,
+      direction,
+      modifier: modifierStr,
+      calloutTextZh: modifierStr ? `${labelCore} · ${modifierStr}` : labelCore,
+      calloutSpeechZh: modifierStr ? `${speechCore}，${mods[0]}` : speechCore,
+      distanceLinkM,
     });
   }
 
-  const s1 = Math.round(bp.lengthM / 3);
-  const s2 = Math.round((bp.lengthM * 2) / 3);
+  pacenotes.push({
+    id: `${meta.id}_finish`,
+    triggerDistanceM: lengthM - 150,
+    cornerDistanceM: lengthM - 15,
+    type: 'finish',
+    severity: 0,
+    direction: 'center',
+    calloutTextZh: '冲刺终点龙门架！全油冲线',
+    calloutSpeechZh: '前方终点冲线',
+  });
+
+  // Build Non-Overlapping Roadside Props
+  const props: RoadsideProp[] = [];
+
+  const isClearOfAllRoad = (wx: number, wz: number, marginM: number): boolean => {
+    for (let j = 0; j < segments.length; j += 2) {
+      const s = segments[j];
+      const dx = wx - s.x;
+      const dz = wz - s.z;
+      const minR = s.widthM * 0.5 + marginM;
+      if (dx * dx + dz * dz < minR * minR) return false;
+    }
+    return true;
+  };
+
+  const placeProp = (
+    segIdx: number,
+    sideSign: 1 | -1, // +1 = right, -1 = left
+    edgeDistM: number,
+    type: RoadsideProp['type'],
+    scale = 1,
+    yawOverride?: number,
+  ) => {
+    const seg = segments[Math.max(0, Math.min(segments.length - 1, segIdx))];
+    const offset = sideSign * (seg.widthM * 0.5 + edgeDistM);
+    const wx = seg.x + seg.normalX * offset;
+    const wz = seg.z + seg.normalZ * offset;
+
+    if (
+      type !== 'start_arch' &&
+      type !== 'split_arch' &&
+      type !== 'finish_arch' &&
+      !isClearOfAllRoad(wx, wz, Math.min(2.0, Math.max(0.6, edgeDistM - 0.4)))
+    ) {
+      return;
+    }
+
+    const vergeDrop = edgeDistM > 2.2 ? -0.16 : -0.03;
+    const wy = seg.y - Math.sin(seg.camberRad) * offset + vergeDrop;
+    const segYaw = Math.atan2(seg.tangentX, -seg.tangentZ);
+
+    props.push({
+      x: wx,
+      y: wy,
+      z: wz,
+      yaw: yawOverride !== undefined ? yawOverride : segYaw,
+      scale,
+      type,
+      collisionRadius: 0,
+      hardness: 0.5,
+      side: sideSign > 0 ? 'right' : 'left',
+    });
+  };
+
+  // Start Arch (at 28m, ahead of spawn at 12m)
+  const startSeg = segments[6];
+  props.push({
+    x: startSeg.x,
+    y: startSeg.y,
+    z: startSeg.z,
+    yaw: Math.atan2(startSeg.tangentX, -startSeg.tangentZ),
+    scale: 1,
+    type: 'start_arch',
+    collisionRadius: 0,
+    hardness: 1,
+    side: 'center' as 'left',
+  });
+
+  // 2 Sector Split Arches
+  for (let s = 0; s < 2; s++) {
+    const splitSegIdx = Math.min(segments.length - 6, Math.floor(sectorSplitsM[s] / stepM));
+    const spSeg = segments[splitSegIdx];
+    props.push({
+      x: spSeg.x,
+      y: spSeg.y,
+      z: spSeg.z,
+      yaw: Math.atan2(spSeg.tangentX, -spSeg.tangentZ),
+      scale: 1,
+      type: 'split_arch',
+      collisionRadius: 0,
+      hardness: 1,
+      side: 'left',
+    });
+  }
+
+  // Finish Arch
+  const finSeg = segments[finishSegIdx];
+  props.push({
+    x: finSeg.x,
+    y: finSeg.y,
+    z: finSeg.z,
+    yaw: Math.atan2(finSeg.tangentX, -finSeg.tangentZ),
+    scale: 1,
+    type: 'finish_arch',
+    collisionRadius: 0,
+    hardness: 1,
+    side: 'left',
+  });
+
+  // Brake Boards, Guardrails, Bridge Parapets & Chevron Signs
+  for (const rf of resolvedFeatures) {
+    const absK = Math.abs(rf.curvature);
+    const sev = classifyCornerSeverity(absK, absK * rf.lenM);
+    const bp = rf.blueprint;
+
+    if (bp.narrowBridge) {
+      for (let i = rf.startIdx; i <= rf.endIdx; i += 2) {
+        placeProp(i, 1, 0.85, 'bridge_parapet', 1);
+        placeProp(i, -1, 0.85, 'bridge_parapet', 1);
+      }
+    }
+
+    if (sev === 0 || sev > 4) continue;
+    // Outside of a RIGHT turn (k > 0) is LEFT (-1); outside of a LEFT turn (k < 0) is RIGHT (+1)
+    const outsideSign: 1 | -1 = rf.curvature > 0 ? -1 : 1;
+
+    if (sev <= 3) {
+      const idx100 = Math.max(8, rf.startIdx - 16);
+      const idx50 = Math.max(8, rf.startIdx - 8);
+      placeProp(idx100, outsideSign, 1.8, 'brake_board', 1);
+      placeProp(idx50, outsideSign, 1.8, 'brake_board', 0.92);
+    }
+
+    for (let i = rf.startIdx - 2; i <= rf.endIdx + 2; i += 2) {
+      if (i < 8 || i >= finishSegIdx - 4) continue;
+      placeProp(i, outsideSign, 1.55, bp.scenery === 'cliff' ? 'stone_wall' : 'guardrail', 1);
+      if (sev <= 3 && (i - rf.startIdx) % 4 === 0 && i >= rf.startIdx && i <= rf.endIdx) {
+        placeProp(i, outsideSign, 2.25, 'chevron_sign', 1);
+      }
+    }
+  }
+
+  // Forests, Rocks, Village Huts & Spectator Tents
+  const seed = meta.seedOffset;
+  const preferPine =
+    meta.primarySurface === 'snow' ||
+    meta.id === 'finland_jumps' ||
+    meta.id === 'turini_tarmac';
+
+  for (let i = 7; i < segments.length - 8; i += 2) {
+    const h1 = deterministicHash(seed * 997 + i * 3.17);
+    const h2 = deterministicHash(seed * 997 + i * 7.31);
+    const h3 = deterministicHash(seed * 997 + i * 13.73);
+    const bp = rawFlags[i];
+
+    if (bp.scenery === 'village' && i % 6 === 0) {
+      const side: 1 | -1 = h1 > 0.5 ? 1 : -1;
+      const segYaw = Math.atan2(segments[i].tangentX, -segments[i].tangentZ);
+      placeProp(
+        i,
+        side,
+        5.5 + h2 * 4.0,
+        'marshal_hut',
+        1.0 + h3 * 0.35,
+        segYaw + (side > 0 ? -Math.PI * 0.5 : Math.PI * 0.5),
+      );
+      if (h3 > 0.45) {
+        placeProp(i + 1, (side * -1) as 1 | -1, 4.2 + h1 * 3.0, 'spectator_tent', 1.0);
+      }
+      continue;
+    }
+
+    // Inner forest line (safe 3.8m .. 13.5m outside road edge)
+    const sideA: 1 | -1 = h1 > 0.5 ? 1 : -1;
+    placeProp(
+      i,
+      sideA,
+      3.8 + h2 * 10.5,
+      preferPine || h3 > 0.4 ? 'pine_tree' : 'birch_tree',
+      0.85 + h3 * 0.65,
+      h1 * Math.PI * 2,
+    );
+
+    if (h2 > 0.24) {
+      placeProp(
+        i,
+        (sideA * -1) as 1 | -1,
+        4.4 + h1 * 12.5,
+        preferPine ? 'pine_tree' : h2 > 0.55 ? 'birch_tree' : 'pine_tree',
+        0.8 + h1 * 0.7,
+        h2 * Math.PI * 2,
+      );
+    }
+
+    // Outer deep forest belt
+    if (i % 4 === 0) {
+      placeProp(
+        i,
+        h3 > 0.5 ? 1 : -1,
+        15.5 + h1 * 18.0,
+        preferPine ? 'pine_tree' : 'birch_tree',
+        1.1 + h2 * 0.65,
+        h3 * Math.PI * 2,
+      );
+    }
+
+    // Rock outcrops
+    if (bp.scenery === 'cliff' || bp.dontCut || h3 > 0.78) {
+      const rockSide: 1 | -1 = bp.dontCut
+        ? rawCurv[i] >= 0
+          ? 1
+          : -1
+        : h2 > 0.5
+          ? 1
+          : -1;
+      const rockDist = bp.dontCut ? 2.5 + h1 * 1.5 : 3.8 + h2 * 8.0;
+      placeProp(i, rockSide, rockDist, 'rock_outcrop', 0.8 + h3 * 0.85, h1 * Math.PI * 2);
+    }
+  }
+
+  // Target par time calibrated realistically (~38 m/s average pace => ~96–112s for 3.8km)
+  const targetParTimeSec = Math.round(lengthM / 35.5);
 
   return {
-    id: bp.id,
-    code: bp.code,
-    nameZh: bp.nameZh,
-    nameEn: bp.nameEn,
-    country: bp.country,
-    lengthM: bp.lengthM,
-    primarySurface: bp.primarySurface,
-    surfaceMixLabel: bp.surfaceMixLabel,
-    defaultWeather: bp.defaultWeather,
-    defaultTimeOfDay: bp.defaultTimeOfDay,
-    recommendedTire: bp.recommendedTire,
-    elevationGainM: bp.elevationGainM,
-    descriptionZh: bp.descriptionZh,
-    targetParTimeSec: bp.targetParTimeSec,
-    sectorSplitsM: [s1, s2, bp.lengthM],
+    id: meta.id,
+    code: meta.code,
+    nameZh: meta.nameZh,
+    nameEn: meta.nameEn,
+    country: meta.country,
+    lengthM,
+    primarySurface: meta.primarySurface,
+    surfaceMixLabel: meta.surfaceMixLabel,
+    defaultWeather: meta.defaultWeather,
+    defaultTimeOfDay: meta.defaultTimeOfDay,
+    recommendedTire: meta.recommendedTire,
+    elevationGainM: Math.max(28, Math.round(maxY - minY)),
+    descriptionZh: meta.descriptionZh,
+    targetParTimeSec,
+    sectorSplitsM,
     segments,
     props,
     pacenotes,
   };
 }
 
-const STAGE_CACHE = new Map<string, StageDefinition>();
+// ============================================================================
+// 6 WORLD RALLY CHAMPIONSHIP SPECIAL STAGES (~3.8 - 4.1 km EACH)
+// ============================================================================
+
+const FINLAND_FEATURES: FeatureBlueprint[] = [
+  { len: 145, curvature: 0.006, slope: 0.025, crest: true },
+  { len: 120, curvature: -0.013, slope: -0.03 },
+  { len: 155, curvature: 0.003, slope: 0.052, jump: true, caution: true },
+  { len: 110, curvature: 0.019, slope: -0.02, camberRad: 0.06 },
+  { len: 145, curvature: -0.008, slope: 0.03, crest: true },
+  { len: 95, curvature: -0.026, slope: -0.015, dontCut: true },
+  { len: 165, curvature: 0.004, slope: 0.045, jump: true },
+  { len: 120, curvature: 0.015, slope: -0.035, scenery: 'lake' },
+  { len: 75, curvature: -0.033, slope: 0.01, caution: true, scenery: 'village' },
+  { len: 155, curvature: 0.009, slope: 0.035, crest: true },
+  { len: 105, curvature: 0.022, slope: -0.025, narrowBridge: true },
+  { len: 165, curvature: -0.005, slope: 0.048, jump: true, caution: true },
+  { len: 110, curvature: -0.019, slope: -0.03, camberRad: -0.06 },
+  { len: 135, curvature: 0.013, slope: 0.015, scenery: 'village' },
+  { len: 62, curvature: 0.038, slope: 0.005, caution: true, dontCut: true },
+  { len: 165, curvature: -0.007, slope: -0.04, crest: true },
+  { len: 115, curvature: -0.023, slope: 0.02 },
+  { len: 155, curvature: 0.011, slope: 0.038, jump: true },
+  { len: 115, curvature: -0.016, slope: -0.025 },
+  { len: 145, curvature: 0.008, slope: -0.01, crest: true },
+  { len: 135, curvature: -0.014, slope: 0.02 },
+  { len: 95, curvature: 0.024, slope: -0.015, caution: true },
+  { len: 160, curvature: -0.006, slope: 0.03, jump: true },
+  { len: 130, curvature: 0.012, slope: -0.02 },
+  { len: 145, curvature: -0.009, slope: -0.01 },
+  { len: 135, curvature: 0.007, slope: 0.005, crest: true },
+];
+
+const TURINI_FEATURES: FeatureBlueprint[] = [
+  { len: 135, curvature: 0.011, slope: 0.052, surface: 'tarmac', scenery: 'cliff' },
+  { len: 58, curvature: -0.041, slope: 0.04, surface: 'tarmac', caution: true, dontCut: true, scenery: 'cliff' },
+  { len: 145, curvature: 0.008, slope: 0.058, surface: 'tarmac', narrowBridge: true },
+  { len: 58, curvature: 0.041, slope: 0.035, surface: 'tarmac', caution: true, scenery: 'cliff' },
+  { len: 135, curvature: -0.015, slope: 0.045, surface: 'tarmac', scenery: 'village' },
+  { len: 120, curvature: 0.02, slope: 0.03, surface: 'tarmac_dirty', caution: true },
+  { len: 60, curvature: -0.039, slope: 0.025, surface: 'tarmac_dirty', dontCut: true, scenery: 'cliff' },
+  { len: 155, curvature: 0.009, slope: 0.048, surface: 'snow', crest: true },
+  { len: 105, curvature: 0.025, slope: -0.035, surface: 'ice', caution: true },
+  { len: 125, curvature: -0.021, slope: -0.042, surface: 'snow' },
+  { len: 58, curvature: 0.041, slope: -0.03, surface: 'tarmac_dirty', caution: true },
+  { len: 150, curvature: -0.013, slope: -0.048, surface: 'tarmac', scenery: 'cliff' },
+  { len: 110, curvature: 0.024, slope: -0.035, surface: 'tarmac', dontCut: true },
+  { len: 58, curvature: -0.04, slope: -0.02, surface: 'tarmac', scenery: 'village' },
+  { len: 155, curvature: 0.012, slope: -0.038, surface: 'tarmac' },
+  { len: 125, curvature: -0.019, slope: -0.015, surface: 'tarmac' },
+  { len: 145, curvature: 0.014, slope: 0.015, surface: 'tarmac', crest: true },
+  { len: 95, curvature: -0.026, slope: 0.025, surface: 'tarmac_dirty', caution: true },
+  { len: 145, curvature: 0.011, slope: -0.02, surface: 'tarmac' },
+  { len: 62, curvature: 0.037, slope: -0.015, surface: 'tarmac', caution: true },
+  { len: 155, curvature: -0.014, slope: -0.025, surface: 'tarmac' },
+  { len: 135, curvature: 0.016, slope: -0.01, surface: 'tarmac' },
+  { len: 145, curvature: -0.01, slope: 0.005, surface: 'tarmac' },
+  { len: 140, curvature: 0.008, slope: 0, surface: 'tarmac' },
+];
+
+const SWEDEN_FEATURES: FeatureBlueprint[] = [
+  { len: 155, curvature: -0.009, slope: 0.02, surface: 'snow' },
+  { len: 125, curvature: 0.017, slope: -0.015, surface: 'snow', camberRad: 0.07 },
+  { len: 150, curvature: -0.014, slope: 0.03, surface: 'ice', crest: true },
+  { len: 85, curvature: 0.03, slope: -0.02, surface: 'snow', caution: true },
+  { len: 165, curvature: -0.007, slope: 0.042, surface: 'snow', jump: true, caution: true },
+  { len: 115, curvature: -0.023, slope: -0.025, surface: 'ice', caution: true },
+  { len: 140, curvature: 0.018, slope: 0.015, surface: 'snow', scenery: 'village' },
+  { len: 62, curvature: -0.038, slope: 0.01, surface: 'snow', caution: true },
+  { len: 165, curvature: 0.008, slope: -0.03, surface: 'ice', crest: true },
+  { len: 110, curvature: 0.024, slope: 0.02, surface: 'snow', narrowBridge: true },
+  { len: 140, curvature: -0.016, slope: -0.025, surface: 'snow' },
+  { len: 65, curvature: 0.035, slope: 0.015, surface: 'ice', caution: true },
+  { len: 165, curvature: -0.01, slope: 0.038, surface: 'snow', jump: true },
+  { len: 125, curvature: 0.016, slope: -0.02, surface: 'snow' },
+  { len: 145, curvature: -0.019, slope: 0.015, surface: 'snow' },
+  { len: 155, curvature: 0.011, slope: -0.025, surface: 'ice', crest: true },
+  { len: 95, curvature: -0.027, slope: 0.01, surface: 'snow', caution: true },
+  { len: 160, curvature: 0.009, slope: 0.03, surface: 'snow', jump: true },
+  { len: 140, curvature: -0.013, slope: -0.02, surface: 'snow' },
+  { len: 150, curvature: 0.01, slope: -0.005, surface: 'snow' },
+];
+
+const ACROPOLIS_FEATURES: FeatureBlueprint[] = [
+  { len: 135, curvature: -0.014, slope: 0.045, roughness: 0.28, dontCut: true, scenery: 'cliff' },
+  { len: 60, curvature: 0.04, slope: 0.048, roughness: 0.32, caution: true, dontCut: true, scenery: 'cliff' },
+  { len: 140, curvature: -0.017, slope: 0.038, roughness: 0.25, narrowBridge: true },
+  { len: 58, curvature: -0.041, slope: 0.035, roughness: 0.3, caution: true, dontCut: true },
+  { len: 150, curvature: 0.011, slope: 0.05, roughness: 0.26, crest: true, scenery: 'cliff' },
+  { len: 95, curvature: 0.027, slope: -0.03, roughness: 0.34, dontCut: true },
+  { len: 130, curvature: -0.02, slope: -0.042, roughness: 0.26, waterSplash: true, surface: 'water_puddle' },
+  { len: 60, curvature: 0.039, slope: -0.025, roughness: 0.3, caution: true, scenery: 'village' },
+  { len: 160, curvature: -0.01, slope: 0.032, roughness: 0.24, jump: true },
+  { len: 105, curvature: -0.025, slope: -0.038, roughness: 0.32, dontCut: true, scenery: 'cliff' },
+  { len: 135, curvature: 0.019, slope: -0.032, roughness: 0.26 },
+  { len: 62, curvature: -0.037, slope: -0.02, roughness: 0.3, caution: true },
+  { len: 150, curvature: 0.013, slope: 0.025, roughness: 0.24, crest: true },
+  { len: 120, curvature: -0.021, slope: -0.025, roughness: 0.28, dontCut: true },
+  { len: 145, curvature: 0.015, slope: 0.02, roughness: 0.25 },
+  { len: 85, curvature: 0.031, slope: -0.015, roughness: 0.3, caution: true },
+  { len: 155, curvature: -0.012, slope: -0.03, roughness: 0.24, jump: true },
+  { len: 140, curvature: 0.016, slope: -0.015, roughness: 0.25 },
+  { len: 150, curvature: -0.011, slope: -0.01, roughness: 0.22 },
+  { len: 145, curvature: 0.009, slope: 0, roughness: 0.2 },
+];
+
+const WALES_FEATURES: FeatureBlueprint[] = [
+  { len: 145, curvature: 0.012, slope: -0.02, surface: 'gravel', roughness: 0.2 },
+  { len: 105, curvature: -0.024, slope: -0.035, surface: 'gravel', caution: true, dontCut: true },
+  { len: 155, curvature: 0.009, slope: 0.03, surface: 'gravel', crest: true },
+  { len: 95, curvature: 0.029, slope: -0.015, surface: 'tarmac_dirty', narrowBridge: true, scenery: 'village' },
+  { len: 140, curvature: -0.017, slope: 0.038, surface: 'gravel', roughness: 0.24 },
+  { len: 60, curvature: -0.039, slope: 0.01, surface: 'gravel', caution: true },
+  { len: 165, curvature: 0.01, slope: -0.038, surface: 'water_puddle', waterSplash: true, caution: true },
+  { len: 125, curvature: 0.022, slope: 0.02, surface: 'gravel' },
+  { len: 100, curvature: -0.027, slope: -0.025, surface: 'gravel', dontCut: true },
+  { len: 155, curvature: 0.014, slope: 0.028, surface: 'gravel', jump: true },
+  { len: 65, curvature: -0.035, slope: -0.02, surface: 'tarmac_dirty', caution: true, scenery: 'village' },
+  { len: 150, curvature: 0.013, slope: -0.025, surface: 'gravel' },
+  { len: 125, curvature: -0.02, slope: 0.02, surface: 'gravel', crest: true },
+  { len: 95, curvature: 0.028, slope: -0.015, surface: 'water_puddle', waterSplash: true },
+  { len: 155, curvature: -0.012, slope: 0.03, surface: 'gravel', jump: true },
+  { len: 135, curvature: 0.017, slope: -0.02, surface: 'gravel' },
+  { len: 145, curvature: -0.014, slope: -0.01, surface: 'gravel' },
+  { len: 150, curvature: 0.01, slope: 0, surface: 'gravel' },
+  { len: 145, curvature: -0.008, slope: 0.005, surface: 'gravel' },
+];
+
+const CORSICA_FEATURES: FeatureBlueprint[] = [
+  { len: 130, curvature: -0.019, slope: 0.032, surface: 'tarmac', scenery: 'cliff' },
+  { len: 105, curvature: 0.027, slope: 0.038, surface: 'tarmac', dontCut: true, scenery: 'cliff' },
+  { len: 125, curvature: -0.022, slope: 0.025, surface: 'tarmac' },
+  { len: 58, curvature: 0.041, slope: 0.02, surface: 'tarmac', caution: true, scenery: 'village' },
+  { len: 140, curvature: -0.017, slope: -0.028, surface: 'tarmac', scenery: 'cliff' },
+  { len: 105, curvature: 0.025, slope: -0.035, surface: 'tarmac_dirty', narrowBridge: true, dontCut: true },
+  { len: 60, curvature: -0.039, slope: -0.015, surface: 'tarmac', caution: true },
+  { len: 150, curvature: 0.015, slope: 0.03, surface: 'tarmac', crest: true },
+  { len: 115, curvature: -0.025, slope: 0.02, surface: 'tarmac', dontCut: true, scenery: 'cliff' },
+  { len: 95, curvature: 0.03, slope: -0.025, surface: 'tarmac', caution: true, scenery: 'village' },
+  { len: 135, curvature: -0.02, slope: -0.03, surface: 'tarmac' },
+  { len: 62, curvature: 0.037, slope: -0.01, surface: 'tarmac', caution: true },
+  { len: 150, curvature: -0.013, slope: 0.025, surface: 'tarmac', crest: true },
+  { len: 115, curvature: 0.023, slope: -0.02, surface: 'tarmac_dirty', dontCut: true },
+  { len: 140, curvature: -0.018, slope: 0.015, surface: 'tarmac' },
+  { len: 90, curvature: 0.029, slope: -0.02, surface: 'tarmac', caution: true },
+  { len: 150, curvature: -0.015, slope: -0.015, surface: 'tarmac' },
+  { len: 135, curvature: 0.018, slope: 0.01, surface: 'tarmac' },
+  { len: 145, curvature: -0.012, slope: -0.005, surface: 'tarmac' },
+  { len: 145, curvature: 0.009, slope: 0, surface: 'tarmac' },
+];
+
+const BUILT_STAGES: StageDefinition[] = [
+  buildProceduralStage(
+    {
+      id: 'finland_jumps',
+      code: 'SS01 · FIN',
+      nameZh: '奥宁波亚千湖飞跳',
+      nameEn: 'Ouninpohja Flying Gravel',
+      country: '芬兰 · 于韦斯屈莱',
+      primarySurface: 'gravel',
+      surfaceMixLabel: '96% 高速砂石 / 4% 木桥',
+      defaultWeather: 'clear',
+      defaultTimeOfDay: 'day',
+      recommendedTire: 'gravel',
+      descriptionZh: '标志性芬兰森林极速砂石赛段，连续坡顶盲跳与高倾角流畅弯道考验全油门胆识与落地姿态控制。',
+      seedOffset: 11,
+    },
+    FINLAND_FEATURES,
+  ),
+  buildProceduralStage(
+    {
+      id: 'turini_tarmac',
+      code: 'SS02 · MCO',
+      nameZh: '图里尼山口混合冰雪',
+      nameEn: 'Col de Turini Mixed Pass',
+      country: '摩纳哥 · 阿尔卑斯',
+      primarySurface: 'tarmac',
+      surfaceMixLabel: '68% 山地柏油 / 32% 山顶冰雪暗冰',
+      defaultWeather: 'clear',
+      defaultTimeOfDay: 'dusk',
+      recommendedTire: 'tarmac_dry',
+      descriptionZh: '从干地峡谷柏油连续发卡弯一路爬升至阿尔卑斯山顶冰雪与镜面暗冰路段，极具轮胎策略挑战。',
+      seedOffset: 23,
+    },
+    TURINI_FEATURES,
+  ),
+  buildProceduralStage(
+    {
+      id: 'sweden_snow',
+      code: 'SS03 · SWE',
+      nameZh: '韦姆兰科林坡顶雪道',
+      nameEn: 'Vargåsen Colin Crest',
+      country: '瑞典 · 韦姆兰',
+      primarySurface: 'snow',
+      surfaceMixLabel: '74% 压实雪道 / 26% 镜面冰面',
+      defaultWeather: 'snow',
+      defaultTimeOfDay: 'day',
+      recommendedTire: 'snow',
+      descriptionZh: '北欧纯白高速冰雪林道，换装钨钢钉胎后可在雪墙边缘借力完成华丽四轮全动力漂移。',
+      seedOffset: 37,
+    },
+    SWEDEN_FEATURES,
+  ),
+  buildProceduralStage(
+    {
+      id: 'acropolis_rock',
+      code: 'SS04 · GRC',
+      nameZh: '雅典卫城乱石山脊',
+      nameEn: 'Elatia Rocky Ridge',
+      country: '希腊 · 拉米亚',
+      primarySurface: 'gravel',
+      surfaceMixLabel: '92% 粗砺碎石 / 8% 涉水浅滩',
+      defaultWeather: 'clear',
+      defaultTimeOfDay: 'day',
+      recommendedTire: 'gravel',
+      descriptionZh: '地中海烈日下的高落差碎石悬崖山脊，包含涉水浅滩与乱石内侧禁切发卡弯，极度考验悬挂调校。',
+      seedOffset: 53,
+    },
+    ACROPOLIS_FEATURES,
+  ),
+  buildProceduralStage(
+    {
+      id: 'wales_mud',
+      code: 'SS05 · GBR',
+      nameZh: '威尔士哈弗伦浓雾泥林',
+      nameEn: 'Sweet Lamb Hafren Mud',
+      country: '英国 · 威尔士',
+      primarySurface: 'gravel',
+      surfaceMixLabel: '80% 湿滑泥泞砂石 / 20% 脏柏油与积水',
+      defaultWeather: 'rain',
+      defaultTimeOfDay: 'dusk',
+      recommendedTire: 'gravel',
+      descriptionZh: '阴雨浓雾笼罩的松林泥泞砂石道，穿插积水深坑与村镇湿滑柏油窄桥，抓地力瞬息万变。',
+      seedOffset: 71,
+    },
+    WALES_FEATURES,
+  ),
+  buildProceduralStage(
+    {
+      id: 'corsica_cliff',
+      code: 'SS06 · FRA',
+      nameZh: '科西嘉万弯海岸悬崖',
+      nameEn: 'Cap Corse 10,000 Corners',
+      country: '法国 · 科西嘉岛',
+      primarySurface: 'tarmac',
+      surfaceMixLabel: '90% 海岸柏油 / 10% 碎石带脏柏油',
+      defaultWeather: 'clear',
+      defaultTimeOfDay: 'dusk',
+      recommendedTire: 'tarmac_dry',
+      descriptionZh: '零长直道喘息的海岸悬崖连续技术柏油弯道，精准循迹刹车与重心转移是刷出紫段的唯一秘诀。',
+      seedOffset: 89,
+    },
+    CORSICA_FEATURES,
+  ),
+];
 
 export function getAllStages(): StageDefinition[] {
-  return STAGE_BLUEPRINTS.map((bp) => {
-    let cached = STAGE_CACHE.get(bp.id);
-    if (!cached) {
-      cached = buildStageFromBlueprint(bp);
-      STAGE_CACHE.set(bp.id, cached);
-    }
-    return cached;
-  });
+  return BUILT_STAGES;
 }
 
 export function getStageById(id: string): StageDefinition {
-  const stages = getAllStages();
-  return stages.find((s) => s.id === id) || stages[0];
+  return BUILT_STAGES.find((s) => s.id === id) ?? BUILT_STAGES[0];
 }
 
-/**
- * Projects any world (x, z) position onto the closest road spline segment,
- * returning the interpolated road elevation, normal, surface, width, and lateral offset.
- */
-export function sampleStageAtWorldPos(
-  stage: StageDefinition,
-  x: number,
-  z: number,
-  hintSegmentIndex: number
-): {
+export interface StageWorldSample {
   segmentIndex: number;
-  distanceM: number;
-  roadX: number;
-  roadY: number;
-  roadZ: number;
+  segment: StageSegment;
+  distanceAlongStageM: number;
+  /** Signed offset along road RIGHT normal (+ = right of centerline, - = left of centerline) */
   lateralOffsetM: number;
+  roadY: number;
   roadYaw: number;
-  slope: number;
-  camberRad: number;
-  widthM: number;
+  roadPitch: number;
+  roadBank: number;
+  halfWidthM: number;
   surface: SurfaceType;
   roughness: number;
-} {
-  const segs = stage.segments;
-  const n = segs.length;
-  const searchRadius = 35;
-  const startIdx = Math.max(0, hintSegmentIndex - searchRadius);
-  const endIdx = Math.min(n - 1, hintSegmentIndex + searchRadius);
+}
 
-  let bestIdx = hintSegmentIndex;
+export function sampleStageAtWorldPos(
+  stage: StageDefinition,
+  wx: number,
+  wz: number,
+  hintSegmentIndex = 0,
+): StageWorldSample {
+  const segs = stage.segments;
+  const total = segs.length;
+  const windowRadius = 22;
+  const lo = Math.max(0, hintSegmentIndex - windowRadius);
+  const hi = Math.min(total - 2, hintSegmentIndex + windowRadius);
+
+  let bestIdx = Math.max(0, Math.min(total - 2, hintSegmentIndex));
+  let bestT = 0;
   let bestDistSq = Infinity;
 
-  for (let i = startIdx; i <= endIdx; i++) {
-    const dx = x - segs[i].x;
-    const dz = z - segs[i].z;
-    const d2 = dx * dx + dz * dz;
-    if (d2 < bestDistSq) {
-      bestDistSq = d2;
-      bestIdx = i;
-    }
-  }
-
-  // If far from hint window, fallback to full scan
-  if (bestDistSq > 1600) {
-    for (let i = 0; i < n; i++) {
-      const dx = x - segs[i].x;
-      const dz = z - segs[i].z;
-      const d2 = dx * dx + dz * dz;
-      if (d2 < bestDistSq) {
-        bestDistSq = d2;
+  const scan = (start: number, end: number) => {
+    for (let i = start; i <= end; i++) {
+      const a = segs[i];
+      const b = segs[i + 1];
+      const abx = b.x - a.x;
+      const abz = b.z - a.z;
+      const abLenSq = abx * abx + abz * abz || 1;
+      const t = Math.max(0, Math.min(1, ((wx - a.x) * abx + (wz - a.z) * abz) / abLenSq));
+      const cx = a.x + abx * t;
+      const cz = a.z + abz * t;
+      const dx = wx - cx;
+      const dz = wz - cz;
+      const dSq = dx * dx + dz * dz;
+      if (dSq < bestDistSq) {
+        bestDistSq = dSq;
         bestIdx = i;
+        bestT = t;
       }
     }
+  };
+
+  scan(lo, hi);
+  if (bestDistSq > 95 * 95) {
+    scan(0, total - 2);
   }
 
-  const seg = segs[bestIdx];
-  const dx = x - seg.x;
-  const dz = z - seg.z;
-  const along = dx * seg.tangentX + dz * seg.tangentZ;
-  const lateralOffsetM = dx * seg.normalX + dz * seg.normalZ;
+  const a = segs[bestIdx];
+  const b = segs[bestIdx + 1];
+  const cx = a.x + (b.x - a.x) * bestT;
+  const cy = a.y + (b.y - a.y) * bestT;
+  const cz = a.z + (b.z - a.z) * bestT;
 
-  const distanceM = Math.max(0, Math.min(stage.lengthM, seg.distanceM + along));
-  const halfW = seg.widthM * 0.5;
-  const isOfftrack = Math.abs(lateralOffsetM) > halfW + 0.35;
-  const effectiveSurface: SurfaceType = isOfftrack ? 'offtrack' : seg.surface;
+  let nx = a.normalX + (b.normalX - a.normalX) * bestT;
+  let nz = a.normalZ + (b.normalZ - a.normalZ) * bestT;
+  const nLen = Math.hypot(nx, nz) || 1;
+  nx /= nLen;
+  nz /= nLen;
 
-  // Include camber banking and roadside ditch depression when off-track
-  let roadY = seg.y + along * seg.slope + lateralOffsetM * Math.sin(seg.camberRad);
-  if (isOfftrack) {
-    const excess = Math.min(4.0, Math.abs(lateralOffsetM) - halfW);
-    // Roadside drainage ditch dip then verge slope
-    roadY += -Math.sin(Math.min(Math.PI, excess * 1.4)) * 0.24;
+  const tx = a.tangentX + (b.tangentX - a.tangentX) * bestT;
+  const tz = a.tangentZ + (b.tangentZ - a.tangentZ) * bestT;
+  const roadYaw = Math.atan2(tx, -tz);
+
+  const slope = a.slope + (b.slope - a.slope) * bestT;
+  const roadPitch = Math.atan(slope);
+  const roadBank = a.camberRad + (b.camberRad - a.camberRad) * bestT;
+  const widthM = a.widthM + (b.widthM - a.widthM) * bestT;
+  const halfWidthM = widthM * 0.5;
+
+  const lateralOffsetM = (wx - cx) * nx + (wz - cz) * nz;
+  const clampedBankLat = Math.max(-halfWidthM * 1.4, Math.min(halfWidthM * 1.4, lateralOffsetM));
+  const vergeExcess = Math.max(0, Math.abs(lateralOffsetM) - (halfWidthM + 1.4));
+  const vergeDrop = -Math.min(0.22, vergeExcess * 0.05);
+  const roadY = cy - Math.sin(roadBank) * clampedBankLat + vergeDrop;
+
+  const absLat = Math.abs(lateralOffsetM);
+  let surface: SurfaceType = a.surface;
+  let roughness = a.roughness + (b.roughness - a.roughness) * bestT;
+
+  if (absLat > halfWidthM + 1.6) {
+    surface = 'offtrack';
+    roughness = Math.max(roughness, 0.32);
+  } else if (absLat > halfWidthM) {
+    if (surface === 'tarmac') surface = 'tarmac_dirty';
+    roughness = Math.max(roughness, 0.22);
   }
 
   return {
     segmentIndex: bestIdx,
-    distanceM,
-    roadX: seg.x + seg.tangentX * along,
-    roadY,
-    roadZ: seg.z + seg.tangentZ * along,
+    segment: a,
+    distanceAlongStageM: a.distanceM + (b.distanceM - a.distanceM) * bestT,
     lateralOffsetM,
-    roadYaw: Math.atan2(seg.tangentX, seg.tangentZ),
-    slope: seg.slope,
-    camberRad: seg.camberRad,
-    widthM: seg.widthM,
-    surface: effectiveSurface,
-    roughness: isOfftrack ? 0.095 : seg.roughness,
+    roadY,
+    roadYaw,
+    roadPitch,
+    roadBank,
+    halfWidthM,
+    surface,
+    roughness,
   };
 }

@@ -8,6 +8,7 @@ const PREFS_KEY = 'gaistudio.lucky_landlord.prefs.v1';
 export interface UserPrefs {
   muted: boolean;
   fastSpin: boolean;
+  tutorialCompleted: boolean;
 }
 
 export function createInitialMetaSave(): MetaSaveData {
@@ -166,17 +167,20 @@ export function saveActiveRun(run: RunState | null): void {
 }
 
 export function loadUserPrefs(): UserPrefs {
-  if (typeof window === 'undefined') return { muted: false, fastSpin: false };
+  if (typeof window === 'undefined') {
+    return { muted: false, fastSpin: false, tutorialCompleted: false };
+  }
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
-    if (!raw) return { muted: false, fastSpin: false };
+    if (!raw) return { muted: false, fastSpin: false, tutorialCompleted: false };
     const parsed = JSON.parse(raw) as Partial<UserPrefs>;
     return {
       muted: Boolean(parsed.muted),
       fastSpin: Boolean(parsed.fastSpin),
+      tutorialCompleted: Boolean(parsed.tutorialCompleted),
     };
   } catch {
-    return { muted: false, fastSpin: false };
+    return { muted: false, fastSpin: false, tutorialCompleted: false };
   }
 }
 

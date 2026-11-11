@@ -9,6 +9,7 @@ import {
   DEFAULT_INPUT_SETTINGS,
   DEFAULT_TUNING,
   FIXED_DT,
+  PRO_INPUT_SETTINGS,
   SPORT_INPUT_SETTINGS,
   applyDrivingPreset,
   createInitialCarState,
@@ -20,7 +21,7 @@ import {
 } from './physics.ts';
 import { getAllStages, getStageById } from './stages.ts';
 
-test('all 6 rally stages generate complete 3D spline segments, gantries, brake boards, and pacenotes', () => {
+test('all 6 rally stages generate complete 3D spline segments, gantries, brake boards, and pacenotes without self-intersection', () => {
   const stages = getAllStages();
   assert.equal(stages.length, 6);
   for (const st of stages) {
@@ -36,6 +37,19 @@ test('all 6 rally stages generate complete 3D spline segments, gantries, brake b
     assert.ok(hasStartArch, `Stage ${st.id} must spawn a WRC start arch`);
     assert.equal(splitArches.length, 2, `Stage ${st.id} must spawn 2 sector split arches`);
     assert.ok(hasBrakeBoard, `Stage ${st.id} must spawn brake marker boards before hard corners`);
+
+    // Verify no road ribbon loops back or crosses itself in 2D
+    for (let i = 0; i < st.segments.length; i += 3) {
+      const a = st.segments[i];
+      for (let j = i + 26; j < st.segments.length; j += 3) {
+        const b = st.segments[j];
+        const dist2d = Math.hypot(a.x - b.x, a.z - b.z);
+        assert.ok(
+          dist2d > 34,
+          `Stage ${st.id} road self-intersects near s=${a.distanceM.toFixed(0)}m and s=${b.distanceM.toFixed(0)}m (dist=${dist2d.toFixed(1)}m)`
+        );
+      }
+    }
   }
 });
 
@@ -126,9 +140,10 @@ test('longitudinal weight transfer loads rear wheels under acceleration and fron
   assert.ok(frontLoadBrake > rearLoadBrake, 'Braking must transfer weight to the front axle');
 });
 
-test('Sport sequential auto-gearbox upshifts cleanly under full throttle and toggles with Pro preset', () => {
+test('Sport sequential auto-gearbox is default, upshifts cleanly under full throttle, and toggles with Pro preset', () => {
   assert.equal(getDrivingPreset(SPORT_INPUT_SETTINGS), 'sport');
-  assert.equal(getDrivingPreset(DEFAULT_INPUT_SETTINGS), 'pro');
+  assert.equal(getDrivingPreset(DEFAULT_INPUT_SETTINGS), 'sport');
+  assert.equal(getDrivingPreset(PRO_INPUT_SETTINGS), 'pro');
   const switchedPro = applyDrivingPreset(SPORT_INPUT_SETTINGS, 'pro');
   assert.equal(switchedPro.autoGearbox, false);
   assert.equal(switchedPro.autoClutch, false);
@@ -161,6 +176,110 @@ test('Sport sequential auto-gearbox upshifts cleanly under full throttle and tog
 
   assert.ok(state.gear >= 2, `Sport auto-gearbox should upshift past 1st gear (got gear=${state.gear})`);
   assert.ok(state.forwardSpeedMs > 18, 'Car should reach brisk speed smoothly without hitting 1st gear limiter');
+});
+
+test('right-handed steering turns car RIGHT (+X, +lateralOffset) for steer=+1 and LEFT (-X, -lateralOffset) for steer=-1', () => {
+  const stage = getStageById('finland_jumps');
+  const rightCar = createInitialCarState(stage);
+  const leftCar = createInitialCarState(stage);
+
+  for (let i = 0; i < 180; i++) {
+    stepCarPhysics(
+      rightCar,
+      {
+        steer: i >= 24 ? 0.85 : 0,
+        throttle: 0.85,
+        brake: 0,
+        handbrake: 0,
+        clutch: 0,
+        shiftUpJustPressed: false,
+        shiftDownJustPressed: false,
+        ignitionJustPressed: false,
+      },
+      stage,
+      DEFAULT_TUNING,
+      SPORT_INPUT_SETTINGS,
+      'clear',
+      i * FIXED_DT
+    );
+
+    stepCarPhysics(
+      leftCar,
+      {
+        steer: i >= 24 ? -0.85 : 0,
+        throttle: 0.85,
+        brake: 0,
+        handbrake: 0,
+        clutch: 0,
+        shiftUpJustPressed: false,
+        shiftDownJustPressed: false,
+        ignitionJustPressed: false,
+      },
+      stage,
+      DEFAULT_TUNING,
+      SPORT_INPUT_SETTINGS,
+      'clear',
+      i * FIXED_DT
+    );
+  }
+
+  assert.ok(rightCar.x > 1.5 && rightCar.yaw > 0.15 && rightCar.lateralOffsetM > 1.5, `D / ArrowRight (steer > 0) must steer right on screen (+X), got x=${rightCar.x.toFixed(2)}, yaw=${rightCar.yaw.toFixed(2)}`);
+  assert.ok(leftCar.x < -1.5 && leftCar.yaw < -0.15 && leftCar.lateralOffsetM < -1.5, `A / ArrowLeft (steer < 0) must steer left on screen (-X), got x=${leftCar.x.toFixed(2)}, yaw=${leftCar.yaw.toFixed(2)}`);
+});
+
+test('car never gets stuck off-track and holding brake/S from standstill seamlessly auto-reverses', () => {
+  const stage = getStageById('wales_mud');
+  const state = createInitialCarState(stage);
+  // Place car deep on off-track shoulder
+  state.x = stage.segments[0].widthM * 0.5 + 3.2;
+
+  // Hold S / ArrowDown (brake = 1) from standstill -> auto-reverse engages cleanly
+  for (let i = 0; i < 160; i++) {
+    stepCarPhysics(
+      state,
+      {
+        steer: -0.5,
+        throttle: 0,
+        brake: 1.0,
+        handbrake: 0,
+        clutch: 0,
+        shiftUpJustPressed: false,
+        shiftDownJustPressed: false,
+        ignitionJustPressed: false,
+      },
+      stage,
+      DEFAULT_TUNING,
+      SPORT_INPUT_SETTINGS,
+      'rain',
+      i * FIXED_DT
+    );
+  }
+  assert.equal(state.gear, -1, 'Holding brake from standstill in Sport mode must engage Reverse');
+  assert.ok(state.forwardSpeedMs < -3.0, `Car should reverse smoothly out of off-track shoulder (got ${state.forwardSpeedMs.toFixed(2)} m/s)`);
+
+  // Now hold W / ArrowUp (throttle = 1) -> auto-shifts back to 1st and launches forward briskly
+  for (let i = 0; i < 300; i++) {
+    stepCarPhysics(
+      state,
+      {
+        steer: -0.25,
+        throttle: 1.0,
+        brake: 0,
+        handbrake: 0,
+        clutch: 0,
+        shiftUpJustPressed: false,
+        shiftDownJustPressed: false,
+        ignitionJustPressed: false,
+      },
+      stage,
+      DEFAULT_TUNING,
+      SPORT_INPUT_SETTINGS,
+      'rain',
+      2.0 + i * FIXED_DT
+    );
+  }
+  assert.ok(state.gear >= 1, 'Holding throttle after reversing must re-engage forward gear');
+  assert.ok(state.forwardSpeedMs > 7.5, `Car must launch forward cleanly from wet off-track mud (got ${state.forwardSpeedMs.toFixed(2)} m/s)`);
 });
 
 test('WRC 6-stage championship tracks cumulative standings, Super-Rally +60s DNF, and Service Park cadence', () => {
