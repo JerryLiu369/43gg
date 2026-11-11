@@ -1,42 +1,57 @@
 **English** | [README_zh.md (Chinese)](./README_zh.md)
 
-# gaistudio — Multi-Project Workspace for Google AI Studio
+# gaistudio — Unified React WebApp Workspace
 
-This repository serves as a unified private workspace for organizing Google AI Studio web apps and prototypes under a single GitHub repository.
-
-To remain compatible with Google AI Studio's repository-root sync entry and the existing GitHub Pages deployment (`/` and `/ds/`), the repository root hosts the default active workspace (`CHRONO STAGE`), while additional or archived small projects live self-contained under `apps/<project-slug>/`.
+`gaistudio` is a single unified React 19 + Vite 8 + TypeScript + Tailwind CSS 4 web application shell that hosts multiple isolated mini-apps under one entry point and one development/preview origin.
 
 ---
 
-## Project Catalog
+## Hosted Apps
 
-| Slug | Path | Stack / Type | Local Run Command | Docs & Pages Route |
-| :--- | :--- | :--- | :--- | :--- |
-| `chrono-stage` | `.` (repository root) | React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + WebGL 3D Rally Simulator | `npm run dev` | [Manual (Chinese)](docs/chrono-stage_zh.md) · Pages `/` |
-| `ds-stage` | `apps/ds-stage/` | Zero-build static HTML + Vanilla JS + WebGL 1.0 Rally Simulator (mirrored from `ds-stage` branch) | `npm run dev:ds` or open `apps/ds-stage/index.html` | [Project README (Chinese)](apps/ds-stage/README.md) · Pages `/ds/` |
+| App ID | Title | Runtime Isolation | Location | Route | Documentation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `chrono-stage` | `CHRONO STAGE` | Lazy-loaded React module (`React.lazy`) with lifecycle teardown | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [Manual (Chinese)](docs/chrono-stage_zh.md) |
+| `ds-stage` | `STAGE` | Isolated static HTML + Vanilla JS + WebGL 1.0 `<iframe>` sandbox | `apps/ds-stage/` | `/?app=ds-stage` | [Project README (Chinese)](apps/ds-stage/README.md) |
 
 ---
 
-## Directory Layout
+## Architecture & Directory Layout
 
 ```text
 gaistudio/
+├── src/
+│   ├── App.tsx                  # Unified shell router, Home Hub / active app viewport & top bar
+│   ├── apps/
+│   │   ├── registry.ts          # Single project registration entry for all mini-apps
+│   │   └── chrono-stage/        # CHRONO STAGE lazy-loaded React app entry
+│   ├── shell/
+│   │   ├── HomeHub.tsx          # Responsive Home Hub launcher (desktop + mobile)
+│   │   ├── IframeAppHost.tsx    # Isolated iframe host with explicit teardown on exit
+│   │   ├── AppErrorBoundary.tsx # Sub-app error boundary with Home recovery
+│   │   ├── router.ts            # Portable URL routing (?app=..., #/apps/..., subpath-safe)
+│   │   └── shell.test.ts        # Registry and router unit tests
+│   ├── components/              # CHRONO STAGE UI modals & SVG pacenote signs
+│   ├── game/                    # CHRONO STAGE physics, stages, audio, input & tests
+│   └── render/                  # CHRONO STAGE WebGL 3D renderer
 ├── apps/
-│   └── ds-stage/          # Self-contained static app (STAGE)
+│   └── ds-stage/                # Self-contained static WebGL rally game (iframe sandbox)
 ├── docs/
-│   └── chrono-stage_zh.md # Preserved full Chinese manual for root CHRONO STAGE
+│   └── chrono-stage_zh.md       # CHRONO STAGE manual (Chinese)
 ├── scripts/
-│   └── workspace.mjs      # Zero-dependency helper CLI (list, serve, check, stage-pages)
-├── src/                   # Root default app source (CHRONO STAGE)
-├── index.html             # Root default app entry
-├── metadata.json          # Google AI Studio app metadata
-├── package.json           # Root dependencies and workspace helper scripts
-├── vite.config.ts         # Vite config (base: '/gaistudio/')
-├── .env.example           # Placeholder environment variables (never store real keys)
-├── .gitignore             # Ignores node_modules/, dist/, .env*, etc. across root and apps/*
-├── README.md              # English workspace guide (this file)
-└── README_zh.md           # Chinese workspace guide
+│   └── workspace.mjs            # Workspace discovery, validation & static staging CLI
+├── vite.config.ts               # Relative base (`./`) + static apps dev/build integration
+├── index.html                   # Standard React/Vite root entry
+├── metadata.json                # Google AI Studio app metadata
+├── .env.example                 # Placeholder environment variables (never commit real keys)
+└── .gitignore                   # Ignores node_modules/, dist/, .env*, etc.
 ```
+
+Key properties of the unified shell:
+
+- **Single Dev & Preview Entry**: `npm run dev` launches the entire workspace on `http://127.0.0.1:3000/`. No multiple dev servers or manual entry switching is required.
+- **No Premature Engine Startup**: Opening the Home Hub (`/`) initializes zero WebGL contexts, zero `requestAnimationFrame` loops, and zero `AudioContext` instances.
+- **Clean Exit Teardown**: Exiting any app back to the Home Hub unmounts the module/sandbox and disposes WebGL resources, animation frames, Web Audio contexts, speech synthesis, and keyboard/resize listeners.
+- **Dual-Path Portability**: Built with Vite relative base (`base: './'`) and portable query/hash routing (`?app=<id>` and `#/apps/<id>`), working identically both at root `/` (local dev/preview and Google AI Studio) and under the GitHub Pages subpath `/gaistudio/`.
 
 ---
 
@@ -45,56 +60,51 @@ gaistudio/
 Run from the repository root:
 
 ```bash
-npm install          # Install root dependencies
-npm run dev          # Start the root app (CHRONO STAGE) on port 3000
-npm run dev:ds       # Serve apps/ds-stage locally on http://127.0.0.1:3001/
-npm run typecheck    # Run TypeScript check (tsc --noEmit)
-npm test             # Run root physics & stage unit tests
-npm run build        # Build the root app into dist/
-npm run apps:list    # List all discovered projects in the workspace
-npm run apps:check   # Check env rules, root typecheck/tests/build, and all apps/* assets & JS syntax
-npm run build:pages  # Stage combined dist/ (/ + /ds/) matching gh-pages layout (local build only)
+npm install          # Install workspace dependencies
+npm run dev          # Start unified React shell + static sub-apps on port 3000
+npm run typecheck    # Run TypeScript compiler check (tsc --noEmit)
+npm test             # Run physics + shell/registry unit tests
+npm run build        # Build production dist/ (root shell + bundled static apps/*)
+npm run preview      # Preview production dist/ locally
+npm run apps:list    # List discovered shell and mini-apps
+npm run apps:check   # Validate .env hygiene, tsc, unit tests, vite build, and static apps
+npm run dev:ds       # Optional standalone static server for apps/ds-stage on port 3001
 ```
 
 ---
 
-## Google AI Studio Sync Boundaries & Recommended Workflows
+## Adding a New Mini-App
 
-Verified against official Google documentation ([Sync your AI Studio apps with GitHub](https://aistudio.google.com/learn/sync-your-ai-studio-apps-with-github) and [Build apps in Google AI Studio](https://ai.google.dev/gemini-api/docs/aistudio-build-mode)):
+Only a new app folder plus a single entry in `src/apps/registry.ts` is required — no changes to `vite.config.ts`, `package.json`, or routing internals:
 
-- **Platform Boundary**: Google AI Studio Build mode two-way GitHub sync operates strictly at the **repository root level** (one AI Studio workspace synced to one GitHub repository root on `main`). Official docs do **not** provide a subdirectory selector (`apps/<slug>/`), branch selector, or conflict-free binding of multiple separate AI Studio sessions to different folders in one repository. Moreover, importing an existing repo and initiating sync may prompt AI Studio to force-push root compatibility edits.
-- **Practical Workflows in One Repository**:
+### Option 1: React Mini-App (Recommended for AI Studio React Mode)
 
-### Workflow A (Recommended for Many Small Apps): Export ZIP from AI Studio -> Commit under `apps/<project-slug>/`
+1. Create `src/apps/<slug>/index.tsx` exporting a default React component (clean up any timers, listeners, animation frames, or audio in `useEffect` return callbacks).
+2. Add one entry to `APP_REGISTRY` in `src/apps/registry.ts` with `kind: 'react-lazy'` and `loader: () => import('./<slug>/index.tsx')`.
 
-1. Build and iterate on a small app in Google AI Studio, then download its ZIP export.
-2. Locally run `git pull origin main`.
-3. Extract the project into `apps/<project-slug>/` (e.g., `apps/json-diff-tool/`), keeping dependencies, assets, and docs self-contained.
-4. Run `npm run apps:check`, add an entry to the Project Catalog tables in `README.md` and `README_zh.md`, then commit and push.
+### Option 2: Self-Contained Static HTML / Vanilla JS App
 
-### Workflow B (Active Root Slot + Archive Rotation)
-
-If you bind `JerryLiu369/gaistudio` directly in AI Studio Settings -> GitHub:
-
-1. Treat the **repository root** as the single active AI Studio two-way sync slot (`CHRONO STAGE` currently).
-2. Always **Pull before editing** and **Push promptly**; avoid blind force-pushes that could overwrite repository history or `apps/`.
-3. When switching the active root slot to a new app, archive the finished root project into `apps/<project-slug>/` locally and commit/push first before replacing root files.
+1. Place the app directory under `apps/<slug>/` containing `index.html` and relative asset references.
+2. Add one entry to `APP_REGISTRY` in `src/apps/registry.ts` with `kind: 'iframe'` and `entryPath: 'apps/<slug>/index.html'`.
+3. `vite.config.ts` automatically serves `/apps/<slug>/` during `npm run dev` and copies non-secret runtime assets into `dist/apps/<slug>/` during `npm run build`.
 
 ---
 
-## Adding a New Small Project & Secrets Rules
+## Google AI Studio Build Mode & GitHub Sync Workflow
 
-1. **Naming**: Place each app under `apps/<project-slug>/` using lowercase kebab-case (e.g., `apps/pomodoro-timer/`).
-2. **Self-Contained Assets**: Keep each project's `index.html`, `src/`, `assets/`, `public/`, and optional `package.json` / `metadata.json` inside its own folder. Prefer relative paths (or configure `base` appropriately) if you intend to host under a subpath.
-3. **Secrets & `.env` Hygiene**:
-   - **Never** commit `.env` files or real API keys to Git.
-   - Commit `.env.example` with placeholder values only (`GEMINI_API_KEY="MY_GEMINI_API_KEY"`), and keep real credentials in local `.env` (already excluded recursively across root and `apps/*` by `.gitignore`).
+Based on Google's official documentation ([Sync your AI Studio apps with GitHub](https://aistudio.google.com/learn/sync-your-ai-studio-apps-with-github) and [Build apps in Google AI Studio](https://ai.google.dev/gemini-api/docs/aistudio-build-mode)):
+
+- Official documentation covers importing and syncing an entire repository into Google AI Studio Build mode (selecting React as the client framework) with two-way GitHub commit/pull/push sync; it does **not** document per-subdirectory binding or selecting separate branches per mini-app.
+- **Recommended Workflow**: Import this single repository (`JerryLiu369/gaistudio`) into Google AI Studio as one unified React workspace, select React in AI Studio Build settings, and add or iterate on each mini-app inside its own isolated directory registered via `src/apps/registry.ts`.
+- Pull before editing and commit/push promptly to keep AI Studio and local changes in sync without force-pushing.
+- Note: Local development (`npm run dev`), production build (`npm run build`), `npm run preview`, and GitHub Pages output have been verified directly; behavior inside the live Google AI Studio web UI itself was not separately tested in an authenticated session.
 
 ---
 
-## Branches & GitHub Pages Visibility
+## Visibility, Branches & Secrets
 
-- `main`: Default multi-project workspace branch.
-- `ds-stage`: Preserved historical branch for `STAGE` (also mirrored under `apps/ds-stage/` on `main`).
-- `gh-pages`: Legacy static deployment branch (`/` serves `CHRONO STAGE`; `/ds/` serves `STAGE`).
-- **Visibility Notice**: Although `JerryLiu369/gaistudio` is a **private** repository, its currently enabled GitHub Pages site (`https://jerryliu369.github.io/gaistudio/`) is **publicly accessible** (`public: true`). Do not deploy sensitive data to `gh-pages`.
+- `main`: Private source repository workspace (`JerryLiu369/gaistudio`, `private: true`).
+- `ds-stage`: Preserved historical standalone branch for `STAGE` (also stored under `apps/ds-stage/` on `main`).
+- `gh-pages`: Public static deployment branch (`public: true` via GitHub Pages at `https://jerryliu369.github.io/gaistudio/`).
+- **Intentional Split Visibility**: Keeping source code **Private** while serving the compiled static WebApp **Publicly** on GitHub Pages is an intentional configuration. `gh-pages` only receives pure compiled runtime files from `dist/` (`.nojekyll`, `index.html`, `assets/`, `apps/*` runtime assets) — never `src/`, `.env*`, credentials, or `.aistudio/` temporary media.
+- **Secrets**: Never commit real `.env` files or API keys anywhere in the repository; keep placeholders only in `.env.example`.

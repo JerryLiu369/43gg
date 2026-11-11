@@ -185,6 +185,84 @@ export class RallyAudioEngine {
     }
   }
 
+  public dispose(): void {
+    this.isPaused = true;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore speech synthesis errors
+      }
+    }
+    const stoppable = [
+      this.engOsc1,
+      this.engOsc2,
+      this.engOsc3,
+      this.turboOsc,
+      this.squealOsc,
+      this.tireNoiseSource,
+      this.windSource,
+    ];
+    for (const node of stoppable) {
+      if (!node) continue;
+      try {
+        node.stop();
+      } catch {
+        // Ignore if already stopped
+      }
+      try {
+        node.disconnect();
+      } catch {
+        // Ignore disconnect errors
+      }
+    }
+    this.engOsc1 = null;
+    this.engOsc2 = null;
+    this.engOsc3 = null;
+    this.turboOsc = null;
+    this.squealOsc = null;
+    this.tireNoiseSource = null;
+    this.windSource = null;
+
+    const disconnectable = [
+      this.engFilter,
+      this.engGain,
+      this.turboGain,
+      this.tireFilter,
+      this.tireGain,
+      this.squealGain,
+      this.windFilter,
+      this.windGain,
+      this.masterGain,
+    ];
+    for (const node of disconnectable) {
+      if (!node) continue;
+      try {
+        node.disconnect();
+      } catch {
+        // Ignore disconnect errors
+      }
+    }
+    this.engFilter = null;
+    this.engGain = null;
+    this.turboGain = null;
+    this.tireFilter = null;
+    this.tireGain = null;
+    this.squealGain = null;
+    this.windFilter = null;
+    this.windGain = null;
+    this.masterGain = null;
+    this.noiseBuffer = null;
+
+    if (this.ctx) {
+      const ctx = this.ctx;
+      this.ctx = null;
+      if (ctx.state !== 'closed') {
+        void ctx.close().catch(() => {});
+      }
+    }
+  }
+
   public getMuted(): boolean {
     return this.isMuted;
   }

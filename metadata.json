@@ -1,6 +1,8 @@
 {
-  "name": "CHRONO STAGE // Pure Point-to-Point Rally Simulation",
-  "description": "Hardcore 3D point-to-point stage rally simulator with authentic weight transfer, 4-wheel suspension kinematics, combined-slip tire physics, manual transmission, co-driver pacenotes, and multi-surface stages.",
+  "name": "gaistudio // Unified WebApp Workspace",
+  "description": "Unified React workspace shell hosting multiple isolated Google AI Studio web apps and WebGL prototypes.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
