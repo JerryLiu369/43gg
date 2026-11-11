@@ -101,6 +101,7 @@ export class RallySimulationEngine {
   private flyoverTimeSec = 0;
   private lastRafTimeMs = 0;
   private rafId = 0;
+  private disposed = false;
   private isHeadless: boolean;
   private lastHeadlessRenderMs = 0;
 
@@ -194,8 +195,10 @@ export class RallySimulationEngine {
   }
 
   public startLoop(): void {
+    if (this.disposed) return;
     this.lastRafTimeMs = performance.now();
     const tick = (nowMs: number) => {
+      if (this.disposed) return;
       this.rafId = requestAnimationFrame(tick);
 
       // In headless CPU WebGL, throttle to ~18fps so software rendering never stalls Playwright
@@ -212,9 +215,17 @@ export class RallySimulationEngine {
   }
 
   public dispose(): void {
-    cancelAnimationFrame(this.rafId);
+    this.disposed = true;
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = 0;
+    }
+    this.audio.dispose();
     this.input.dispose();
     this.renderer.dispose();
+    if (typeof document !== 'undefined') {
+      delete document.body.dataset.state;
+    }
   }
 
   public handleResize(width: number, height: number): void {

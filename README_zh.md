@@ -1,105 +1,110 @@
 [English](./README.md) | **简体中文**
 
-# gaistudio — Google AI Studio 多项目工作区
+# gaistudio — 统一 React WebApp 多应用工作区
 
-本仓库用于统一整理和存放 Google AI Studio 原型与小型 Web 项目。
-
-为了同时兼容 Google AI Studio 当前的根目录双向同步入口与现有 GitHub Pages 部署（`/` 与 `/ds/`），仓库保留根目录作为默认/活跃 AI Studio 工作区（`CHRONO STAGE`），并将其他独立小项目统一收口到 `apps/<project-slug>/` 目录下各自自包含维护。
+`gaistudio` 是一个基于 React 19 + Vite 8 + TypeScript + Tailwind CSS 4 的统一 WebApp 外壳工作区，通过单一入口与单一预览端口收口多个相互隔离的小应用与原型。
 
 ---
 
-## 一、项目总目录
+## 一、内置小应用列表
 
-| 项目标识 | 目录位置 | 类型 / 技术栈 | 本地运行方式 | 文档与线上入口 |
-| :--- | :--- | :--- | :--- | :--- |
-| `chrono-stage` | `.`（根目录默认项目） | React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + WebGL 3D 拉力模拟 | `npm run dev` | [游戏手册](docs/chrono-stage_zh.md) · Pages `/` |
-| `ds-stage` | `apps/ds-stage/` | 纯静态 HTML + 原生 JS + WebGL 1.0 拉力模拟（零构建，镜像自 `ds-stage` 分支） | `npm run dev:ds` 或直接打开 `apps/ds-stage/index.html` | [项目说明](apps/ds-stage/README.md) · Pages `/ds/` |
+| 应用标识 (`id`) | 名称 | 隔离方式 | 目录位置 | 直接访问路由 | 说明文档 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整资源销毁 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [中文游戏手册](docs/chrono-stage_zh.md) |
+| `ds-stage` | `STAGE` | 原生静态 HTML + JS + WebGL 1.0 `<iframe>` 隔离沙盒 | `apps/ds-stage/` | `/?app=ds-stage` | [项目说明](apps/ds-stage/README.md) |
 
 ---
 
-## 二、目录结构
+## 二、目录结构与核心特性
 
 ```text
 gaistudio/
+├── src/
+│   ├── App.tsx                  # 统一 React 外壳：路由分发、顶部返回导航条、应用视口
+│   ├── apps/
+│   │   ├── registry.ts          # 唯一清晰的小应用注册清单
+│   │   └── chrono-stage/        # CHRONO STAGE 懒加载 React 入口
+│   ├── shell/
+│   │   ├── HomeHub.tsx          # 桌面与移动端自适应首页应用大厅
+│   │   ├── IframeAppHost.tsx    # Iframe 隔离宿主（退出时主动释放音频/WebGL/事件）
+│   │   ├── AppErrorBoundary.tsx # 子应用异常兜底与返回首页恢复
+│   │   ├── router.ts            # 兼容根路径 `/` 与 `/gaistudio/` 子路径的路由工具
+│   │   └── shell.test.ts        # 注册表与路由单元测试
+│   ├── components/              # CHRONO STAGE 弹窗与 SVG 路书组件
+│   ├── game/                    # CHRONO STAGE 物理、赛道、音频、输入与单元测试
+│   └── render/                  # CHRONO STAGE WebGL 3D 渲染器
 ├── apps/
-│   └── ds-stage/          # 独立静态项目（STAGE，保留自包含结构与相对路径资源）
+│   └── ds-stage/                # 纯静态零构建拉力游戏（iframe 沙盒运行）
 ├── docs/
-│   └── chrono-stage_zh.md # 原根目录 CHRONO STAGE 完整中文手册存档
+│   └── chrono-stage_zh.md       # CHRONO STAGE 完整中文驾驶手册
 ├── scripts/
-│   └── workspace.mjs      # 无外部依赖的多项目列表、静态预览、校验与 Pages 打包辅助脚本
-├── src/                   # 根目录默认项目（CHRONO STAGE）源码
-├── index.html             # 根目录默认项目入口
-├── metadata.json          # Google AI Studio 应用元数据
-├── package.json           # 根目录依赖与工作区命令
-├── vite.config.ts         # Vite 构建配置（base: '/gaistudio/'）
-├── .env.example           # 根目录环境变量模板（不含真实密钥）
-├── .gitignore             # 递归忽略 node_modules/、dist/、.env* 等本地产物
-├── README.md              # 英文文档（Pure English）
-└── README_zh.md           # 中文文档（当前文件）
+│   └── workspace.mjs            # 工作区列表、全量校验与静态打包脚本
+├── vite.config.ts               # 相对路径 base (`./`) + apps/* 静态服务与构建同步插件
+├── index.html                   # 标准 React/Vite 根入口
+├── metadata.json                # Google AI Studio 应用元数据
+├── .env.example                 # 环境变量模板（禁止存放真实密钥）
+└── .gitignore                   # 忽略 node_modules/、dist/、.env* 等本地文件
 ```
+
+核心设计：
+
+- **单一启动与预览入口**：只需执行 `npm run dev`（端口 `3000`），首页即可直接启动两款应用并随时返回，无需多个 dev server 或手动切端口。
+- **首页零引擎空转**：停留在应用大厅（`/`）时，不会提前初始化任何游戏的 WebGL 上下文、`requestAnimationFrame` 循环或 Web Audio 引擎。
+- **退出资源释放**：从任意小应用返回首页时，自动卸载组件或清空沙盒，释放 WebGL、动画帧、WebAudio / 语音合成与全局键盘/窗口监听。
+- **双路径兼容**：使用 Vite 相对资源基准（`base: './'`）与查询/哈希路由（`?app=<id>` 与 `#/apps/<id>`），构建产物同时兼容根路径 `/`（本地开发/预览、Google AI Studio）与 GitHub Pages 子路径 `/gaistudio/`。
 
 ---
 
-## 三、常用命令
+## 三、开发与校验命令
 
 在仓库根目录执行：
 
 ```bash
-npm install          # 安装根目录依赖
-npm run dev          # 启动根目录默认项目（CHRONO STAGE，端口 3000）
-npm run dev:ds       # 启动 apps/ds-stage 静态预览（端口 3001）
+npm install          # 安装依赖
+npm run dev          # 单一命令启动统一 React 外壳与内置子应用（端口 3000）
 npm run typecheck    # TypeScript 类型检查（tsc --noEmit）
-npm test             # 运行根目录物理与赛道单元测试
-npm run build        # 构建根目录项目到 dist/
-npm run apps:list    # 列出工作区内全部项目与运行方式
-npm run apps:check   # 执行环境变量安全检查、根项目校验/构建以及全部 apps/* 语法与资源校验
-npm run build:pages  # 本地组装兼容 gh-pages 的 dist/（/ 与 /ds/），仅生成产物不自动推送
+npm test             # 运行物理引擎与外壳注册表/路由单元测试
+npm run build        # 构建生产产物 dist/（含根外壳与 apps/* 纯静态运行时资源）
+npm run preview      # 本地预览 dist/ 构建产物
+npm run apps:list    # 列出工作区外壳与各小应用
+npm run apps:check   # 执行 .env 安全检查、tsc、单元测试、vite build 及 apps/* 语法资源校验
+npm run dev:ds       # 可选：单独静态预览 apps/ds-stage（端口 3001）
 ```
 
 ---
 
-## 四、Google AI Studio 集成边界与多项目工作流
+## 四、如何加入新的小应用
 
-根据 Google 官方文档（[Sync your AI Studio apps with GitHub](https://aistudio.google.com/learn/sync-your-ai-studio-apps-with-github) 与 [Build apps in Google AI Studio](https://ai.google.dev/gemini-api/docs/aistudio-build-mode)）：
+只需新增小应用目录，并在 `src/apps/registry.ts` 增加一条登记项，无需改动 `vite.config.ts`、`package.json` 或多套构建脚本：
 
-- **已核实的平台边界**：Google AI Studio Build 模式的双向 GitHub 同步仅支持**以整个仓库根目录为粒度**进行绑定（1 个 AI Studio 工作区 ↔ 1 个 GitHub 仓库根目录）。官方文档**未提供**绑定 `apps/<project-slug>/` 子目录或选择特定分支的选项，也不支持多个独立 AI Studio 网页会话无冲突并行同步到同一个仓库的不同子目录；此外，首次导入已有仓库并建立同步时，AI Studio 可能要求执行 Force push 覆盖根目录兼容性改动。
-- **因此，在本单仓内沉淀多个小项目的推荐工作流如下**：
+### 方式一：新增 React 小应用（推荐与 AI Studio React 渲染搭配）
 
-### 方式 A（推荐）：AI Studio 开发导出 ZIP → 落盘 `apps/<project-slug>/`
+1. 在 `src/apps/<slug>/index.tsx` 实现并默认导出 React 组件（在 `useEffect` 清理函数中释放自身定时器、监听、RAF 或 WebGL/音频资源）。
+2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 数组添加一条配置，设置 `kind: 'react-lazy'` 与 `loader: () => import('./<slug>/index.tsx')`。
 
-适合积累大量独立小项目，完全避免多会话互踩或强推风险：
+### 方式二：新增纯静态 HTML / 原生 JS 小应用
 
-1. 在 Google AI Studio 中创建并调试小项目，完成后点击下载 ZIP（或导出源码）。
-2. 在本地工作区先执行 `git pull origin main`。
-3. 将源码解压到 `apps/<project-slug>/`（如 `apps/json-diff-tool/`），确保资源路径与依赖自包含。
-4. 本地测试并执行 `npm run apps:check`，更新本总目录表格后提交并 `git push`。
-
-### 方式 B：根目录作为唯一活跃 AI Studio 同步槽位（轮转归档）
-
-如果你希望某一个正在高频迭代的项目直接使用 AI Studio 双向同步：
-
-1. 将**仓库根目录**视为当前唯一接入 AI Studio 双向同步的活跃工作区（当前为 `CHRONO STAGE`）。
-2. 每次在 AI Studio 与本地之间切换编辑前，先 Pull 再改、改完及时 Push，**切勿无脑 Force push** 以免影响仓库历史或其它目录。
-3. 当根目录项目开发告一段落、准备切入下一个新项目时，先在本地将根目录旧项目归档复制到 `apps/<project-slug>/` 并提交推送，再替换根目录内容继续下一个项目。
+1. 将自包含静态目录放到 `apps/<slug>/`（包含 `index.html` 与相对路径资源）。
+2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 数组添加一条配置，设置 `kind: 'iframe'` 与 `entryPath: 'apps/<slug>/index.html'`。
+3. `vite.config.ts` 会在 `npm run dev` 时自动托管 `/apps/<slug>/`，并在 `npm run build` 时自动过滤文档和 `.env` 后把纯静态运行时文件复制到 `dist/apps/<slug>/`。
 
 ---
 
-## 五、添加新小项目与环境变量规则
+## 五、Google AI Studio 使用与同步说明
 
-1. **目录命名**：统一放在 `apps/<project-slug>/`（小写字母、数字和连字符，例如 `apps/markdown-preview/`）。
-2. **项目自包含**：
-   - 纯静态项目：至少包含 `index.html`，CSS/JS/图片等资源全部放在各自目录内并使用相对路径引用。
-   - Vite / React / Node 项目：各自目录保留独立的 `package.json`、`index.html`、`src/`、`metadata.json` 等文件；如需部署到 GitHub Pages 子路径，注意配置相对路径或匹配的 `vite` `base`。
-3. **资源与构建产物**：按项目各自存放，禁止把业务资源堆到仓库根目录；`node_modules/`、`dist/`、`build/` 已由根 `.gitignore` 统一忽略。
-4. **密钥管理（重要）**：
-   - 任何真实 API Key（如 `GEMINI_API_KEY`）**严禁提交进 Git**。
-   - 如需环境变量，仅在项目目录内提交 `.env.example`（只写变量名和占位符），真实值写在本地 `.env` 中。根 `.gitignore` 的 `.env*` 与 `!.env.example` 规则会在根目录及所有 `apps/*` 子目录生效。
+参考 Google 官方文档（[Sync your AI Studio apps with GitHub](https://aistudio.google.com/learn/sync-your-ai-studio-apps-with-github) 与 [Build apps in Google AI Studio](https://ai.google.dev/gemini-api/docs/aistudio-build-mode)）：
+
+- 官方文档目前说明了在 Build 模式中以**整仓**为单位导入与双向同步 GitHub 仓库（可选 React 等前端框架），并未提供只绑定仓库内某个子目录（如 `apps/<slug>/`）或按子应用绑定不同分支的机制。
+- **推荐工作流**：在 Google AI Studio 中直接导入同一个 `JerryLiu369/gaistudio` 仓库，在架构/渲染选项中选择 **React**，将仓库作为统一的 React 应用工作区来维护；不同功能各自隔离放在 `src/apps/<slug>/` 或 `apps/<slug>/`，统一在 `src/apps/registry.ts` 登记即可。
+- 协作习惯：编辑前先拉取最新 `main`，修改后及时提交推送，不使用强制推送（`force push`）。
+- 验证边界说明：当前已在本地完成 `npm run dev`、`npm run build`、`npm run preview` 与真实浏览器全流程测试及 GitHub Pages 线上访问核验；尚未在已登录的真实 Google AI Studio 网页工作台内实测导入。
 
 ---
 
-## 六、分支与 GitHub Pages 说明
+## 六、仓库私有性与 GitHub Pages 部署隔离
 
-- `main`：默认分支，存放完整多项目工作区。
-- `ds-stage`：保留的历史分支（`STAGE` 源码；已同步保留一份在 `main` 的 `apps/ds-stage/`）。
-- `gh-pages`：GitHub Pages 静态发布分支（`/` 对应 `CHRONO STAGE`，`/ds/` 对应 `STAGE`）。
-- **仓库与站点可见性提醒**：虽然 `JerryLiu369/gaistudio` 仓库本身为 **Private（私有）**，但当前开启的 GitHub Pages 站点（`https://jerryliu369.github.io/gaistudio/`）仍为 **Public（公开访问）**。部署静态页面前请确认站点内容不包含敏感信息。
+- `main`：工作区源码主分支，仓库保持 **Private（私有）**。
+- `ds-stage`：保留的 `STAGE` 历史独立分支（代码已同步在 `main` 的 `apps/ds-stage/`）。
+- `gh-pages`：GitHub Pages 静态发布分支，站点（`https://jerryliu369.github.io/gaistudio/`）当前保持 **Public（公开访问）**。
+- **有意采用的隔离策略**：源码仓库 **Private**、线上静态 WebApp **Public** 是当前明确选择。发布到 `gh-pages` 的仅限 `dist/` 编译后的纯静态运行时产物（`.nojekyll`、`index.html`、`assets/` 与 `apps/*` 运行时资源），绝不将 `src/` 源码、`.env*`、凭据或 `.aistudio/` 临时媒体提交到 `gh-pages`。
+- **密钥规范**：真实 API Key 仅保存在本地 `.env`，严禁提交进 Git 历史；示例占位请放在 `.env.example`。

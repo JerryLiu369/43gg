@@ -43,6 +43,7 @@ export class InputController {
     window.removeEventListener('keydown', this.boundKeyDown);
     window.removeEventListener('keyup', this.boundKeyUp);
     window.removeEventListener('blur', this.boundBlur);
+    this.clearAll();
   }
 
   public clearAll(): void {

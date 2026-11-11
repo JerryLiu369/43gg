@@ -457,16 +457,30 @@ export class RallyWebGLRenderer {
 
   public dispose(): void {
     const gl = this.gl;
-    if (!gl) return;
-    if (this.stageBuffer) gl.deleteBuffer(this.stageBuffer);
-    if (this.carChassisBuffer) gl.deleteBuffer(this.carChassisBuffer);
-    if (this.ghostCarBuffer) gl.deleteBuffer(this.ghostCarBuffer);
-    if (this.wheelBuffer) gl.deleteBuffer(this.wheelBuffer);
-    if (this.cockpitInteriorBuffer) gl.deleteBuffer(this.cockpitInteriorBuffer);
-    if (this.hoodCameraBuffer) gl.deleteBuffer(this.hoodCameraBuffer);
-    if (this.steeringWheelBuffer) gl.deleteBuffer(this.steeringWheelBuffer);
-    if (this.particleBuffer) gl.deleteBuffer(this.particleBuffer);
-    if (this.program) gl.deleteProgram(this.program);
+    if (gl) {
+      if (this.stageBuffer) gl.deleteBuffer(this.stageBuffer);
+      if (this.carChassisBuffer) gl.deleteBuffer(this.carChassisBuffer);
+      if (this.ghostCarBuffer) gl.deleteBuffer(this.ghostCarBuffer);
+      if (this.wheelBuffer) gl.deleteBuffer(this.wheelBuffer);
+      if (this.cockpitInteriorBuffer) gl.deleteBuffer(this.cockpitInteriorBuffer);
+      if (this.hoodCameraBuffer) gl.deleteBuffer(this.hoodCameraBuffer);
+      if (this.steeringWheelBuffer) gl.deleteBuffer(this.steeringWheelBuffer);
+      if (this.particleBuffer) gl.deleteBuffer(this.particleBuffer);
+      if (this.program) gl.deleteProgram(this.program);
+      this.gl = null;
+    }
+    this.stageBuffer = null;
+    this.carChassisBuffer = null;
+    this.ghostCarBuffer = null;
+    this.wheelBuffer = null;
+    this.cockpitInteriorBuffer = null;
+    this.hoodCameraBuffer = null;
+    this.steeringWheelBuffer = null;
+    this.particleBuffer = null;
+    this.program = null;
+    this.ctx2d = null;
+    this.canvas.width = 0;
+    this.canvas.height = 0;
   }
 
   /**

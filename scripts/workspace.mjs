@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const APPS_DIR = path.join(ROOT_DIR, 'apps');
+const SRC_APPS_DIR = path.join(ROOT_DIR, 'src', 'apps');
+const STATIC_APPS_DIR = path.join(ROOT_DIR, 'apps');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -51,36 +52,54 @@ function discoverApps() {
 
   const rootPkg = readJsonIfExists(path.join(ROOT_DIR, 'package.json'));
   const rootMeta = readJsonIfExists(path.join(ROOT_DIR, 'metadata.json'));
-  const rootTitle = rootMeta?.name || extractHtmlTitle(path.join(ROOT_DIR, 'index.html')) || rootPkg?.name || 'root';
+  const rootTitle = rootMeta?.name || extractHtmlTitle(path.join(ROOT_DIR, 'index.html')) || rootPkg?.name || 'gaistudio';
   projects.push({
-    slug: 'chrono-stage (root)',
+    slug: 'shell (root)',
     dir: '.',
     absDir: ROOT_DIR,
-    type: rootPkg?.scripts?.build ? 'vite-react-ts' : 'node-app',
+    type: 'unified-react-shell',
     title: rootTitle,
     runCmd: 'npm run dev',
-    pagesPath: '/ (legacy gh-pages)',
-    isRoot: true,
+    route: '/',
+    kind: 'root',
   });
 
-  if (fs.existsSync(APPS_DIR)) {
-    const entries = fs.readdirSync(APPS_DIR, { withFileTypes: true })
+  if (fs.existsSync(SRC_APPS_DIR)) {
+    const entries = fs.readdirSync(SRC_APPS_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const entry of entries) {
-      const absDir = path.join(APPS_DIR, entry.name);
+      projects.push({
+        slug: entry.name,
+        dir: `src/apps/${entry.name}`,
+        absDir: path.join(SRC_APPS_DIR, entry.name),
+        type: 'react-lazy',
+        title: entry.name,
+        runCmd: 'npm run dev (via shell)',
+        route: `/?app=${entry.name}`,
+        kind: 'react-app',
+      });
+    }
+  }
+
+  if (fs.existsSync(STATIC_APPS_DIR)) {
+    const entries = fs.readdirSync(STATIC_APPS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of entries) {
+      const absDir = path.join(STATIC_APPS_DIR, entry.name);
       const pkg = readJsonIfExists(path.join(absDir, 'package.json'));
       const meta = readJsonIfExists(path.join(absDir, 'metadata.json'));
       const hasIndex = fs.existsSync(path.join(absDir, 'index.html'));
       const title = meta?.name || extractHtmlTitle(path.join(absDir, 'index.html')) || pkg?.name || entry.name;
-      const type = pkg ? (pkg.scripts?.build ? 'vite/node-pkg' : 'node-pkg') : (hasIndex ? 'static-html' : 'unknown');
+      const type = pkg ? (pkg.scripts?.build ? 'vite/node-pkg' : 'node-pkg') : (hasIndex ? 'static-html-iframe' : 'unknown');
       const runCmd = pkg?.scripts?.dev
         ? `npm --prefix apps/${entry.name} run dev`
         : hasIndex
-          ? `node scripts/workspace.mjs serve ${entry.name}`
+          ? `npm run dev (via shell) or node scripts/workspace.mjs serve ${entry.name}`
           : '(no runnable entry)';
-      const pagesPath = entry.name === 'ds-stage' ? '/ds/ (legacy gh-pages)' : '-';
 
       projects.push({
         slug: entry.name,
@@ -89,8 +108,8 @@ function discoverApps() {
         type,
         title,
         runCmd,
-        pagesPath,
-        isRoot: false,
+        route: `/?app=${entry.name}`,
+        kind: 'static-app',
       });
     }
   }
@@ -106,8 +125,8 @@ function cmdList() {
     console.log(`  Path:   ${p.dir}`);
     console.log(`  Title:  ${p.title}`);
     console.log(`  Type:   ${p.type}`);
+    console.log(`  Route:  ${p.route}`);
     console.log(`  Run:    ${p.runCmd}`);
-    console.log(`  Pages:  ${p.pagesPath}`);
   }
 }
 
@@ -126,7 +145,7 @@ function walkFiles(dir, extFilter) {
   return out;
 }
 
-function checkStaticHtmlAssets(appDir, htmlPath) {
+function checkStaticHtmlAssets(htmlPath) {
   const html = fs.readFileSync(htmlPath, 'utf8');
   const attrRegex = /\b(?:src|href)=["']([^"']+)["']/gi;
   let match;
@@ -173,6 +192,43 @@ function checkNoTrackedEnvSecrets() {
   }
 }
 
+function verifyBuiltDist() {
+  const distDir = path.join(ROOT_DIR, 'dist');
+  const indexHtmlPath = path.join(distDir, 'index.html');
+  if (!fs.existsSync(indexHtmlPath)) {
+    throw new Error('dist/index.html missing after vite build');
+  }
+  const html = fs.readFileSync(indexHtmlPath, 'utf8');
+  if (html.includes('/gaistudio/assets/')) {
+    throw new Error('dist/index.html unexpectedly hardcodes /gaistudio/assets/ prefix');
+  }
+  if (!html.includes('./assets/')) {
+    throw new Error('dist/index.html expected relative ./assets/ asset references for dual root/subpath compatibility');
+  }
+
+  // Verify every static app in apps/* was bundled into dist/apps/<slug>/index.html without .env or README leakage
+  if (fs.existsSync(STATIC_APPS_DIR)) {
+    for (const entry of fs.readdirSync(STATIC_APPS_DIR, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const srcIndex = path.join(STATIC_APPS_DIR, entry.name, 'index.html');
+      if (!fs.existsSync(srcIndex)) continue;
+      const distIndex = path.join(distDir, 'apps', entry.name, 'index.html');
+      if (!fs.existsSync(distIndex)) {
+        throw new Error(`Built dist missing static sub-app entry: dist/apps/${entry.name}/index.html`);
+      }
+    }
+  }
+
+  // Ensure no private source or .env files leaked into dist/
+  const leakedFiles = walkFiles(distDir).filter((f) => {
+    const base = path.basename(f);
+    return base.startsWith('.env') || base.endsWith('.map') || base.endsWith('.ts') || base.endsWith('.tsx');
+  });
+  if (leakedFiles.length > 0) {
+    throw new Error(`Unexpected source/env/sourcemap artifact(s) in dist/: ${leakedFiles.join(', ')}`);
+  }
+}
+
 function runBin(cmd, args, cwd) {
   execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 }
@@ -186,48 +242,55 @@ function cmdCheck(argv) {
   const projects = discoverApps();
   console.log(`2) Discovered ${projects.length} project(s): ${projects.map((p) => p.slug).join(', ')}\n`);
 
-  for (const p of projects) {
-    if (p.isRoot) {
-      for (const reqFile of ['index.html', 'package.json', 'metadata.json', 'vite.config.ts']) {
-        if (!fs.existsSync(path.join(p.absDir, reqFile))) {
-          throw new Error(`Root project missing required file: ${reqFile}`);
-        }
-      }
-      console.log(`3) Validating root project (${p.title})...`);
-      const tscBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'tsc');
-      if (!fs.existsSync(tscBin)) {
-        throw new Error('node_modules not installed at root. Run `npm install` first.');
-      }
-      runBin(tscBin, ['--noEmit'], ROOT_DIR);
-      console.log('   OK: tsc --noEmit passed');
-      runBin(process.execPath, ['--test', 'src/game/physics.test.ts'], ROOT_DIR);
-      console.log('   OK: unit tests passed');
-      if (!skipBuild) {
-        const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');
-        runBin(viteBin, ['build'], ROOT_DIR);
-        console.log('   OK: root vite build passed\n');
-      }
-    } else {
-      console.log(`4) Validating subproject ${p.dir}...`);
-      const hasPkg = fs.existsSync(path.join(p.absDir, 'package.json'));
-      const htmlPath = path.join(p.absDir, 'index.html');
-      const hasHtml = fs.existsSync(htmlPath);
-      if (!hasPkg && !hasHtml) {
-        throw new Error(`Subproject ${p.dir} has neither index.html nor package.json`);
-      }
-      if (hasHtml && !hasPkg) {
-        checkStaticHtmlAssets(p.absDir, htmlPath);
-        console.log(`   OK: ${p.dir}/index.html asset references resolved`);
-      }
-      const jsFiles = walkFiles(p.absDir, (f) => f.endsWith('.js') || f.endsWith('.mjs'));
-      for (const jsFile of jsFiles) {
-        execFileSync(process.execPath, ['--check', jsFile], { cwd: p.absDir, stdio: 'pipe' });
-      }
-      if (jsFiles.length > 0) {
-        console.log(`   OK: syntax check passed on ${jsFiles.length} JS file(s)`);
-      }
-      console.log('');
+  for (const reqFile of ['index.html', 'package.json', 'metadata.json', 'vite.config.ts', 'src/apps/registry.ts']) {
+    if (!fs.existsSync(path.join(ROOT_DIR, reqFile))) {
+      throw new Error(`Root workspace missing required file: ${reqFile}`);
     }
+  }
+
+  console.log('3) Validating unified root React shell & tests...');
+  const tscBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'tsc');
+  if (!fs.existsSync(tscBin)) {
+    throw new Error('node_modules not installed at root. Run `npm install` first.');
+  }
+  runBin(tscBin, ['--noEmit'], ROOT_DIR);
+  console.log('   OK: tsc --noEmit passed');
+
+  runBin(
+    process.execPath,
+    ['--test', 'src/game/physics.test.ts', 'src/shell/shell.test.ts'],
+    ROOT_DIR,
+  );
+  console.log('   OK: unit tests passed (physics + shell/registry)');
+
+  if (!skipBuild) {
+    const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');
+    runBin(viteBin, ['build'], ROOT_DIR);
+    verifyBuiltDist();
+    console.log('   OK: root vite build & dist/ artifact verification passed\n');
+  }
+
+  for (const p of projects) {
+    if (p.kind !== 'static-app') continue;
+    console.log(`4) Validating static subproject ${p.dir}...`);
+    const hasPkg = fs.existsSync(path.join(p.absDir, 'package.json'));
+    const htmlPath = path.join(p.absDir, 'index.html');
+    const hasHtml = fs.existsSync(htmlPath);
+    if (!hasPkg && !hasHtml) {
+      throw new Error(`Subproject ${p.dir} has neither index.html nor package.json`);
+    }
+    if (hasHtml && !hasPkg) {
+      checkStaticHtmlAssets(htmlPath);
+      console.log(`   OK: ${p.dir}/index.html asset references resolved`);
+    }
+    const jsFiles = walkFiles(p.absDir, (f) => f.endsWith('.js') || f.endsWith('.mjs'));
+    for (const jsFile of jsFiles) {
+      execFileSync(process.execPath, ['--check', jsFile], { cwd: p.absDir, stdio: 'pipe' });
+    }
+    if (jsFiles.length > 0) {
+      console.log(`   OK: syntax check passed on ${jsFiles.length} JS file(s)`);
+    }
+    console.log('');
   }
 
   console.log('All workspace checks passed.');
@@ -255,7 +318,7 @@ function cmdServe(argv) {
     return;
   }
 
-  const appDir = path.join(APPS_DIR, slug);
+  const appDir = path.join(STATIC_APPS_DIR, slug);
   if (!fs.existsSync(appDir)) {
     console.error(`Unknown app slug "${slug}" (expected directory apps/${slug})`);
     process.exit(1);
@@ -303,21 +366,13 @@ function cmdStagePages() {
   if (!fs.existsSync(viteBin)) {
     throw new Error('node_modules not installed at root. Run `npm install` first.');
   }
-  console.log('Building root app (CHRONO STAGE) into dist/...');
+  console.log('Building unified React workspace into dist/...');
   runBin(viteBin, ['build'], ROOT_DIR);
+  verifyBuiltDist();
 
   const distDir = path.join(ROOT_DIR, 'dist');
   fs.writeFileSync(path.join(distDir, '.nojekyll'), '');
-
-  const dsSrc = path.join(APPS_DIR, 'ds-stage');
-  if (fs.existsSync(dsSrc)) {
-    const dsDst = path.join(distDir, 'ds');
-    fs.rmSync(dsDst, { recursive: true, force: true });
-    fs.cpSync(dsSrc, dsDst, { recursive: true });
-    console.log('Copied apps/ds-stage -> dist/ds/');
-  }
-
-  console.log('Pages staging directory ready at dist/ (compatible with gh-pages / and /ds/).');
+  console.log('Static deployment bundle ready at dist/ (compatible with both / and /gaistudio/).');
 }
 
 const [, , command = 'list', ...rest] = process.argv;
