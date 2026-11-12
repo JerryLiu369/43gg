@@ -10,6 +10,72 @@ interface HomeHubProps {
 type CategoryFilter = 'all' | AppCategory;
 
 const AppCoverGraphic: React.FC<{ appId: string }> = ({ appId }) => {
+  if (appId === 'astral-orrery') {
+    return (
+      <svg
+        viewBox="0 0 240 150"
+        className="w-full h-full"
+        fill="none"
+        aria-hidden="true"
+      >
+        {/* Minimalist Swiss Astronomical Orrery Dial */}
+        <circle
+          cx="120"
+          cy="76"
+          r="50"
+          fill="#FAF8F4"
+          stroke="#D6D0C4"
+          strokeWidth="1.5"
+        />
+        <circle
+          cx="120"
+          cy="76"
+          r="35"
+          stroke="#E4DFD5"
+          strokeWidth="1.25"
+        />
+        <circle
+          cx="120"
+          cy="76"
+          r="20"
+          stroke="#1C1917"
+          strokeWidth="1.4"
+        />
+        {/* 12-o'clock Meridian Resonance Axis */}
+        <line
+          x1="120"
+          y1="20"
+          x2="120"
+          y2="76"
+          stroke="#C2410C"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <line
+          x1="64"
+          y1="76"
+          x2="176"
+          y2="76"
+          stroke="#E7E2D8"
+          strokeWidth="1"
+        />
+        {/* Aligned Syzygy Planets & Central Core */}
+        <circle cx="120" cy="41" r="4.5" fill="#0F766E" />
+        <circle cx="120" cy="56" r="4" fill="#C2410C" />
+        <circle
+          cx="155"
+          cy="76"
+          r="4"
+          fill="#FAF8F4"
+          stroke="#1C1917"
+          strokeWidth="1.75"
+        />
+        <circle cx="120" cy="76" r="6" fill="#1C1917" />
+        <circle cx="120" cy="76" r="2.2" fill="#FAF8F4" />
+      </svg>
+    );
+  }
+
   if (appId === 'lucky-landlord') {
     return (
       <svg
@@ -180,6 +246,7 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
             {(
               [
                 ['all', '全部'],
+                ['incremental', '增量'],
                 ['strategy', '策略'],
                 ['racing', '竞速'],
               ] as const

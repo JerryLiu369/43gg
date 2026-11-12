@@ -4,7 +4,7 @@ export type AppRuntimeKind = 'react-lazy' | 'iframe';
 
 export type AppAccent = 'amber' | 'cyan' | 'emerald' | 'rose';
 
-export type AppCategory = 'strategy' | 'racing';
+export type AppCategory = 'strategy' | 'racing' | 'incremental';
 
 export interface WorkspaceAppEntry {
   /** Stable slug used in URL routing (`?app=<id>`) and directory naming */
@@ -41,6 +41,19 @@ export interface WorkspaceAppEntry {
  * - Static HTML/JS app: place folder under `apps/<slug>/` with `index.html`, then add one entry with `kind: 'iframe'` and `entryPath`.
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
+  {
+    id: 'astral-orrery',
+    title: '天枢浑仪',
+    subtitle: '发条星轨共鸣增量工坊',
+    description: '五曜子午交汇、十二星宫棱镜构筑、朔望连珠阶乘爆发与星盘转生。',
+    techLabel: '物理增量',
+    tags: ['放置构筑'],
+    category: 'incremental',
+    accent: 'amber',
+    kind: 'react-lazy',
+    loader: () => import('./astral-orrery/AstralOrreryApp.tsx'),
+    sourceDir: 'src/apps/astral-orrery',
+  },
   {
     id: 'lucky-landlord',
     title: '吉星包租公',
