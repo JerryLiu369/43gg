@@ -200,3 +200,22 @@ test('rent payment, optional contract signing, cycle 12 victory, and endless tra
   assert.equal(run.phase, 'ready');
   assert.equal(run.cycle, VICTORY_CYCLE + 1);
 });
+
+test('ascension 0 casual tier lowers cycle rent target and grants bonus dispatch tokens', () => {
+  const casualRun = createNewRun('landlady_chen', 0, 1234);
+  const standardRun = createNewRun('landlady_chen', 1, 1234);
+  const hardRun = createNewRun('landlady_chen', 4, 1234);
+
+  assert.equal(casualRun.ascension, 0);
+  assert.ok(
+    casualRun.rentTarget < standardRun.rentTarget,
+    `Casual rent (${casualRun.rentTarget}) should be lower than Standard (${standardRun.rentTarget})`,
+  );
+  assert.ok(
+    standardRun.rentTarget < hardRun.rentTarget,
+    `Standard rent (${standardRun.rentTarget}) should be lower than Ascension 4 (${hardRun.rentTarget})`,
+  );
+  assert.equal(casualRun.dispatchTokens, standardRun.dispatchTokens + 1);
+  assert.equal(casualRun.maxDispatchTokens, standardRun.maxDispatchTokens + 1);
+});
+

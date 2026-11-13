@@ -10,6 +10,7 @@ import {
   DEFAULT_TUNING,
   FIXED_DT,
   PRO_INPUT_SETTINGS,
+  RALLY_DIFFICULTY_DEFS,
   SPORT_INPUT_SETTINGS,
   applyDrivingPreset,
   createInitialCarState,
@@ -20,6 +21,7 @@ import {
   stepCarPhysics,
 } from './physics.ts';
 import { getAllStages, getStageById } from './stages.ts';
+import { loadRallyOnboardingCompleted } from './storage.ts';
 
 test('all 6 rally stages generate complete 3D spline segments, gantries, brake boards, and pacenotes without self-intersection', () => {
   const stages = getAllStages();
@@ -310,4 +312,76 @@ test('engine torque curve exhibits low-RPM weakness and turbo boost amplificatio
 
   assert.ok(midRpmFullBoost > lowRpmNoBoost * 2.5, 'Turbo boost at mid-high RPM should strongly exceed low-RPM torque');
   assert.ok(damagedEngine < midRpmFullBoost * 0.65, 'Engine damage must noticeably reduce output torque');
+});
+
+test('three-tier rally difficulty scales collision damage, recovery penalty, and AI stage benchmark times', () => {
+  assert.ok(
+    RALLY_DIFFICULTY_DEFS.relaxed.damageScale < RALLY_DIFFICULTY_DEFS.standard.damageScale &&
+      RALLY_DIFFICULTY_DEFS.standard.damageScale < RALLY_DIFFICULTY_DEFS.master.damageScale
+  );
+  assert.ok(
+    RALLY_DIFFICULTY_DEFS.relaxed.recoveryPenaltySec <
+      RALLY_DIFFICULTY_DEFS.standard.recoveryPenaltySec &&
+      RALLY_DIFFICULTY_DEFS.standard.recoveryPenaltySec <
+        RALLY_DIFFICULTY_DEFS.master.recoveryPenaltySec
+  );
+
+  const stage = getStageById('finland_jumps');
+  const runWallHit = (difficulty: 'relaxed' | 'standard' | 'master') => {
+    const car = createInitialCarState(stage);
+    const seg0 = stage.segments[2];
+    car.x = seg0.x + seg0.normalX * (seg0.widthM * 0.5 + 4.5);
+    car.z = seg0.z + seg0.normalZ * (seg0.widthM * 0.5 + 4.5);
+    car.vx = seg0.normalX * 16;
+    car.vz = seg0.normalZ * 16;
+    stepCarPhysics(
+      car,
+      {
+        steer: 0,
+        throttle: 0,
+        brake: 0,
+        handbrake: 0,
+        clutch: 0,
+        shiftUpJustPressed: false,
+        shiftDownJustPressed: false,
+        ignitionJustPressed: false,
+      },
+      stage,
+      DEFAULT_TUNING,
+      { ...SPORT_INPUT_SETTINGS, difficulty },
+      'clear',
+      1.0
+    );
+    return car.damage.steering + car.damage.engine + car.damage.lights;
+  };
+
+  const dmgRelaxed = runWallHit('relaxed');
+  const dmgStandard = runWallHit('standard');
+  const dmgMaster = runWallHit('master');
+  assert.ok(dmgRelaxed > 0 && dmgRelaxed < dmgStandard, 'Relaxed difficulty reduces wall impact damage');
+  assert.ok(dmgStandard < dmgMaster, 'Master difficulty increases wall impact damage');
+
+  const stages = getAllStages();
+  const champRelaxed = recordChampionshipStageResult(
+    createNewChampionship(stages, 'AWD'),
+    stages[0],
+    true,
+    stages[0].targetParTimeSec + 4,
+    'relaxed'
+  );
+  const champMaster = recordChampionshipStageResult(
+    createNewChampionship(stages, 'AWD'),
+    stages[0],
+    true,
+    stages[0].targetParTimeSec + 4,
+    'master'
+  );
+  const bestAiRelaxed = Math.min(
+    ...champRelaxed.standings.filter((s) => !s.isPlayer).map((s) => s.lastStageTimeSec)
+  );
+  const bestAiMaster = Math.min(
+    ...champMaster.standings.filter((s) => !s.isPlayer).map((s) => s.lastStageTimeSec)
+  );
+  assert.ok(bestAiRelaxed > bestAiMaster + 8, 'Relaxed AI crews should run gentler benchmark times than Master');
+  assert.equal(typeof loadRallyOnboardingCompleted(), 'boolean');
 });

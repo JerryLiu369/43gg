@@ -154,3 +154,97 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   assert.match(agentsDoc, /演进沉淀日志/);
 });
 
+test('hubProgress reads real local milestones safely and ignores unplayed or malformed entries', async () => {
+  const { readHubSnapshot, recordLastPlayedApp, HUB_LAST_PLAYED_KEY } = await import(
+    './hubProgress.ts'
+  );
+  const store = new Map<string, string>();
+  const mockStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, val: string) => {
+      store.set(key, val);
+    },
+  };
+
+  // Fresh visitor: zero fabricated progress
+  const emptySnap = readHubSnapshot(VALID_IDS, mockStorage);
+  assert.equal(emptySnap.lastPlayedAppId, null);
+  assert.deepEqual(emptySnap.progressByAppId, {});
+
+  // Record last played and populate real game saves + one malformed entry
+  recordLastPlayedApp('xuanji-breach', mockStorage);
+  assert.ok(store.has(HUB_LAST_PLAYED_KEY));
+
+  store.set(
+    'gaistudio.xuanji_breach.meta.v1',
+    JSON.stringify({ runsPlayed: 3, victories: 1, bestScore: 2480, highestSectorReached: 4 }),
+  );
+  store.set(
+    'gaistudio.ink_blade.meta.v1',
+    JSON.stringify({ highestUnlockedStage: 2, bestScore: 1850, totalKills: 36, totalVictories: 0 }),
+  );
+  store.set('gaistudio.astral_orrery.meta.v1', '{corrupted_json');
+  store.set(
+    'gaistudio.lucky_landlord.active_run.v1',
+    JSON.stringify({ phase: 'spinning', cycle: 4, coins: 128 }),
+  );
+  store.set(
+    'chrono_rally_stage_records_v1',
+    JSON.stringify({ ss1: { bestTimeSec: 104.2 }, ss2: { bestTimeSec: 112.8 } }),
+  );
+
+  const snap = readHubSnapshot(VALID_IDS, mockStorage);
+  assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
+  assert.match(snap.progressByAppId['xuanji-breach'], /已破阵通关 1 次/);
+  assert.match(snap.progressByAppId['ink-blade'], /解锁至第 3 幕/);
+  assert.equal(snap.progressByAppId['astral-orrery'], undefined);
+  assert.match(snap.progressByAppId['lucky-landlord'], /第 4 周期收租进行中/);
+  assert.match(snap.progressByAppId['chrono-stage'], /已刷新 2 \/ 6 站/);
+
+  // Unknown app ID in last_played is safely ignored
+  recordLastPlayedApp('nonexistent-game', mockStorage);
+  assert.equal(readHubSnapshot(VALID_IDS, mockStorage).lastPlayedAppId, null);
+});
+
+test('filterWorkspaceApps scales across arbitrary N future games, categories, and search queries', async () => {
+  const { filterWorkspaceApps, APP_CATEGORY_LABELS } = await import('../apps/registry.ts');
+  const extendedCatalog = [
+    ...APP_REGISTRY,
+    {
+      id: 'mirror-maze',
+      title: '镜渊折光',
+      subtitle: '光学折射机关解谜',
+      description: '旋转棱镜引导双色光束点亮古碑。',
+      techLabel: '光学解谜',
+      tags: ['烧脑解谜', '关卡'],
+      category: 'puzzle' as const,
+      accent: 'cyan' as const,
+      kind: 'react-lazy' as const,
+      sourceDir: 'src/apps/mirror-maze',
+    },
+    {
+      id: 'dice-dungeon',
+      title: '骰子地牢坊',
+      subtitle: '回合骰面构筑肉鸽',
+      description: '锻造六面点数触发连锁奇物。',
+      techLabel: '骰子肉鸽',
+      tags: ['地牢探索'],
+      category: 'roguelike' as const,
+      accent: 'amber' as const,
+      kind: 'react-lazy' as const,
+      sourceDir: 'src/apps/dice-dungeon',
+    },
+  ];
+
+  assert.equal(APP_CATEGORY_LABELS.puzzle, '解谜');
+  assert.equal(APP_CATEGORY_LABELS.roguelike, '肉鸽');
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '').length, 7);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'puzzle', '').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '折射').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'strategy', '罗盘').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '不存在的游戏词条').length, 0);
+});
+
+
+

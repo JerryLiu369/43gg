@@ -4,9 +4,13 @@ import { RoomBadgeSvg, SymbolArtSvg } from './icons.tsx';
 
 interface TutorialModalProps {
   onClose: () => void;
+  onStartGuidedPractice?: () => void;
 }
 
-export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
+export const TutorialModal: React.FC<TutorialModalProps> = ({
+  onClose,
+  onStartGuidedPractice,
+}) => {
   return (
     <div
       role="dialog"
@@ -41,21 +45,21 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
           <section className="p-4 rounded-xl bg-white border border-[#E4DFD5] space-y-2.5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#C2410C]">
-                01. 核心目标：在限期轮数内攒够房租
+                第一步：在限期轮数内攒够本期房租
               </h3>
               <span className="font-mono-num text-[11px] text-[#78716C]">
                 通关条件：缴清全部 12 期物业账单
               </span>
             </div>
             <p className="text-[#57534E] leading-relaxed">
-              左上角显示你的<strong>当前金币 / 本期租金目标</strong>以及<strong>交租剩余轮数</strong>。每摇动一次账本消耗 1 轮：只要在轮数用完前攒够目标金币，就能顺利缴租并免费挑选 1 枚强力【传家宝印章】进入下一期！
+              左上角显示你的<strong>当前金币 / 本期租金目标</strong>以及<strong>交租剩余轮数</strong>。每摇动一次账本消耗 1 轮：只要在轮数用完前攒够目标金币，就能顺利缴租并免费挑选 1 枚强力【传家宝印章】进入下一期。初上手可在标题页选择<strong>「难度 0 · 轻松休闲」</strong>（租金减免 18% 且每期额外获赠主动调度令）。
             </p>
           </section>
 
           {/* Step 2: Two-Stage Turn & Adjacency Synergies */}
           <section className="p-4 rounded-xl bg-white border border-[#E4DFD5] space-y-3">
             <h3 className="text-sm font-bold text-[#1C1917]">
-              02. 每轮只需两步：先摇账本收租，再三选一招租客
+              第二步：每轮两动——先摇账本收租，再三选一招租客
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 rounded-lg bg-[#FAF8F4] border border-[#E4DFD5] space-y-1.5">
@@ -83,7 +87,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
           {/* Step 3: Active Board Control */}
           <section className="p-4 rounded-xl bg-white border border-[#E4DFD5] space-y-3">
             <h3 className="text-sm font-bold text-[#1C1917]">
-              03. 告别纯看脸：善用「主动调度令」与「格子装修」逆天改命
+              第三步：善用「主动调度令」与「格子装修」主动控盘
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="p-2.5 rounded-lg bg-[#FAF8F4] border border-[#E4DFD5] flex items-start gap-2.5">
@@ -137,18 +141,30 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ onClose }) => {
           <div className="px-4 py-2.5 rounded-lg bg-[#F2EFE9] text-[#57534E] flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1.5">
               <Lock className="w-3.5 h-3.5 text-[#1C1917] shrink-0" />
-              <span>随时把鼠标悬停在任意棋盘格或候选牌上，右侧【账本检视栏】都会实时显示它的连携条件与 2★ 效果。</span>
+              <span>桌面端支持鼠标悬停与全键盘快捷键（Space / 1-3 / S / R / L / B / H），手机与平板可直接点触任意格位检视连携详情并调换落位。</span>
             </span>
           </div>
         </div>
 
         {/* Footer CTA */}
-        <div className="px-6 py-3.5 bg-white border-t border-[#E4DFD5] flex items-center justify-end gap-3 shrink-0">
+        <div className="px-6 py-3.5 bg-white border-t border-[#E4DFD5] flex flex-wrap items-center justify-between gap-3 shrink-0">
+          {onStartGuidedPractice ? (
+            <button
+              type="button"
+              data-testid="replay-landlord-guide-btn"
+              onClick={onStartGuidedPractice}
+              className="px-4 py-2.5 rounded-lg bg-[#FFFBEB] hover:bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+            >
+              开启四步实战带教
+            </button>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             data-testid="close-tutorial-btn"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold transition-colors cursor-pointer"
+            className="px-6 py-2.5 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
           >
             明白了，开始收租赚钱！
           </button>

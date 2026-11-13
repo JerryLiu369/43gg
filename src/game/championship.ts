@@ -1,7 +1,9 @@
+import { RALLY_DIFFICULTY_DEFS } from './physics.ts';
 import type {
   ChampionshipProgress,
   ChampionshipStandingEntry,
   DrivetrainType,
+  RallyDifficulty,
   StageDefinition,
   SurfaceType,
 } from './types.ts';
@@ -93,10 +95,15 @@ function deterministicStageJitter(driverId: string, stageId: string): number {
   return (norm - 0.5) * 0.036; // +-1.8% stage-to-stage pace variance
 }
 
-export function computeAiStageTimeSec(crew: AiCrewProfile, stage: StageDefinition): number {
+export function computeAiStageTimeSec(
+  crew: AiCrewProfile,
+  stage: StageDefinition,
+  difficulty: RallyDifficulty = 'standard'
+): number {
   const surfaceBonus = crew.favoredSurface === stage.primarySurface ? -0.014 : 0.004;
   const jitter = deterministicStageJitter(crew.driverId, stage.id);
-  const raw = stage.targetParTimeSec * (crew.paceRatio + surfaceBonus + jitter);
+  const aiScale = RALLY_DIFFICULTY_DEFS[difficulty]?.aiTimeScale ?? 1.0;
+  const raw = stage.targetParTimeSec * (crew.paceRatio + surfaceBonus + jitter) * aiScale;
   return Number(Math.max(45, raw).toFixed(3));
 }
 
@@ -148,7 +155,8 @@ export function recordChampionshipStageResult(
   prev: ChampionshipProgress,
   stage: StageDefinition,
   completed: boolean,
-  playerRawTimeSec: number
+  playerRawTimeSec: number,
+  difficulty: RallyDifficulty = 'standard'
 ): ChampionshipProgress {
   // Under FIA Super-Rally rules, retiring on a stage incurs Target Par + 60s penalty so the rally continues!
   const effectivePlayerStageTime = completed
@@ -169,7 +177,7 @@ export function recordChampionshipStageResult(
     }
 
     const crew = AI_RALLY_CREWS.find((c) => c.driverId === entry.driverId) || AI_RALLY_CREWS[0];
-    const aiStageTime = computeAiStageTimeSec(crew, stage);
+    const aiStageTime = computeAiStageTimeSec(crew, stage, difficulty);
     stageRankList.push({ driverId: entry.driverId, stageTime: aiStageTime });
     return {
       ...entry,

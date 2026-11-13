@@ -4,7 +4,37 @@ export type AppRuntimeKind = 'react-lazy' | 'iframe';
 
 export type AppAccent = 'amber' | 'cyan' | 'emerald' | 'rose';
 
-export type AppCategory = 'action' | 'strategy' | 'racing' | 'incremental';
+export type AppCategory =
+  | 'strategy'
+  | 'action'
+  | 'incremental'
+  | 'racing'
+  | 'puzzle'
+  | 'roguelike'
+  | 'simulation'
+  | 'arcade';
+
+export const APP_CATEGORY_ORDER: ReadonlyArray<AppCategory> = [
+  'strategy',
+  'action',
+  'incremental',
+  'racing',
+  'puzzle',
+  'roguelike',
+  'simulation',
+  'arcade',
+];
+
+export const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
+  strategy: '策略',
+  action: '动作',
+  incremental: '增量',
+  racing: '竞速',
+  puzzle: '解谜',
+  roguelike: '肉鸽',
+  simulation: '模拟',
+  arcade: '街机',
+};
 
 export interface WorkspaceAppEntry {
   /** Stable slug used in URL routing (`?app=<id>`) and directory naming */
@@ -34,11 +64,12 @@ export interface WorkspaceAppEntry {
 }
 
 /**
- * Single registration list for all mini-apps hosted inside the unified gaistudio shell.
+ * Single registration list for all mini-games hosted inside the 43gg portal shell.
  *
- * Adding a new app:
- * - React app: place component under `src/apps/<slug>/`, then add one entry with `kind: 'react-lazy'` and `loader`.
- * - Static HTML/JS app: place folder under `apps/<slug>/` with `index.html`, then add one entry with `kind: 'iframe'` and `entryPath`.
+ * Adding a new game:
+ * - React game: place component under `src/apps/<slug>/`, then add one entry with `kind: 'react-lazy'` and `loader`.
+ * - Static HTML/JS game: place folder under `apps/<slug>/` with `index.html`, then add one entry with `kind: 'iframe'` and `entryPath`.
+ * The 43gg HomeHub automatically derives category tabs, search indexing, grid/list layout, and a procedural cover fallback.
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
   {
@@ -112,4 +143,31 @@ export function getAppById(id: string | null | undefined): WorkspaceAppEntry | n
   if (!id) return null;
   const normalized = id.trim().toLowerCase();
   return APP_REGISTRY.find((entry) => entry.id === normalized) ?? null;
+}
+
+export function filterWorkspaceApps(
+  apps: ReadonlyArray<WorkspaceAppEntry>,
+  category: 'all' | AppCategory,
+  query: string,
+): ReadonlyArray<WorkspaceAppEntry> {
+  const byCategory =
+    category === 'all' ? apps : apps.filter((app) => app.category === category);
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return byCategory;
+
+  return byCategory.filter((app) => {
+    const categoryLabel = APP_CATEGORY_LABELS[app.category] ?? '';
+    const haystack = [
+      app.id,
+      app.title,
+      app.subtitle,
+      app.description,
+      app.techLabel,
+      categoryLabel,
+      ...app.tags,
+    ]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(trimmed);
+  });
 }

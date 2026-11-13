@@ -21,12 +21,13 @@ export class InputController {
   // Gamepad previous button states for edge detection
   private prevGpButtons: boolean[] = [];
 
-  // Callbacks for global shortcuts (Camera, Pause, Transmission, Mute, Reset)
+  // Callbacks for global shortcuts (Camera, Pause, Transmission, Mute, Reset, Help)
   public onToggleCamera?: () => void;
   public onTogglePause?: () => void;
   public onToggleTransmission?: () => void;
   public onToggleMute?: () => void;
   public onResetVehicle?: () => void;
+  public onToggleHelp?: () => void;
 
   private boundKeyDown: (e: KeyboardEvent) => void;
   private boundKeyUp: (e: KeyboardEvent) => void;
@@ -100,6 +101,8 @@ export class InputController {
         this.onToggleMute?.();
       } else if (code === 'KeyR') {
         this.onResetVehicle?.();
+      } else if (code === 'KeyH') {
+        this.onToggleHelp?.();
       }
     }
     this.keysDown.add(code);

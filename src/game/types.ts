@@ -14,6 +14,7 @@ export type TireCompound = 'gravel' | 'tarmac_dry' | 'tarmac_wet' | 'snow';
 export type CameraMode = 'cockpit' | 'hood' | 'chase' | 'chase_far';
 export type DrivingAssistPreset = 'sport' | 'pro';
 export type RallyEventMode = 'single' | 'championship';
+export type RallyDifficulty = 'relaxed' | 'standard' | 'master';
 
 export interface TuningSetup {
   name: string;
@@ -54,6 +55,8 @@ export interface InputSettings {
   autoClutch: boolean;
   absAssist: boolean;
   tcsAssist: boolean;
+  /** Three-tier difficulty scaling damage, recovery penalty & AI pace */
+  difficulty?: RallyDifficulty;
 }
 
 export interface DamageState {

@@ -2,6 +2,7 @@ import { RallyAudioEngine } from './audio.ts';
 import { InputController } from './input.ts';
 import {
   FIXED_DT,
+  RALLY_DIFFICULTY_DEFS,
   cloneCarState,
   createInitialCarState,
   interpolateCarState,
@@ -172,7 +173,9 @@ export class RallySimulationEngine {
   public onRequestPauseToggle?: () => void;
   public onRequestTransmissionToggle?: () => void;
   public onRequestMuteToggle?: () => void;
+  public onRequestHelpToggle?: () => void;
   public onCameraModeChanged?: (mode: CameraMode) => void;
+  public onVehicleRecovered?: () => void;
 
   private lastReactSyncTime = 0;
 
@@ -213,6 +216,9 @@ export class RallySimulationEngine {
         this.recoverCarToRoadWithPenalty();
       }
     };
+    this.input.onToggleHelp = () => {
+      this.onRequestHelpToggle?.();
+    };
 
     this.currCarState = createInitialCarState(this.stage);
     this.prevCarState = cloneCarState(this.currCarState);
@@ -230,9 +236,11 @@ export class RallySimulationEngine {
     const stepFrame = () => {
       if (this.disposed) return;
       const nowMs = performance.now();
-      const rawDt = Math.min(0.06, Math.max(0.001, (nowMs - this.lastRafTimeMs) / 1000));
+      const elapsedSec = Math.max(0.001, (nowMs - this.lastRafTimeMs) / 1000);
+      const rawDt = Math.min(0.06, elapsedSec);
+      const wallDt = Math.min(0.25, elapsedSec);
       this.lastRafTimeMs = nowMs;
-      this.updateAndRender(rawDt);
+      this.updateAndRender(rawDt, wallDt);
 
       if (this.disposed) return;
       if (this.renderer.isSoftwareGl) {
@@ -392,7 +400,9 @@ export class RallySimulationEngine {
     this.currCarState.stalled = false;
     this.currCarState.rpm = 1600;
 
-    this.penaltyTimeSec += 15.0;
+    const penSec =
+      RALLY_DIFFICULTY_DEFS[this.inputSettings.difficulty ?? 'standard'].recoveryPenaltySec;
+    this.penaltyTimeSec += penSec;
     this.mistakes.push({
       id: `recover_${Math.round(this.stageTimeSec * 10)}`,
       timeSec: this.stageTimeSec,
@@ -404,10 +414,11 @@ export class RallySimulationEngine {
             ? 2
             : 3,
       type: 'off_track',
-      label: '赛段救援复位 (+15.0s 罚时)',
-      timeLossEstSec: 15.0,
+      label: `赛段救援复位 (+${penSec.toFixed(1)}s 罚时)`,
+      timeLossEstSec: penSec,
     });
     this.prevCarState = cloneCarState(this.currCarState);
+    this.onVehicleRecovered?.();
   }
 
   public resetStageRun(startPlayingImmediately: boolean, options?: ResetStageOptions): void {
@@ -489,13 +500,13 @@ export class RallySimulationEngine {
     this.personalBestRecord = records[this.stage.id] || null;
   }
 
-  private updateAndRender(dt: number): void {
+  private updateAndRender(dt: number, wallDt: number = dt): void {
     if (this.phase === 'playing') {
       const rawControls = this.input.sample(dt);
 
       // Handle Start-Line 3-2-1-GO! Launch Control sequence
       if (this.countdownSec > 0) {
-        this.countdownSec = Math.max(0, this.countdownSec - dt);
+        this.countdownSec = Math.max(0, this.countdownSec - wallDt);
         const curInt = Math.ceil(this.countdownSec);
 
         // Allow driver to spool anti-lag turbo boost on the start line while holding Throttle!
@@ -504,11 +515,11 @@ export class RallySimulationEngine {
         this.currCarState.throttle = thr;
         this.currCarState.brake = 1.0;
         this.currCarState.handbrake = 1.0;
-        this.currCarState.rpm += (targetRpm - this.currCarState.rpm) * Math.min(1, 9.5 * dt);
+        this.currCarState.rpm += (targetRpm - this.currCarState.rpm) * Math.min(1, 9.5 * wallDt);
         if (thr > 0.55) {
           this.currCarState.turboBoostBar = Math.min(
             1.45,
-            this.currCarState.turboBoostBar + 1.8 * dt
+            this.currCarState.turboBoostBar + 1.8 * wallDt
           );
           if (Math.random() < 0.25) {
             this.currCarState.backfireTrigger = 0.14;
@@ -516,10 +527,10 @@ export class RallySimulationEngine {
         } else {
           this.currCarState.turboBoostBar = Math.max(
             -0.2,
-            this.currCarState.turboBoostBar - 1.5 * dt
+            this.currCarState.turboBoostBar - 1.5 * wallDt
           );
         }
-        this.currCarState.backfireTrigger = Math.max(0, this.currCarState.backfireTrigger - dt);
+        this.currCarState.backfireTrigger = Math.max(0, this.currCarState.backfireTrigger - wallDt);
 
         if (curInt > 0 && curInt !== this.lastCountdownInt) {
           this.lastCountdownInt = curInt;
@@ -557,7 +568,7 @@ export class RallySimulationEngine {
         this.emitLaunchControlState();
       } else {
         if (this.launchBannerTimerSec > 0) {
-          this.launchBannerTimerSec = Math.max(0, this.launchBannerTimerSec - dt);
+          this.launchBannerTimerSec = Math.max(0, this.launchBannerTimerSec - wallDt);
           if (this.launchBannerTimerSec <= 0) {
             this.launchBannerText = '';
             this.emitLaunchControlState();

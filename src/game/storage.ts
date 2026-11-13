@@ -132,3 +132,23 @@ export function saveInputSettings(settings: InputSettings): void {
     // Ignore
   }
 }
+
+const ONBOARDING_KEY = 'chrono_rally_onboarding_v1';
+
+export function loadRallyOnboardingCompleted(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem(ONBOARDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveRallyOnboardingCompleted(completed: boolean): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(ONBOARDING_KEY, completed ? '1' : '0');
+  } catch {
+    // Ignore
+  }
+}

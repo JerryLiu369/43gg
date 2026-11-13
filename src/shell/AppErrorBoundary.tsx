@@ -44,7 +44,7 @@ export class AppErrorBoundary extends React.Component<
               onClick={this.props.onBackToHub}
               className="px-4 py-2 text-xs font-semibold bg-[#1C1917] hover:bg-[#36312D] text-white rounded-lg transition-colors cursor-pointer"
             >
-              返回应用大厅
+              返回 43gg 大厅
             </button>
           </div>
         </div>
