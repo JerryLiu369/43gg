@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_REGISTRY, getAppById } from '../apps/registry.ts';
+import { APP_REGISTRY, getAppById, type AppCategory } from '../apps/registry.ts';
 import {
   buildAppUrl,
   buildHomeUrl,
@@ -278,55 +278,40 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
 
 test('filterWorkspaceApps scales across arbitrary N future games, categories, and search queries', async () => {
   const { filterWorkspaceApps, APP_CATEGORY_LABELS } = await import('../apps/registry.ts');
+  // Deliberately bland placeholders: fixtures here are read by coding agents, so they must not
+  // look like a game pitch (an earlier mirror-puzzle fixture was copied by several new games).
+  const fixture = (id: string, category: AppCategory, token: string) => ({
+    id,
+    title: `占位条目 ${token}`,
+    subtitle: '测试夹具',
+    description: `仅用于目录筛选测试的占位数据（${token}），不代表任何游戏设想。`,
+    author: 'tester',
+    model: 'test-model',
+    highlights: ['测试'],
+    techLabel: '测试',
+    tags: ['测试夹具'],
+    category,
+    accent: 'cyan' as const,
+    kind: 'react-lazy' as const,
+    sourceDir: `src/apps/${id}`,
+    addedAt: '2099-01-01',
+  });
   const extendedCatalog = [
     ...APP_REGISTRY,
-    {
-      id: 'mirror-maze',
-      title: '镜渊折光',
-      subtitle: '光学折射机关解谜',
-      description: '旋转棱镜引导双色光束点亮古碑。',
-      author: 'tester',
-      model: 'test-model',
-      highlights: ['测试'],
-      techLabel: '光学解谜',
-      tags: ['烧脑解谜', '关卡'],
-      category: 'puzzle' as const,
-      accent: 'cyan' as const,
-      kind: 'react-lazy' as const,
-      sourceDir: 'src/apps/mirror-maze',
-    },
-    {
-      id: 'dice-dungeon',
-      title: '骰子地牢坊',
-      subtitle: '回合骰面构筑肉鸽',
-      description: '锻造六面点数触发连锁奇物。',
-      author: 'tester',
-      model: 'test-model',
-      highlights: ['测试'],
-      techLabel: '骰子肉鸽',
-      tags: ['地牢探索'],
-      category: 'roguelike' as const,
-      accent: 'amber' as const,
-      kind: 'react-lazy' as const,
-      sourceDir: 'src/apps/dice-dungeon',
-    },
+    fixture('fixture-alpha', 'puzzle', 'zzq-alpha'),
+    fixture('fixture-beta', 'roguelike', 'zzq-beta'),
   ];
+  const countIn = (category: 'all' | AppCategory, query: string) =>
+    filterWorkspaceApps(APP_REGISTRY, category, query).length;
 
   assert.equal(APP_CATEGORY_LABELS.puzzle, '解谜');
   assert.equal(APP_CATEGORY_LABELS.roguelike, '肉鸽');
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '').length, APP_REGISTRY.length + 2);
-  assert.equal(
-    filterWorkspaceApps(extendedCatalog, 'puzzle', '').length,
-    APP_REGISTRY.filter((app) => app.category === 'puzzle').length + 1,
-  );
-  assert.equal(
-    filterWorkspaceApps(extendedCatalog, 'all', '折射').length,
-    filterWorkspaceApps(APP_REGISTRY, 'all', '折射').length + 1,
-  );
-  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, 1);
-  assert.equal(filterWorkspaceApps(extendedCatalog, 'strategy', '罗盘').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'puzzle', '').length, countIn('puzzle', '') + 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', 'zzq-alpha').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'roguelike', 'zzq').length, 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, countIn('all', '肉鸽') + 1);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'strategy', '罗盘').length, countIn('strategy', '罗盘'));
+  assert.ok(countIn('strategy', '罗盘') >= 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '不存在的游戏词条').length, 0);
 });
-
-
-

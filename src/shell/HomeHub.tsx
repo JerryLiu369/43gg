@@ -7,6 +7,14 @@ import {
   type AppCategory,
   type WorkspaceAppEntry,
 } from '../apps/registry.ts';
+import {
+  localDayKey,
+  orderCatalog,
+  readOrCreateShuffleSeed,
+  readSortMode,
+  writeSortMode,
+  type CatalogSortMode,
+} from './catalogOrder.ts';
 import { readHubSnapshot } from './hubProgress.ts';
 import { CONTRIBUTING_URL, REPO_URL } from './site.ts';
 
@@ -28,6 +36,20 @@ function loadInitialViewMode(): CatalogViewMode {
       : 'grid';
   } catch {
     return 'grid';
+  }
+}
+
+const SORT_MODE_OPTIONS: ReadonlyArray<{ id: CatalogSortMode; label: string; hint: string }> = [
+  { id: 'shuffle', label: '随机', hint: '每天为你重新随机排列一次' },
+  { id: 'newest', label: '最新', hint: '按上架时间从新到旧排列' },
+];
+
+function getBrowserStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
   }
 }
 
@@ -718,9 +740,24 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
     return items;
   }, [apps]);
 
+  // Display order is owned by the hub, not by APP_REGISTRY order: a per-visitor shuffle that
+  // re-rolls daily (stable within the day), or newest first. Seed and day are fixed per mount.
+  const [sortMode, setSortMode] = useState<CatalogSortMode>(() => readSortMode(getBrowserStorage()));
+  const [shuffleSeed] = useState(() => readOrCreateShuffleSeed(getBrowserStorage()));
+  const [dayKey] = useState(() => localDayKey());
+  const orderedApps = useMemo(
+    () => orderCatalog(apps, sortMode, shuffleSeed, dayKey),
+    [apps, sortMode, shuffleSeed, dayKey],
+  );
+
+  const handleSelectSortMode = (mode: CatalogSortMode) => {
+    setSortMode(mode);
+    writeSortMode(mode, getBrowserStorage());
+  };
+
   const filteredApps = useMemo(
-    () => filterWorkspaceApps(apps, categoryFilter, searchQuery),
-    [apps, categoryFilter, searchQuery],
+    () => filterWorkspaceApps(orderedApps, categoryFilter, searchQuery),
+    [orderedApps, categoryFilter, searchQuery],
   );
 
   const lastPlayedApp = useMemo(() => {
@@ -852,10 +889,19 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                   data-testid="hub-search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索游戏名称或玩法 (按 / 键)"
+                  placeholder="搜索游戏或玩法"
                   aria-label="搜索游戏名称或玩法"
+                  aria-keyshortcuts="/"
                   className="w-full h-9 pl-8 pr-8 rounded-lg bg-white border border-[#E4DFD5] hover:border-[#CFC7B8] focus:outline-none focus:border-[#C2410C] text-xs text-[#1C1917] placeholder:text-[#A8A29E] transition-colors"
                 />
+                {searchQuery.length === 0 && (
+                  <kbd
+                    aria-hidden="true"
+                    className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 h-5 min-w-5 px-1 items-center justify-center rounded border border-[#E4DFD5] bg-[#FAF8F4] font-mono text-[11px] leading-none text-[#78716C] pointer-events-none"
+                  >
+                    /
+                  </kbd>
+                )}
                 {searchQuery.length > 0 && (
                   <button
                     type="button"
@@ -870,6 +916,33 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                     <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 )}
+              </div>
+
+              <div
+                role="group"
+                aria-label="排列顺序"
+                className="inline-flex items-center gap-0.5 p-1 rounded-lg bg-[#EFECE5] shrink-0"
+              >
+                {SORT_MODE_OPTIONS.map((option) => {
+                  const active = sortMode === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      data-testid={`sort-mode-${option.id}`}
+                      title={option.hint}
+                      aria-pressed={active}
+                      onClick={() => handleSelectSortMode(option.id)}
+                      className={`h-7 px-2.5 rounded-md border text-xs font-medium whitespace-nowrap transition-colors cursor-pointer focus:outline-none focus-visible:border-[#C2410C] ${
+                        active
+                          ? 'bg-white border-[#E4DFD5] text-[#1C1917]'
+                          : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div
