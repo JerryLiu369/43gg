@@ -1,17 +1,29 @@
+/**
+ * Reads the active app id from a location. `aliases` maps retired ids to current ids
+ * (see APP_ID_ALIASES); a match on an alias returns the current id.
+ */
 export function parseAppIdFromLocation(
   search: string,
   hash: string,
   pathname: string,
   validIds: ReadonlyArray<string>,
+  aliases: Readonly<Record<string, string>> = {},
 ): string | null {
-  const validSet = new Set(validIds.map((id) => id.toLowerCase()));
+  const live = new Set(validIds.map((id) => id.toLowerCase()));
+  const resolve = (raw: string): string | null => {
+    const id = raw.toLowerCase();
+    if (live.has(id)) return id;
+    const target = aliases[id];
+    return target && live.has(target) ? target : null;
+  };
+  const validSet = { has: (raw: string) => resolve(raw) !== null };
 
   // 1. Canonical query parameter: ?app=<id>
   try {
     const params = new URLSearchParams(search);
     const queryApp = params.get('app')?.trim().toLowerCase();
     if (queryApp && validSet.has(queryApp)) {
-      return queryApp;
+      return resolve(queryApp);
     }
   } catch {
     // Ignore malformed search query
@@ -21,15 +33,15 @@ export function parseAppIdFromLocation(
   if (hash) {
     const cleanedHash = hash.replace(/^#\/?/, '').split('?')[0].replace(/\/+$/, '');
     const hashParts = cleanedHash.split('/').filter(Boolean);
-    if (hashParts.length === 1 && validSet.has(hashParts[0].toLowerCase())) {
-      return hashParts[0].toLowerCase();
+    if (hashParts.length === 1 && validSet.has(hashParts[0])) {
+      return resolve(hashParts[0]);
     }
     if (
       hashParts.length === 2 &&
       (hashParts[0] === 'app' || hashParts[0] === 'apps') &&
-      validSet.has(hashParts[1].toLowerCase())
+      validSet.has(hashParts[1])
     ) {
-      return hashParts[1].toLowerCase();
+      return resolve(hashParts[1]);
     }
   }
 
@@ -39,7 +51,7 @@ export function parseAppIdFromLocation(
     const last = pathParts[pathParts.length - 1].toLowerCase();
     const prev = pathParts[pathParts.length - 2].toLowerCase();
     if ((prev === 'app' || prev === 'apps') && validSet.has(last)) {
-      return last;
+      return resolve(last);
     }
   }
 

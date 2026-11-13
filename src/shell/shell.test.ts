@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_REGISTRY, getAppById, type AppCategory } from '../apps/registry.ts';
+import {
+  APP_ID_ALIASES,
+  APP_REGISTRY,
+  getAppById,
+  resolveAppId,
+  type AppCategory,
+} from '../apps/registry.ts';
 import {
   buildAppUrl,
   buildHomeUrl,
@@ -17,7 +23,7 @@ const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 
 test('APP_REGISTRY keeps every published app id and each entry has valid metadata and existing paths', () => {
   // Published ids are part of the public URL (?app=<id>) and save-key contract; they may be added to, never removed.
-  // See docs/compatibility.md.
+  // A renamed app keeps its old id working through APP_ID_ALIASES. See docs/compatibility.md.
   const PUBLISHED_IDS = [
     'xuanji-breach',
     'ink-blade',
@@ -29,9 +35,15 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     'inch-of-shade',
     'moon-mirror',
     'mistlight-voyage',
+    'meridian-rails',
+    'fangcun-realms',
   ];
   for (const id of PUBLISHED_IDS) {
-    assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
+    const resolved = resolveAppId(id);
+    assert.ok(resolved && VALID_IDS.includes(resolved), `Published app id must stay reachable: ${id}`);
+    if (!VALID_IDS.includes(id)) {
+      assert.ok(APP_ID_ALIASES[id], `Published id ${id} left the registry without an alias`);
+    }
   }
   const seenIds = new Set<string>();
 
@@ -76,11 +88,47 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
   assert.equal(getAppById('astral-orrery')?.kind, 'react-lazy');
   assert.equal(getAppById('lucky-landlord')?.kind, 'react-lazy');
   assert.equal(getAppById('chrono-stage')?.kind, 'react-lazy');
-  assert.equal(getAppById('ticket-to-ride-europe')?.kind, 'react-lazy');
-  assert.equal(getAppById('carcassonne-bigbox')?.kind, 'react-lazy');
+  assert.equal(getAppById('meridian-rails')?.kind, 'react-lazy');
+  assert.equal(getAppById('fangcun-realms')?.kind, 'react-lazy');
   assert.equal(getAppById('inch-of-shade')?.kind, 'react-lazy');
   assert.equal(getAppById('ds-stage'), null);
   assert.equal(getAppById('unknown-app'), null);
+});
+
+test('retired app ids alias to live entries without shadowing or chaining', () => {
+  for (const [oldId, newId] of Object.entries(APP_ID_ALIASES)) {
+    assert.match(oldId, /^[a-z0-9-]+$/);
+    assert.ok(!VALID_IDS.includes(oldId), `Alias ${oldId} must not shadow a live id`);
+    assert.ok(VALID_IDS.includes(newId), `Alias ${oldId} must point at a live id, got ${newId}`);
+    assert.equal(APP_ID_ALIASES[newId], undefined, `Alias target ${newId} must not itself be an alias`);
+  }
+  assert.equal(resolveAppId('ticket-to-ride-europe'), 'meridian-rails');
+  assert.equal(resolveAppId(' Carcassonne-BigBox '), 'fangcun-realms');
+  assert.equal(getAppById('carcassonne-bigbox')?.id, 'fangcun-realms');
+  assert.equal(resolveAppId('meridian-rails'), 'meridian-rails');
+  assert.equal(resolveAppId('nonexistent'), null);
+
+  // Old links of every supported shape land on the renamed app.
+  const parse = (search: string, hash: string, pathname: string) =>
+    parseAppIdFromLocation(search, hash, pathname, VALID_IDS, APP_ID_ALIASES);
+  assert.equal(parse('?app=ticket-to-ride-europe', '', '/43gg/'), 'meridian-rails');
+  assert.equal(parse('?app=carcassonne-bigbox&autostart=1', '', '/'), 'fangcun-realms');
+  assert.equal(parse('', '#/apps/carcassonne-bigbox', '/'), 'fangcun-realms');
+  assert.equal(parse('', '#ticket-to-ride-europe', '/'), 'meridian-rails');
+  assert.equal(parse('', '', '/app/ticket-to-ride-europe'), 'meridian-rails');
+  // Without the alias table an old id is unknown: that is how the shell detects it should rewrite the URL.
+  assert.equal(parseAppIdFromLocation('?app=ticket-to-ride-europe', '', '/', VALID_IDS), null);
+  assert.equal(
+    buildAppUrl('https://jerryliu369.github.io/43gg/?app=ticket-to-ride-europe&autostart=1', 'meridian-rails', [
+      ...VALID_IDS,
+      ...Object.keys(APP_ID_ALIASES),
+    ]),
+    '/43gg/?app=meridian-rails&autostart=1',
+  );
+  assert.equal(
+    buildHomeUrl('http://127.0.0.1:3000/app/carcassonne-bigbox', [...VALID_IDS, ...Object.keys(APP_ID_ALIASES)]),
+    '/',
+  );
 });
 
 test('router parses query, hash, and path app routes safely', () => {
@@ -169,8 +217,8 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   assert.match(readme, /天枢浑仪/);
   assert.match(readme, /吉星包租公/);
   assert.match(readme, /CHRONO STAGE/);
-  assert.match(readme, /车票之旅：欧洲/);
-  assert.match(readme, /卡卡颂：大盒版/);
+  assert.match(readme, /经纬铁道/);
+  assert.match(readme, /方寸山河/);
   assert.match(readme, /寸阴/);
   assert.match(readme, /skills\/kasidia-frontend-law\/SKILL\.md/);
   assert.match(readme, /AGENTS\.md/);
@@ -233,6 +281,7 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
     '43gg.chrono_stage.records.v1',
     JSON.stringify({ ss1: { bestTimeSec: 104.2 }, ss2: { bestTimeSec: 112.8 } }),
   );
+  // Not yet migrated: the hub still reads saves written under the retired ids.
   store.set(
     '43gg.ticket_to_ride_europe.meta.v1',
     JSON.stringify({ gamesPlayed: 2, victories: 1, bestScore: 132 }),
@@ -267,8 +316,17 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
   assert.equal(snap.progressByAppId['astral-orrery'], undefined);
   assert.match(snap.progressByAppId['lucky-landlord'], /第 4 周期收租进行中/);
   assert.match(snap.progressByAppId['chrono-stage'], /已刷新 2 \/ 6 站/);
-  assert.match(snap.progressByAppId['ticket-to-ride-europe'], /已胜出 1 局/);
-  assert.match(snap.progressByAppId['carcassonne-bigbox'], /第 7 回合拼图中/);
+  assert.match(snap.progressByAppId['meridian-rails'], /已胜出 1 局/);
+  assert.match(snap.progressByAppId['fangcun-realms'], /第 7 回合拼地块中/);
+  assert.equal(snap.progressByAppId['ticket-to-ride-europe'], undefined);
+
+  // Once migrated, the new key wins over a stale legacy copy.
+  store.set('43gg.meridian_rails.meta.v1', JSON.stringify({ gamesPlayed: 5, victories: 3, bestScore: 150 }));
+  assert.match(readHubSnapshot(VALID_IDS, mockStorage).progressByAppId['meridian-rails'], /已胜出 3 局 · 最高 150 分/);
+
+  // A last-played record left under an old id follows the alias.
+  recordLastPlayedApp('carcassonne-bigbox', mockStorage);
+  assert.equal(readHubSnapshot(VALID_IDS, mockStorage).lastPlayedAppId, 'fangcun-realms');
   assert.equal(snap.progressByAppId['mistlight-voyage'], '已通航 2 片海域 · 收集 5 枚星');
 
   // Unknown app ID in last_played is safely ignored
