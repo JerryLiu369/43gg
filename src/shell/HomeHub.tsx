@@ -771,7 +771,7 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                         <AppCoverGraphic app={app} />
                       </div>
 
-                      <div className="p-4 flex-1 flex flex-col justify-between gap-3">
+                      <div className="w-full p-4 flex-1 flex flex-col justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-1.5 text-xs text-[#78716C] min-w-0">
                             <span className="font-medium text-[#57534E] shrink-0">
@@ -796,6 +796,12 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
 
                           <p className="mt-1.5 text-xs leading-relaxed text-[#57534E] line-clamp-2">
                             {app.description}
+                          </p>
+
+                          <p className="mt-2 text-[11px] text-[#78716C] truncate">
+                            作者 <span className="text-[#57534E]">{app.author}</span>
+                            <span aria-hidden="true"> · </span>
+                            模型 <span className="text-[#57534E]">{app.model}</span>
                           </p>
                         </div>
 
@@ -859,6 +865,9 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                         </div>
                         <p className="mt-0.5 text-xs text-[#57534E] truncate">
                           {app.description}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-[#78716C] truncate">
+                          作者 {app.author} · 模型 {app.model}
                         </p>
                       </div>
                     </div>
