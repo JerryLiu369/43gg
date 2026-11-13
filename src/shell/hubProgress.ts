@@ -319,6 +319,18 @@ function summarizeMoonMirror(storage: StorageReader): string | null {
   return completed > 0 ? `已唤醒 ${completed} / 9 座夜庭` : null;
 }
 
+function summarizeMistlight(storage: StorageReader): string | null {
+  const save = safeParseJson<{ version?: unknown; records?: unknown }>(
+    storage.getItem('43gg.mistlight_voyage.progress.v1'),
+  );
+  if (save?.version !== 1 || !save.records || typeof save.records !== 'object' || Array.isArray(save.records)) return null;
+  const records = Object.values(save.records).filter(
+    (record): record is { stars: number } => record && Number.isInteger(record.stars) && record.stars >= 1 && record.stars <= 3,
+  );
+  if (!records.length) return null;
+  return `已通航 ${records.length} 片海域 · 收集 ${records.reduce((sum, record) => sum + record.stars, 0)} 枚星`;
+}
+
 export function readHubSnapshot(
   validAppIds: ReadonlyArray<string>,
   storage: StorageReader | null = getBrowserStorage(),
@@ -340,6 +352,7 @@ export function readHubSnapshot(
 
   const summaries: Array<[string, string | null]> = [
     ['moon-mirror', summarizeMoonMirror(storage)],
+    ['mistlight-voyage', summarizeMistlight(storage)],
     ['xuanji-breach', summarizeXuanji(storage)],
     ['ink-blade', summarizeInkBlade(storage)],
     ['astral-orrery', summarizeAstralOrrery(storage)],
