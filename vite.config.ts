@@ -168,7 +168,7 @@ function workspaceStaticAppsPlugin(): Plugin {
 export default defineConfig(() => {
   return {
     // Relative base works identically at root `/` (AI Studio / local dev & preview)
-    // and under `/gaistudio/` (GitHub Pages project site).
+    // and under `/43gg/` (GitHub Pages project site).
     base: './',
     plugins: [react(), tailwindcss(), workspaceStaticAppsPlugin()],
     resolve: {

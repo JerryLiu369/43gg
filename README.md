@@ -1,117 +1,58 @@
-> **在线访问 (GitHub Pages)：** [https://jerryliu369.github.io/gaistudio/](https://jerryliu369.github.io/gaistudio/)（推送 `main` 后由 GitHub Actions 自动校验并发布）  
-> 直达应用：[璇玑破阵](https://jerryliu369.github.io/gaistudio/?app=xuanji-breach) | [墨刃：一闪](https://jerryliu369.github.io/gaistudio/?app=ink-blade) | [天枢浑仪](https://jerryliu369.github.io/gaistudio/?app=astral-orrery) | [吉星包租公](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
+# 43gg 小游戏
 
-# 43gg 小游戏（`gaistudio` 统一多应用工作区）
+免安装、点开即玩的网页小游戏合集。每款游戏都可以在桌面和手机上玩，内置新手引导和三档难度，进度自动保存在本地浏览器里。
 
-**43gg 小游戏**是一个基于 React 19 + Vite 8 + TypeScript + Tailwind CSS 4 构建的独立网页小游戏大厅与多应用隔离工作区，支持随注册表持续扩展新游戏（自动派生分类筛选、实时检索、卡片/列表双视图与程序化瑞士几何封面兜底）。
+**在线游玩：<https://jerryliu369.github.io/43gg/>**
 
----
+## 游戏列表
 
-## 内置小应用列表
+| 游戏 | 类型 | 简介 | 直达 |
+| :--- | :--- | :--- | :--- |
+| 璇玑破阵 | 沙盘战棋 | 旋转中央璇玑环偏转敌方弹道，全明牌推演地形连锁。 | [开始](https://jerryliu369.github.io/43gg/?app=xuanji-breach) |
+| 墨刃：一闪 | 瞬身动作 | 水墨风俯视角剑戟动作，击杀刷新一闪，刹那弹反破甲。 | [开始](https://jerryliu369.github.io/43gg/?app=ink-blade) |
+| 天枢浑仪 | 增量放置 | 发条星轨共鸣，构筑星宫棱镜，约 20 分钟完成三次转生。 | [开始](https://jerryliu369.github.io/43gg/?app=astral-orrery) |
+| 吉星包租公 | 构筑肉鸽 | 四乘五账本格子收租，装修房间、三连升星，凑够每期账单。 | [开始](https://jerryliu369.github.io/43gg/?app=lucky-landlord) |
+| CHRONO STAGE | 3D 竞速 | 六站拉力赛段、四轮悬挂物理与锦标赛模式，附[驾驶调校手册](docs/chrono-stage.md)。 | [开始](https://jerryliu369.github.io/43gg/?app=chrono-stage) |
 
-| 应用标识 (`id`) | 名称 | 隔离方式 | 目录位置 | 直接访问路由 | 说明文档 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `xuanji-breach` | `璇玑破阵` | `React.lazy` 按需懒加载 + 立体沙盘画布与声学合成器完整释放 | `src/apps/xuanji-breach/` | `/?app=xuanji-breach` | 内置四步实战新手指引、三档难度与键鼠/触屏双端操控 |
-| `ink-blade` | `墨刃：一闪` | `React.lazy` 按需懒加载 + 离屏墨痕画布与音频完整释放 | `src/apps/ink-blade/` | `/?app=ink-blade` | 内置三步实战教学、三档难度与移动端虚拟摇杆/刀诀键 |
-| `astral-orrery` | `天枢浑仪` | `React.lazy` 按需懒加载 + 退出完整释放 Three.js 场景与音频 | `src/apps/astral-orrery/` | `/?app=astral-orrery` | 内置五步实战带教、图文三维星盘手册与桌面/触屏双端适配 |
-| `lucky-landlord` | `吉星包租公` | `React.lazy` 按需懒加载 + 本地自动存档与音频释放 | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | 内置四步实战带教、轻松至高阶多档难度与全图鉴指引 |
-| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整释放 WebGL/音频/全局监听 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | 内置四步领航实战带教、路书图解、三档难度与[驾驶调校手册](docs/chrono-stage.md) |
+## 本地运行
 
----
-
-## 目录结构与核心机制
-
-```text
-gaistudio/
-├── AGENTS.md                        # Agent 持久记忆库：用户偏好、能力规范、自有工程方法与沉淀日志
-├── kfl-spec.md                      # Kasidia Frontend Law (KFL) 工作区视觉与交互规格契约
-├── skills/
-│   └── kasidia-frontend-law/        # 仓库级前端设计与评审规范技能包（源自 AngleNaris/KFL）
-├── src/
-│   ├── App.tsx                      # 统一 React 外壳：路由分发、顶部导航条、子应用隔离视口
-│   ├── apps/
-│   │   ├── registry.ts              # 唯一清晰的小应用注册清单
-│   │   ├── xuanji-breach/           # 璇玑破阵（青铜罗盘移星·全明牌立体沙盘战棋）
-│   │   ├── ink-blade/               # 墨刃：一闪（水墨瞬身弹反剑戟动作坊）
-│   │   ├── astral-orrery/           # 天枢浑仪（发条星轨共鸣增量工坊）
-│   │   ├── lucky-landlord/          # 吉星包租公（四乘五账本控盘收租构筑）
-│   │   └── chrono-stage/            # CHRONO STAGE 懒加载 React 入口
-│   ├── shell/
-│   │   ├── HomeHub.tsx              # 自适应首页应用大厅（瑞士暖纸极简目录）
-│   │   ├── IframeAppHost.tsx        # Iframe 隔离宿主（退出时主动释放音频/WebGL/事件）
-│   │   ├── AppErrorBoundary.tsx     # 子应用异常兜底与返回目录恢复
-│   │   ├── router.ts                # 兼容根路径 `/` 与 `/gaistudio/` 子路径的路由工具
-│   │   └── shell.test.ts            # 注册表、路由与工作区规范单元测试
-│   ├── components/                  # CHRONO STAGE 弹窗与 SVG 路书组件
-│   ├── game/                        # CHRONO STAGE 120Hz 物理、6 大赛段、WRC 锦标赛与单测
-│   └── render/                      # CHRONO STAGE WebGL 3D 大气山脉与赛段渲染器
-├── docs/
-│   └── chrono-stage.md              # CHRONO STAGE 驾驶与调校手册
-├── scripts/
-│   └── workspace.mjs                # 工作区列表、全量校验与静态打包脚本
-├── vite.config.ts                   # 相对路径 base (`./`) + apps/* 静态服务与构建同步插件
-├── index.html                       # 标准 React/Vite 根入口
-├── metadata.json                    # Google AI Studio 应用元数据
-└── .gitignore                       # 忽略 node_modules/、dist/、.env* 等本地与临时文件
-```
-
-核心设计特性：
-
-- **单一启动与预览入口**：只需执行 `npm run dev`（固定端口 `3000`），首页即可启动任意子应用并随时切回目录，无需维护多套开发服务器。
-- **首页零引擎空转**：停留在应用大厅（`/`）时，不会提前初始化任何子应用的 WebGL 上下文、`requestAnimationFrame` 循环或 Web Audio 实例。
-- **退出资源完整释放**：从任意小应用返回目录时，自动卸载模块或清空沙盒，彻底释放 WebGL 纹理/缓冲、动画帧、Web Audio / 语音合成与全局键盘/窗口监听。
-- **双路径无缝兼容**：采用 Vite 相对资源基准（`base: './'`）与查询/哈希路由（`?app=<id>` 与 `#/apps/<id>`），构建产物同时兼容根路径 `/`（本地开发、Google AI Studio）与 GitHub Pages 子路径 `/gaistudio/`。
-
----
-
-## 前端设计规范与 Agent 协作记忆
-
-本仓库统一执行以下两项协作治理文件：
-
-- **[`skills/kasidia-frontend-law/SKILL.md`](skills/kasidia-frontend-law/SKILL.md) 与 [`kfl-spec.md`](kfl-spec.md)**：所有前端界面设计、组件复用、交互微动效与视觉走查均严格遵循 **Kasidia Frontend Law (KFL)** 四大法则与六类反 AI 堆砌防线，在 `kfl-spec.md` 中持续维护工作区视觉基线与决策记录。
-- **[`AGENTS.md`](AGENTS.md)**：作为跨会话持久记忆库，沉淀用户偏好（全中文单语文档、瑞士暖纸克制审美）、Agent 能力加强规范（纯逻辑单测先行、资源零泄漏、真实浏览器截图与交互验收）及本仓自有工程方法论。
-
----
-
-## 开发与校验命令
-
-在仓库根目录执行：
+需要 Node.js 22 或更高版本。
 
 ```bash
-npm install          # 安装工作区依赖
-npm run dev          # 启动统一 React 外壳与子应用开发服务器（端口 3000）
-npm run typecheck    # TypeScript 严格类型检查（tsc --noEmit）
-npm test             # 运行物理引擎、增量引擎、收租引擎与外壳规范单元测试
-npm run build        # 构建生产产物 dist/（含根外壳与 apps/* 纯静态运行时资源）
-npm run preview      # 本地预览 dist/ 构建产物
-npm run apps:list    # 列出工作区外壳与已发现的小应用
-npm run apps:check   # 执行 .env 安全检查、工作区契约校验、tsc、单测与 vite build 全量门禁
+npm install
+npm run dev          # 开发服务器，http://localhost:3000
+npm test             # 单元测试（自动发现 src/**/*.test.ts）
+npm run typecheck    # TypeScript 类型检查
+npm run build        # 构建到 dist/
+npm run apps:check   # 提交前的完整检查：密钥检查、类型检查、单测、构建与产物审计
 ```
 
----
+## 技术栈与结构
 
-## 新增小应用接入方式
+React 19 + Vite + TypeScript + Tailwind CSS 4，3D 部分使用 Three.js。所有游戏共用一个外壳：大厅页面不加载任何游戏引擎，进入游戏时才按需加载，返回大厅时释放 WebGL、音频和事件监听。
 
-只需新增小应用目录并在 `src/apps/registry.ts` 增加一条登记项，无需改动 `vite.config.ts`、`package.json` 或底层路由：
+```text
+src/
+├── App.tsx               外壳：路由分发与顶栏
+├── apps/
+│   ├── registry.ts       游戏注册表，新增游戏只需在这里登记
+│   └── <id>/             各游戏源码（engine.ts 纯逻辑 + engine.test.ts 单测 + *App.tsx 视图）
+├── shell/                大厅、路由、错误兜底
+├── game/ render/ components/   CHRONO STAGE 的物理、渲染与界面
+docs/                     游戏手册与长期兼容约定
+skills/kasidia-frontend-law/   前端设计规范（KFL）
+scripts/workspace.mjs     列表、检查与打包脚本
+```
 
-### 接入 React 小应用（推荐）
+## 参与贡献
 
-1. 在 `src/apps/<slug>/` 下实现并默认导出根组件，在 `useEffect` 清理函数中完整释放定时器、全局监听、RAF 循环及 WebGL/Web Audio 资源。
-2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 中新增配置项，指定 `kind: 'react-lazy'` 与 `loader: () => import('./<slug>/...')`。
-3. 为核心纯逻辑编写 `src/apps/<slug>/engine.test.ts` 单元测试并纳入 `package.json` 与 `scripts/workspace.mjs` 的校验链路。
+欢迎提 Issue 和 PR，修复、平衡调整、新游戏都可以。动手前请先读：
 
-### 接入自包含静态 HTML / 原生 JS 小应用
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)：开发流程、新增游戏的步骤和 PR 要求；
+- [`docs/compatibility.md`](docs/compatibility.md)：不能破坏的链接、存档与注册表约定；
+- [`AGENTS.md`](AGENTS.md)：给编码 Agent 的工程规范与项目偏好，人类贡献者也可以参考；
+- [`skills/kasidia-frontend-law/SKILL.md`](skills/kasidia-frontend-law/SKILL.md) 与 [`kfl-spec.md`](kfl-spec.md)：界面设计规范与本项目的视觉契约。
 
-1. 将自包含静态目录放入 `apps/<slug>/`（包含 `index.html` 与相对路径静态资源）。
-2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 中新增配置项，指定 `kind: 'iframe'` 与 `entryPath: 'apps/<slug>/index.html'`。
-3. `vite.config.ts` 会在开发态自动托管 `/apps/<slug>/`，并在构建时自动过滤文档与 `.env*` 后复制纯静态运行时资源至 `dist/apps/<slug>/`。
+## 许可证
 
----
-
-## Google AI Studio 同步与 GitHub Pages 部署说明
-
-- **整仓统一工作流**：在 Google AI Studio Build 模式中直接绑定 `JerryLiu369/gaistudio` 整仓（框架选择 **React**），各子应用通过 `src/apps/<slug>/` 与 `src/apps/registry.ts` 模块化隔离演进。协作时先拉取最新 `main` 再编辑提交，禁止使用强制推送（`force push`）。
-- **源码私有与静态站点公开隔离**：
-  - `main` 为工作区唯一活跃主分支，源码仓库保持 **Private（私有）**；`ds-stage` 与 `gh-pages` 仅作为历史归档留存，不再作为发布源。
-  - 推送 `main` 会自动触发 [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)，运行 `npm run apps:check` 全量校验后仅将 `./dist` 纯静态编译产物发布至公开的 `https://jerryliu369.github.io/gaistudio/`，绝不泄露 `src/`、`skills/`、`AGENTS.md`、`.env*` 或凭据文件。
-- **密钥安全**：真实密钥仅存放于本地未跟踪的 `.env` 或服务端环境变量，严禁提交进版本历史；占位说明仅写入 `.env.example`。
+本项目代码以 [MIT 许可证](LICENSE) 发布。`skills/kasidia-frontend-law/` 来自上游 [AngleNaris/KFL](https://github.com/AngleNaris/KFL)，来源与许可说明见其中的 [`THIRD_PARTY.md`](skills/kasidia-frontend-law/THIRD_PARTY.md)。

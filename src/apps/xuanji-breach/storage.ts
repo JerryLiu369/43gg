@@ -1,6 +1,6 @@
 import type { DifficultyTier, XuanjiMetaSave } from './types.ts';
 
-const META_STORAGE_KEY = 'gaistudio.xuanji_breach.meta.v1';
+const META_STORAGE_KEY = '43gg.xuanji_breach.meta.v1';
 
 function isValidDifficulty(val: unknown): val is DifficultyTier {
   return val === 'casual' || val === 'standard' || val === 'master';

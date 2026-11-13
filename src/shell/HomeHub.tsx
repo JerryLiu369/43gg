@@ -17,7 +17,7 @@ interface HomeHubProps {
 type CategoryFilter = 'all' | AppCategory;
 type CatalogViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'gaistudio.hub.view_mode.v1';
+const VIEW_MODE_STORAGE_KEY = '43gg.hub.view_mode.v1';
 
 function loadInitialViewMode(): CatalogViewMode {
   if (typeof window === 'undefined') return 'grid';

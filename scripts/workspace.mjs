@@ -52,7 +52,7 @@ function discoverApps() {
 
   const rootPkg = readJsonIfExists(path.join(ROOT_DIR, 'package.json'));
   const rootMeta = readJsonIfExists(path.join(ROOT_DIR, 'metadata.json'));
-  const rootTitle = rootMeta?.name || extractHtmlTitle(path.join(ROOT_DIR, 'index.html')) || rootPkg?.name || 'gaistudio';
+  const rootTitle = rootMeta?.name || extractHtmlTitle(path.join(ROOT_DIR, 'index.html')) || rootPkg?.name || '43gg';
   projects.push({
     slug: 'shell (root)',
     dir: '.',
@@ -119,7 +119,7 @@ function discoverApps() {
 
 function cmdList() {
   const projects = discoverApps();
-  console.log('Projects in JerryLiu369/gaistudio:\n');
+  console.log('Projects in the 43gg workspace:\n');
   for (const p of projects) {
     console.log(`- ${p.slug}`);
     console.log(`  Path:   ${p.dir}`);
@@ -199,8 +199,8 @@ function verifyBuiltDist() {
     throw new Error('dist/index.html missing after vite build');
   }
   const html = fs.readFileSync(indexHtmlPath, 'utf8');
-  if (html.includes('/gaistudio/assets/')) {
-    throw new Error('dist/index.html unexpectedly hardcodes /gaistudio/assets/ prefix');
+  if (html.includes('/43gg/assets/')) {
+    throw new Error('dist/index.html unexpectedly hardcodes /43gg/assets/ prefix');
   }
   if (!html.includes('./assets/')) {
     throw new Error('dist/index.html expected relative ./assets/ asset references for dual root/subpath compatibility');
@@ -270,20 +270,9 @@ function cmdCheck(argv) {
   runBin(tscBin, ['--noEmit'], ROOT_DIR);
   console.log('   OK: tsc --noEmit passed');
 
-  runBin(
-    process.execPath,
-    [
-      '--test',
-      'src/game/physics.test.ts',
-      'src/shell/shell.test.ts',
-      'src/apps/lucky-landlord/engine.test.ts',
-      'src/apps/astral-orrery/engine.test.ts',
-      'src/apps/ink-blade/engine.test.ts',
-      'src/apps/xuanji-breach/engine.test.ts',
-    ],
-    ROOT_DIR,
-  );
-  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord + astral-orrery + ink-blade + xuanji-breach)');
+  // Discover every *.test.ts under src/ so new games are picked up without editing this list.
+  runBin(process.execPath, ['--test', 'src/**/*.test.ts'], ROOT_DIR);
+  console.log('   OK: unit tests passed (src/**/*.test.ts)');
 
   if (!skipBuild) {
     const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');
@@ -394,7 +383,7 @@ function cmdStagePages() {
 
   const distDir = path.join(ROOT_DIR, 'dist');
   fs.writeFileSync(path.join(distDir, '.nojekyll'), '');
-  console.log('Static deployment bundle ready at dist/ (compatible with both / and /gaistudio/).');
+  console.log('Static deployment bundle ready at dist/ (compatible with both / and /43gg/).');
 }
 
 const [, , command = 'list', ...rest] = process.argv;
