@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+@theme {
+  --color-ink-950: #090d10;
+  --color-ink-900: #0d1318;
+  --color-ink-850: #111920;
+  --color-ink-800: #16212a;
+  --color-ink-700: #1e2d38;
+  --color-ink-600: #2a3d49;
+  --color-paper-50: #fbf7ee;
+  --color-paper-100: #f4ecdc;
+  --color-paper-200: #e9dcc4;
+  --color-paper-300: #d9c7a8;
+  --color-paper-400: #c1a87f;
+  --color-paper-500: #9a8a72;
+  --color-paper-600: #6f6454;
+  --color-brass-200: #f5dda4;
+  --color-brass-300: #ecc878;
+  --color-brass-400: #d9a94e;
+  --color-brass-500: #bf8a34;
+  --color-brass-600: #9d6d25;
+  --color-rail-500: #b5483d;
+  --color-rail-600: #93352d;
+  --color-moss-500: #4f7a5b;
+  --color-moss-600: #3c6248;
+}
+
 @layer base {
   :root {
     --font-display: 'Barlow Condensed', 'Noto Sans SC', system-ui, -apple-system, sans-serif;

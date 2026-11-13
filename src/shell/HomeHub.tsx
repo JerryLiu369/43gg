@@ -447,6 +447,94 @@ const AppCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) => {
     );
   }
 
+  if (appId === 'ticket-to-ride-europe') {
+    return (
+      <svg
+        viewBox="0 0 320 180"
+        className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+        fill="none"
+        aria-hidden="true"
+      >
+        <PlateRegistrationMarks />
+        <rect
+          x="54"
+          y="24"
+          width="212"
+          height="132"
+          rx="6"
+          fill="#FAF8F4"
+          stroke="#CFC7B8"
+          strokeWidth="1.5"
+        />
+        <g stroke="#EAE5DC" strokeWidth="1">
+          <line x1="107" y1="24" x2="107" y2="156" />
+          <line x1="160" y1="24" x2="160" y2="156" />
+          <line x1="213" y1="24" x2="213" y2="156" />
+          <line x1="54" y1="68" x2="266" y2="68" />
+          <line x1="54" y1="112" x2="266" y2="112" />
+        </g>
+        <path
+          d="M84 124L126 76L176 88L232 48"
+          stroke="#C2410C"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M92 52L126 76L148 128L226 116"
+          stroke="#0F766E"
+          strokeWidth="2.1"
+          strokeDasharray="6 4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M176 88L226 116"
+          stroke="#1C1917"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <circle cx="84" cy="124" r="5" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.8" />
+        <circle cx="126" cy="76" r="5.5" fill="#C2410C" />
+        <circle cx="176" cy="88" r="5" fill="#0F766E" />
+        <circle cx="232" cy="48" r="5.5" fill="#FAF8F4" stroke="#C2410C" strokeWidth="2" />
+        <circle cx="92" cy="52" r="4" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.6" />
+        <circle cx="148" cy="128" r="4.2" fill="#1C1917" />
+        <circle cx="226" cy="116" r="4.5" fill="#FAF8F4" stroke="#0F766E" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (appId === 'carcassonne-bigbox') {
+    return (
+      <svg
+        viewBox="0 0 320 180"
+        className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+        fill="none"
+        aria-hidden="true"
+      >
+        <PlateRegistrationMarks />
+        <g transform="translate(88 26)">
+          <rect x="0" y="0" width="46" height="42" rx="3" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.5" />
+          <rect x="49" y="0" width="46" height="42" rx="3" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.6" />
+          <rect x="49" y="45" width="46" height="42" rx="3" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.5" />
+          <rect x="98" y="45" width="46" height="42" rx="3" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.5" />
+          <rect x="49" y="90" width="46" height="42" rx="3" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.5" />
+          <path d="M49 21H95" stroke="#0F766E" strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M72 21V132" stroke="#C2410C" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M72 66H144" stroke="#C2410C" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M10 0C16 14 30 14 36 0" fill="#F2EFE9" stroke="#1C1917" strokeWidth="1.5" />
+          <path d="M98 54C112 60 112 72 98 78" fill="#F2EFE9" stroke="#1C1917" strokeWidth="1.5" />
+          <circle cx="72" cy="66" r="6" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.8" />
+          <path
+            d="M23 18C25.2 18 26 20 25.4 21.5L29 23.2C30 23.7 29.8 25.6 28.5 25.6H26.2L28 32H24.6L23 28.6L21.4 32H18L19.8 25.6H17.5C16.2 25.6 16 23.7 17 23.2L20.6 21.5C20 20 20.8 18 23 18Z"
+            fill="#C2410C"
+          />
+        </g>
+      </svg>
+    );
+  }
+
   return <ProceduralCoverGraphic app={app} />;
 };
 
