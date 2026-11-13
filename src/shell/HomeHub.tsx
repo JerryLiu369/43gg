@@ -10,6 +10,59 @@ interface HomeHubProps {
 type CategoryFilter = 'all' | AppCategory;
 
 const AppCoverGraphic: React.FC<{ appId: string }> = ({ appId }) => {
+  if (appId === 'ink-blade') {
+    return (
+      <svg
+        viewBox="0 0 240 150"
+        className="w-full h-full"
+        fill="none"
+        aria-hidden="true"
+      >
+        {/* Minimalist Swiss Xuan-Paper Courtyard & Enso Katana Slash */}
+        <rect
+          x="55"
+          y="25"
+          width="130"
+          height="100"
+          rx="6"
+          fill="#FAF8F4"
+          stroke="#D6D0C4"
+          strokeWidth="1.5"
+        />
+        <line x1="98" y1="25" x2="98" y2="125" stroke="#EFECE5" strokeWidth="1" />
+        <line x1="142" y1="25" x2="142" y2="125" stroke="#EFECE5" strokeWidth="1" />
+        <line x1="55" y1="75" x2="185" y2="75" stroke="#EFECE5" strokeWidth="1" />
+        {/* Sumi Enso Circle */}
+        <path
+          d="M145 53A33 33 0 1 0 149 93"
+          stroke="#1C1917"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        {/* Diagonal Vermilion Issen Blade Flash */}
+        <line
+          x1="78"
+          y1="109"
+          x2="162"
+          y2="39"
+          stroke="#C2410C"
+          strokeWidth="2.8"
+          strokeLinecap="round"
+        />
+        {/* Cinnabar Seal Stamp */}
+        <rect
+          x="151"
+          y="93"
+          width="16"
+          height="16"
+          rx="2.5"
+          fill="#C2410C"
+        />
+        <circle cx="159" cy="101" r="3" fill="#FAF8F4" />
+      </svg>
+    );
+  }
+
   if (appId === 'astral-orrery') {
     return (
       <svg
@@ -246,6 +299,7 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
             {(
               [
                 ['all', '全部'],
+                ['action', '动作'],
                 ['incremental', '增量'],
                 ['strategy', '策略'],
                 ['racing', '竞速'],

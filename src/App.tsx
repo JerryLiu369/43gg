@@ -69,7 +69,7 @@ export default function App() {
   useEffect(() => {
     document.title = activeApp
       ? `${activeApp.title} · gaistudio`
-      : 'gaistudio // Unified WebApp Workspace';
+      : 'gaistudio 统一多应用工作区';
   }, [activeApp]);
 
   const handleLaunchApp = useCallback((appId: string) => {

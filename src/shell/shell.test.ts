@@ -15,8 +15,8 @@ const SHELL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SHELL_DIR, '..', '..');
 const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 
-test('APP_REGISTRY registers astral-orrery, lucky-landlord, and chrono-stage with valid metadata and existing paths', () => {
-  assert.equal(APP_REGISTRY.length, 3);
+test('APP_REGISTRY registers ink-blade, astral-orrery, lucky-landlord, and chrono-stage with valid metadata and existing paths', () => {
+  assert.equal(APP_REGISTRY.length, 4);
   const seenIds = new Set<string>();
 
   for (const app of APP_REGISTRY) {
@@ -47,6 +47,7 @@ test('APP_REGISTRY registers astral-orrery, lucky-landlord, and chrono-stage wit
     }
   }
 
+  assert.equal(getAppById('ink-blade')?.kind, 'react-lazy');
   assert.equal(getAppById('astral-orrery')?.kind, 'react-lazy');
   assert.equal(getAppById('lucky-landlord')?.kind, 'react-lazy');
   assert.equal(getAppById('chrono-stage')?.kind, 'react-lazy');
@@ -134,6 +135,7 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   );
 
   const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  assert.match(readme, /墨刃：一闪/);
   assert.match(readme, /天枢浑仪/);
   assert.match(readme, /吉星包租公/);
   assert.match(readme, /CHRONO STAGE/);

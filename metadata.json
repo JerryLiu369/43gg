@@ -1,6 +1,6 @@
 {
-  "name": "gaistudio // Unified WebApp Workspace",
-  "description": "Unified React workspace shell hosting multiple isolated Google AI Studio web apps and WebGL prototypes.",
+  "name": "gaistudio 统一多应用工作区",
+  "description": "统一 React 多应用工作区，收录《墨刃：一闪》、《天枢浑仪》、《吉星包租公》与《CHRONO STAGE》四款独立交互作品。",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
