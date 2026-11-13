@@ -35,6 +35,7 @@ import { TutorialModal } from './TutorialModal.tsx';
 import { OrreryAudioEngine } from './audio.ts';
 import {
   ACHIEVEMENTS,
+  ASCENSION_NODES,
   CAMERA_PRESETS,
   CRUCIBLE_CHAMBERS,
   DIRECTIVES,
@@ -418,7 +419,7 @@ export default function AstralOrreryApp() {
     audioRef.current?.playSupernovaBoom();
     sceneHandleRef.current?.triggerBurst({ kind: 'supernova' });
     setEraToast(
-      `超新星坍缩脉冲释放！已将 ${res.alignedPlanets} 颗星体强行聚拢向黄金子午门，开启 8s ×2.5 超载！`,
+      `超新星坍缩脉冲释放！已将 ${res.alignedPlanets} 颗星体强行聚拢向黄金子午门，开启 8s ×2.0 超载！`,
     );
     saveOrreryRun(runRef.current);
     syncUiImmediate();
@@ -431,7 +432,7 @@ export default function AstralOrreryApp() {
     audioRef.current?.playSyzygyChord(3);
     sceneHandleRef.current?.triggerBurst({ kind: 'comet' });
     setEraToast(
-      `拦截流火彗星！+${formatNum(res.gainedLuminance)} 星辉 · +${res.gainedFlux} 通量 · 开启 ${res.frenzyAddedSec}s ×3 狂热`,
+      `拦截流火彗星！+${formatNum(res.gainedLuminance)} 星辉 · +${res.gainedFlux} 通量 · 开启 ${res.frenzyAddedSec}s ×2.5 狂热`,
     );
     saveOrreryRun(runRef.current);
     syncUiImmediate();
@@ -620,14 +621,7 @@ export default function AstralOrreryApp() {
 
   const handleUnlockAscensionNode = useCallback(
     (nodeId: AscensionNodeId) => {
-      if (unlockAscensionNode(metaRef.current, nodeId)) {
-        if (nodeId === 'aether_fountain') {
-          runRef.current.directives.quadrant_unlock_8 = true;
-        }
-        if (nodeId === 'cosmic_architect') {
-          runRef.current.directives.auto_architect = true;
-          runRef.current.automator.enabled = true;
-        }
+      if (unlockAscensionNode(metaRef.current, nodeId, runRef.current)) {
         audioRef.current?.playAscensionFanfare();
         saveOrreryMeta(metaRef.current);
         saveOrreryRun(runRef.current);
@@ -643,7 +637,18 @@ export default function AstralOrreryApp() {
     runRef.current = res.nextRun;
     setSwapSourceSlot(null);
     setSelectedSlot(0);
-    setShowAstrolabeModal(false);
+    const hasAffordableNode = ASCENSION_NODES.some(
+      (n) =>
+        !metaRef.current.ascensionNodes[n.id] &&
+        (!n.requires || metaRef.current.ascensionNodes[n.requires]) &&
+        metaRef.current.stardust >= n.costStardust,
+    );
+    setShowAstrolabeModal(hasAffordableNode);
+    setEraToast(
+      `星盘重铸完成！收获 +${formatNum(res.earnedStardust)} 天枢星尘${
+        hasAffordableNode ? '，可立即铭刻星宿天赋' : ''
+      }`,
+    );
     setScreenState('playing');
     audioRef.current?.playAscensionFanfare();
     sceneHandleRef.current?.triggerBurst({ kind: 'ascension' });
@@ -844,7 +849,7 @@ export default function AstralOrreryApp() {
       ? TUTORIAL_QUESTS[uiRun.tutorialStep]
       : null;
 
-  const perfectWindow = uiMeta.ascensionNodes.wide_meridian ? 0.44 : 0.28;
+  const perfectWindow = uiMeta.ascensionNodes.wide_meridian ? 0.42 : 0.28;
   const isMeridianReady = ORBITAL_RINGS.some(
     (d) =>
       uiRun.rings[d.id].unlocked &&
@@ -1033,14 +1038,14 @@ export default function AstralOrreryApp() {
                 {uiRun.frenzySecondsLeft > 0 && (
                   <span className="inline-flex items-center gap-1 text-xs font-mono-num font-bold text-[#FDE047]">
                     <Flame className="w-3.5 h-3.5 text-[#F59E0B]" />
-                    狂热 ×3 ({Math.ceil(uiRun.frenzySecondsLeft)}s)
+                    狂热 ×2.5 ({Math.ceil(uiRun.frenzySecondsLeft)}s)
                   </span>
                 )}
 
                 {uiRun.crucible.supernovaSecondsLeft > 0 && (
                   <span className="inline-flex items-center gap-1 text-xs font-mono-num font-bold text-[#67E8F9]">
                     <Zap className="w-3.5 h-3.5 text-[#38BDF8]" />
-                    坍缩超载 ×2.5 ({Math.ceil(uiRun.crucible.supernovaSecondsLeft)}s)
+                    坍缩超载 ×2.0 ({Math.ceil(uiRun.crucible.supernovaSecondsLeft)}s)
                   </span>
                 )}
 
@@ -1220,7 +1225,7 @@ export default function AstralOrreryApp() {
                     >
                       <Sparkles className="w-3.5 h-3.5 text-[#FDE047]" />
                       <span>
-                        流火彗星正掠过 3D 天穹！点击天际彗星或点此立即拦截（开启 15s ×3.0 狂热）
+                        流火彗星正掠过 3D 天穹！点击天际彗星或点此立即拦截（开启 15s ×2.5 狂热）
                       </span>
                     </button>
                   ) : eraToast || offlineBanner ? (
@@ -1297,7 +1302,7 @@ export default function AstralOrreryApp() {
                     <Compass className="w-3.5 h-3.5" />
                     <span>
                       {isMeridianReady
-                        ? '精准擒纵 ×3! [Space]'
+                        ? `精准擒纵 ×${uiMeta.ascensionNodes.wide_meridian ? 4.2 : 3}! [Space]`
                         : '拨动擒纵 [Space]'}
                     </span>
                   </button>
@@ -1702,7 +1707,7 @@ export default function AstralOrreryApp() {
                       <div className="lg:col-span-7 p-2.5 rounded-lg bg-[#0E172A] border border-[#243452]">
                         {!selectedSlotUnlocked ? (
                           <div className="text-xs text-[#94A3B8] py-4 text-center">
-                            【{selectedPalace.name}】尚未开放 · 累计 120 星辉开放四正宫，敕令【八方星盘扩建】与【周天十二宫全开】开放其余石碑。
+                            【{selectedPalace.name}】尚未开放 · 累计 {formatNum(ERAS[1].unlockLuminance)} 星辉开放四正宫，敕令【八方星盘扩建】与【周天十二宫全开】开放其余石碑。
                           </div>
                         ) : selectedModule ? (
                           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1848,10 +1853,10 @@ export default function AstralOrreryApp() {
 
                           const liveEffect =
                             ch.id === 'fusion'
-                              ? `当前星辉乘区 ×${Math.pow(1.32, lv).toFixed(2)}`
+                              ? `当前星辉乘区 ×${Math.pow(1.18, lv).toFixed(2)}`
                               : ch.id === 'dilation'
-                                ? `转速 +${lv * 9}% · 蓄能回充 +${lv * 22}%`
-                                : `连珠 +${lv * 18}% · 通量 +${lv * 25}%${
+                                ? `转速 +${lv * 6}% · 蓄能回充 +${lv * 15}%`
+                                : `连珠 +${lv * 10}% · 通量 +${lv * 15}%${
                                     lv >= 2
                                       ? ` · 以太自凝 ${Math.round(uiRun.crucible.aetherSynthProgress * 100)}%`
                                       : ''

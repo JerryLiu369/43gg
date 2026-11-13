@@ -53,7 +53,7 @@ export const AstrolabeModal: React.FC<AstrolabeModalProps> = ({
               天枢星盘 · 星宿重铸与永恒铭刻
             </h2>
             <p className="text-xs text-[#94A3B8] mt-0.5">
-              每枚未消耗的天枢星尘常驻提供 +25% 全局星辉产出 · 重铸将完整保留您的【发条智械】编程规则 · 已重铸 {meta.ascensionCount} 次
+              每枚未消耗的天枢星尘常驻提供 +12% 全局星辉产出 · 重铸将完整保留您的【发条智械】编程规则 · 已重铸 {meta.ascensionCount} 次
             </p>
           </div>
           <button
