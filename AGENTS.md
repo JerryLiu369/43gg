@@ -1,6 +1,6 @@
 # AGENTS.md — 工作区持久记忆库与工程宪章
 
-本文档是 `gaistudio` 仓库的**跨会话持久记忆库（Persistent Memory Bank）**与 **Agent 行为宪章**。任何进入本仓库工作的编码 Agent，在开始分析、设计或修改代码前，**必须首先完整阅读本文件与 [`kfl-spec.md`](./kfl-spec.md)**；凡涉及前端界面、组件、排版、色彩、微交互或视觉验收的任务，**必须同步读取并严格遵循 [`skills/kasidia-frontend-law/SKILL.md`](./skills/kasidia-frontend-law/SKILL.md) 及其 [`references/rules.md`](./skills/kasidia-frontend-law/references/rules.md)**。
+本文档是 43gg 小游戏仓库（`JerryLiu369/43gg`）的**跨会话持久记忆库（Persistent Memory Bank）**与 **Agent 行为宪章**。任何进入本仓库工作的编码 Agent，在开始分析、设计或修改代码前，**必须首先完整阅读本文件、[`kfl-spec.md`](./kfl-spec.md) 与 [`docs/compatibility.md`](./docs/compatibility.md)（长期兼容约定）**；凡涉及前端界面、组件、排版、色彩、微交互或视觉验收的任务，**必须同步读取并严格遵循 [`skills/kasidia-frontend-law/SKILL.md`](./skills/kasidia-frontend-law/SKILL.md) 及其 [`references/rules.md`](./skills/kasidia-frontend-law/references/rules.md)**。
 
 ---
 
@@ -51,10 +51,15 @@
   - **实时动作/竞速类**：自动识别触屏或窄屏视口（并支持手动开关），在左右拇指热区提供**虚拟摇杆 + 大尺寸技能触控键**，确保手机和平板无需外接键鼠即可完整通关。
 
 ### 站点品牌与目录扩展性偏好（`43gg 小游戏`）
-- **对外站点品牌固定为 `43gg` / `43gg 小游戏`**：首页顶栏、网页 `<title>`、分享卡片与运行态返回按钮统一展示 **`43gg` / `43gg 小游戏` / `43gg 大厅`**；**严禁**在任何用户可见界面挂出仓库内部目录名 `gaistudio` 或底层模型代号（如 `Carbon`、`Gemini` 等；注：`router.ts` 中兼容 GitHub Pages `/gaistudio/` 部署路径与既有 `localStorage` 内部键名前缀属底层技术兼容，不对用户展示）。
+- **对外站点品牌固定为 `43gg` / `43gg 小游戏`**：首页顶栏、网页 `<title>`、分享卡片与运行态返回按钮统一展示 **`43gg` / `43gg 小游戏` / `43gg 大厅`**；**严禁**在任何用户可见界面挂出旧仓库名 `gaistudio` 或底层模型代号（如 `Carbon`、`Gemini` 等）。
 - **首页目录面向未来 N 款新游戏无感扩展**：后续会持续新增第 6、7…N 款不同品类游戏，大厅排列严禁写死针对固定数量（如 `length === 5`）的特判版式；统一采用均等模块化自适应网格 + 紧凑列表视图切换 + 按 `APP_REGISTRY` 自动派生的动态分类标签（含策略/动作/增量/竞速/解谜/肉鸽/模拟/街机等）+ 实时搜索与程序化几何封面兜底，确保只改注册表即可丝滑扩容。
 - **单仓多应用收口**：所有实验原型、增量游戏与 3D 模拟统一收纳于本仓单一工作区，通过 `src/apps/registry.ts` 集中注册，保持根目录整洁。
-- **源码私有、静态构建公开**：Git 仓库保持 `Private`，GitHub Actions 仅发布编译后的 `./dist` 静态产物，严禁把 `.env*`、源码映射（`.map`）或未脱敏凭据带入构建目录。
+- **公开仓库、开放 PR**：仓库为 `Public`，采用 MIT 许可证，欢迎外部 Issue / PR（以展示和好玩为主，PR 是次要目标）。仓库与构建产物中都严禁出现 `.env*`、源码映射（`.map`）或未脱敏的凭据。面向贡献者的说明集中写在 `README.md` 与 `CONTRIBUTING.md`，Agent 专用规范写在本文件，两者不重复。
+- **双轨协作模型**：
+  - **AI Studio 轨**：用户每次从最新 `main` 新建 Google AI Studio 工程开发新游戏，完成后强制推送回 `main`。在 AI Studio 内工作的 Agent 必须基于开工时的 `main` 演进，不得回退或删除与本次任务无关的既有文件。
+  - **外部维护轨**：其他编码 Agent 与外部贡献者以普通提交或 PR 维护 `main`，PR 由 `.github/workflows/ci.yml` 运行 `npm run apps:check`。
+  - `.aistudio/` 为 AI Studio 本地产物，已加入 `.gitignore`，不入库。
+- **长期兼容红线**：已发布的应用 `id`、`?app=<id>` 链接格式、`localStorage` 存档键名（统一格式 `43gg.<id>.<用途>.v<版本>`，前缀冻结）与 `base: './'` 均属对外契约，详见 [`docs/compatibility.md`](./docs/compatibility.md)；品牌改名不改存档键名。新游戏上线后须把 `id` 追加到 `src/shell/shell.test.ts` 的 `PUBLISHED_IDS`，并在 `README.md` 游戏列表补一行。
 
 ---
 
@@ -101,7 +106,7 @@
   - 支持 `?autostart=1` 查询参数跳过标题封面直达主运行态，便于自动化回归快速切入核心循环。
 
 ### 方法二：双路径同构路由与静态资产安全摆渡
-- **适用场景**：工作区同时部署在本地/AI Studio 根路径 `/` 与 GitHub Pages 项目子路径 `/gaistudio/`。
+- **适用场景**：工作区同时部署在本地/AI Studio 根路径 `/` 与 GitHub Pages 项目子路径 `/43gg/`（仓库改名后为任意新子路径）。
 - **标准做法**：
   - `vite.config.ts` 保持 `base: './'`，所有路由跳转统一走 `src/shell/router.ts`（`buildAppUrl` / `buildHomeUrl` / `parseAppIdFromLocation`），以 `?app=<slug>` 为主路由并兼容 `#/apps/<slug>`。
   - 静态子应用通过 `vite.config.ts` 内置的 `workspaceStaticAppsPlugin` 在开发态映射 `/apps/<slug>/`，构建态自动剔除 `.env*` 与 `.md` 后拷贝至 `dist/apps/<slug>/`。
@@ -109,7 +114,7 @@
 ### 方法三：小应用“两步注册 + 一键门禁”标准流水线
 - **标准做法**：
   1. 在 `src/apps/<slug>/` 建立模块化目录（`content.ts` 静态配置、`types.ts` 类型定义、`engine.ts` 纯逻辑状态机、`engine.test.ts` 单测、`storage.ts` 持久化、`audio.ts` 合成音效、`*App.tsx` 视图层）。
-  2. 在 `src/apps/registry.ts` 添加唯一注册项并在 `HomeHub.tsx` 补充契合瑞士极简线条风格的矢量封面 `AppCoverGraphic`。
+  2. 在 `src/apps/registry.ts` 添加唯一注册项（单测由 `src/**/*.test.ts` 自动发现，无需改测试清单）并在 `HomeHub.tsx` 补充契合瑞士极简线条风格的矢量封面 `AppCoverGraphic`。
   3. 收尾统一执行 `npm run apps:check`，一站式完成 `.env` 跟踪检查、工作区必备文件核验、`tsc --noEmit`、全量单元测试、`vite build` 以及 `dist/` 源码/密钥零泄漏审计。
 
 ### 方法四：KFL 共享拥有者根因修复法（Shared-Owner Repair）
@@ -146,3 +151,4 @@
 | 2026-11-12 | 将「实战分步新手指引、适中渐进难度曲线（三档可选）与原生多端触屏可玩」确立为全仓游戏最高优先级铁律，同步补齐《璇玑破阵》与《墨刃：一闪》的交互式实战教学、三档难度及移动端触屏操控。 | 用户明确指令 |
 | 2026-11-13 | 完成工作区存量三款游戏（《天枢浑仪》《吉星包租公》《CHRONO STAGE》）的实战分步带教（支持任意进度一键重温）、平滑难度档位与移动端 `390×844` 零重叠双拇指触控改造，实现全仓 5 款游戏 100% 达标。 | 用户明确指令 |
 | 2026-11-13 | 确立站点对外品牌名为 **`43gg 小游戏`**（界面彻底移除 `gaistudio` 与模型代号文案），并将首页大厅重构为面向未来 N 款新游戏无感扩容的均等三列卡片网格 + 紧凑列表双视图、动态分类派生、实时检索与程序化瑞士几何封面兜底架构。 | 用户明确指令 |
+| 2026-11-13 | 仓库转为 `Public` 并开放 PR：新增 MIT `LICENSE`、`CONTRIBUTING.md`、PR 模板与 PR 校验 CI，重写面向玩家与贡献者的 `README.md`；新建 `docs/compatibility.md` 固化应用 id、路由、存档键名（`43gg.` 前缀冻结）与注册表的长期兼容约定；单测改为通配自动发现；仓库由 `gaistudio` 改名为 `43gg`（Pages 地址变为 `/43gg/`），存档键名趁公开前统一为 `43gg.<id>.<用途>.v1`；删除 `.aistudio/` 与归档分支 `ds-stage` / `gh-pages`；记录「AI Studio 强推 + 外部 Agent/PR 维护」双轨协作模型。 | 用户明确指令 |

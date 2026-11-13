@@ -1,9 +1,9 @@
 import { SPORT_INPUT_SETTINGS, DEFAULT_TUNING } from './physics.ts';
 import type { InputSettings, StageRecord, TuningSetup } from './types.ts';
 
-const RECORDS_KEY = 'chrono_rally_stage_records_v1';
-const TUNING_PRESETS_KEY = 'chrono_rally_tuning_presets_v1';
-const INPUT_SETTINGS_KEY = 'chrono_rally_input_settings_v3';
+const RECORDS_KEY = '43gg.chrono_stage.records.v1';
+const TUNING_PRESETS_KEY = '43gg.chrono_stage.tuning_presets.v1';
+const INPUT_SETTINGS_KEY = '43gg.chrono_stage.input_settings.v1';
 
 export function loadStageRecords(): Record<string, StageRecord> {
   try {
@@ -133,7 +133,7 @@ export function saveInputSettings(settings: InputSettings): void {
   }
 }
 
-const ONBOARDING_KEY = 'chrono_rally_onboarding_v1';
+const ONBOARDING_KEY = '43gg.chrono_stage.onboarding.v1';
 
 export function loadRallyOnboardingCompleted(): boolean {
   try {

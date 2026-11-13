@@ -15,8 +15,13 @@ const SHELL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SHELL_DIR, '..', '..');
 const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 
-test('APP_REGISTRY registers xuanji-breach, ink-blade, astral-orrery, lucky-landlord, and chrono-stage with valid metadata and existing paths', () => {
-  assert.equal(APP_REGISTRY.length, 5);
+test('APP_REGISTRY keeps every published app id and each entry has valid metadata and existing paths', () => {
+  // Published ids are part of the public URL (?app=<id>) and save-key contract; they may be added to, never removed.
+  // See docs/compatibility.md.
+  const PUBLISHED_IDS = ['xuanji-breach', 'ink-blade', 'astral-orrery', 'lucky-landlord', 'chrono-stage'];
+  for (const id of PUBLISHED_IDS) {
+    assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
+  }
   const seenIds = new Set<string>();
 
   for (const app of APP_REGISTRY) {
@@ -59,8 +64,8 @@ test('APP_REGISTRY registers xuanji-breach, ink-blade, astral-orrery, lucky-land
 test('router parses query, hash, and path app routes safely', () => {
   assert.equal(parseAppIdFromLocation('', '', '/', VALID_IDS), null);
   assert.equal(parseAppIdFromLocation('?app=chrono-stage', '', '/', VALID_IDS), 'chrono-stage');
-  assert.equal(parseAppIdFromLocation('?app=LUCKY-LANDLORD', '', '/gaistudio/', VALID_IDS), 'lucky-landlord');
-  assert.equal(parseAppIdFromLocation('', '#/apps/lucky-landlord', '/gaistudio/', VALID_IDS), 'lucky-landlord');
+  assert.equal(parseAppIdFromLocation('?app=LUCKY-LANDLORD', '', '/43gg/', VALID_IDS), 'lucky-landlord');
+  assert.equal(parseAppIdFromLocation('', '#/apps/lucky-landlord', '/43gg/', VALID_IDS), 'lucky-landlord');
   assert.equal(parseAppIdFromLocation('', '#/app/chrono-stage?autostart=1', '/', VALID_IDS), 'chrono-stage');
   assert.equal(parseAppIdFromLocation('', '#lucky-landlord', '/', VALID_IDS), 'lucky-landlord');
   assert.equal(parseAppIdFromLocation('', '', '/app/chrono-stage', VALID_IDS), 'chrono-stage');
@@ -68,22 +73,22 @@ test('router parses query, hash, and path app routes safely', () => {
   assert.equal(parseAppIdFromLocation('?app=nonexistent', '', '/', VALID_IDS), null);
 });
 
-test('router builds portable URLs for root (/) and subpath (/gaistudio/) origins', () => {
+test('router builds portable URLs for root (/) and subpath (/43gg/) origins', () => {
   assert.equal(
     buildAppUrl('http://127.0.0.1:3000/', 'chrono-stage', VALID_IDS),
     '/?app=chrono-stage',
   );
   assert.equal(
-    buildAppUrl('https://jerryliu369.github.io/gaistudio/', 'lucky-landlord', VALID_IDS),
-    '/gaistudio/?app=lucky-landlord',
+    buildAppUrl('https://jerryliu369.github.io/43gg/', 'lucky-landlord', VALID_IDS),
+    '/43gg/?app=lucky-landlord',
   );
   assert.equal(
     buildAppUrl('http://127.0.0.1:3000/app/chrono-stage', 'lucky-landlord', VALID_IDS),
     '/?app=lucky-landlord',
   );
   assert.equal(
-    buildHomeUrl('https://jerryliu369.github.io/gaistudio/?app=chrono-stage&autostart=1', VALID_IDS),
-    '/gaistudio/',
+    buildHomeUrl('https://jerryliu369.github.io/43gg/?app=chrono-stage&autostart=1', VALID_IDS),
+    '/43gg/',
   );
   assert.equal(
     buildHomeUrl('http://127.0.0.1:3000/?app=chrono-stage&autostart=1', VALID_IDS),
@@ -91,7 +96,7 @@ test('router builds portable URLs for root (/) and subpath (/gaistudio/) origins
   );
 });
 
-test('buildIframeEntryUrl resolves static sub-apps cleanly on both root and /gaistudio/ subpath', () => {
+test('buildIframeEntryUrl resolves static sub-apps cleanly on both root and /43gg/ subpath', () => {
   const mockIds = [...VALID_IDS, 'demo-static'];
   assert.equal(
     buildIframeEntryUrl('apps/demo-static/index.html', 'http://127.0.0.1:3000/?app=demo-static', mockIds),
@@ -100,10 +105,10 @@ test('buildIframeEntryUrl resolves static sub-apps cleanly on both root and /gai
   assert.equal(
     buildIframeEntryUrl(
       'apps/demo-static/index.html',
-      'https://jerryliu369.github.io/gaistudio/?app=demo-static&stage=1',
+      'https://jerryliu369.github.io/43gg/?app=demo-static&stage=1',
       mockIds,
     ),
-    'https://jerryliu369.github.io/gaistudio/apps/demo-static/index.html?stage=1',
+    'https://jerryliu369.github.io/43gg/apps/demo-static/index.html?stage=1',
   );
 });
 
@@ -176,20 +181,20 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
   assert.ok(store.has(HUB_LAST_PLAYED_KEY));
 
   store.set(
-    'gaistudio.xuanji_breach.meta.v1',
+    '43gg.xuanji_breach.meta.v1',
     JSON.stringify({ runsPlayed: 3, victories: 1, bestScore: 2480, highestSectorReached: 4 }),
   );
   store.set(
-    'gaistudio.ink_blade.meta.v1',
+    '43gg.ink_blade.meta.v1',
     JSON.stringify({ highestUnlockedStage: 2, bestScore: 1850, totalKills: 36, totalVictories: 0 }),
   );
-  store.set('gaistudio.astral_orrery.meta.v1', '{corrupted_json');
+  store.set('43gg.astral_orrery.meta.v1', '{corrupted_json');
   store.set(
-    'gaistudio.lucky_landlord.active_run.v1',
+    '43gg.lucky_landlord.active_run.v1',
     JSON.stringify({ phase: 'spinning', cycle: 4, coins: 128 }),
   );
   store.set(
-    'chrono_rally_stage_records_v1',
+    '43gg.chrono_stage.records.v1',
     JSON.stringify({ ss1: { bestTimeSec: 104.2 }, ss2: { bestTimeSec: 112.8 } }),
   );
 

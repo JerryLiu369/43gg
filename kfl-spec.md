@@ -1,11 +1,11 @@
-# KFL 规格契约 — gaistudio 统一多应用工作区
+# KFL 规格契约 — 43gg 小游戏
 
-本文件依据 [`skills/kasidia-frontend-law/SKILL.md`](./skills/kasidia-frontend-law/SKILL.md) 与 [`references/spec-template.md`](./skills/kasidia-frontend-law/references/spec-template.md) 建立，记录 `gaistudio` 工作区外壳与子应用接入的视觉基线、作用域契约、保留决策与核验状态，作为跨迭代的工作记忆。
+本文件依据 [`skills/kasidia-frontend-law/SKILL.md`](./skills/kasidia-frontend-law/SKILL.md) 与 [`references/spec-template.md`](./skills/kasidia-frontend-law/references/spec-template.md) 建立，记录 43gg 工作区外壳与子应用接入的视觉基线、作用域契约、保留决策与核验状态，作为跨迭代的工作记忆。
 
 ## 上下文概览（Context）
 
 - **当前模式 / 阶段**：Change / Stage 6（基线固化与持续演进）
-- **适用范围**：`gaistudio` 统一外壳（`src/App.tsx`、`src/shell/HomeHub.tsx`、`src/shell/AppErrorBoundary.tsx`、`src/index.css`）及子应用接入边界
+- **适用范围**：43gg 统一外壳（`src/App.tsx`、`src/shell/HomeHub.tsx`、`src/shell/AppErrorBoundary.tsx`、`src/index.css`）及子应用接入边界
 - **视觉路径**：`Inherit`（外壳沿用既有瑞士暖纸极简设计系统；独立子应用视口内部按各自题材沿用既有基线或在新立项时单独声明 `Explore`）
 - **授权依据**：用户指令要求全仓长期遵循 `AngleNaris/KFL` 前端法则，文档统一采用简体中文
 
@@ -14,7 +14,7 @@
 | 核心任务与主操作 | 用户在工作区目录快速浏览、按类别筛选并一键启动隔离的 WebApp / 游戏原型；运行态可随时一键返回目录或重新加载当前应用 |
 | 支持平台、输入与窗口范围 | 全端覆盖：桌面端（1280–1920 CSS px 常规视口）与平板/手机竖屏视口（`390×844` 起）同等支持；输入同时兼容鼠标/键盘、触屏（战棋双点确认预览、动作类虚拟摇杆+技能键）与手柄（Gamepad API） |
 | 真实内容与数据来源 | 注册表 `src/apps/registry.ts` 中的真实内置应用（`璇玑破阵`、`墨刃：一闪`、`天枢浑仪`、`吉星包租公`、`CHRONO STAGE`）；各子应用进度、难度偏好与新手指引状态持久化于浏览器本地独立命名空间 `localStorage` |
-| 品牌、主题与几何语言 | 品牌名 `gaistudio`；外壳采用单色明亮瑞士暖纸主题（`#FAF8F4` 纸底 + `#FFFFFF` 卡片 + `#1C1917` 主墨色 + `#C2410C` 朱砂印章色）；克制小圆角体系（按钮/标签 `6px`、筛选组 `8px`、应用卡片 `12px`） |
+| 品牌、主题与几何语言 | 对外品牌名 `43gg` / `43gg 小游戏`；外壳采用单色明亮瑞士暖纸主题（`#FAF8F4` 纸底 + `#FFFFFF` 卡片 + `#1C1917` 主墨色 + `#C2410C` 朱砂印章色）；克制小圆角体系（按钮/标签 `6px`、筛选组 `8px`、应用卡片 `12px`） |
 | 既有系统与界面基线 | `src/index.css` 语义变量、`src/shell/HomeHub.tsx` 纯净卡片网格与几何线条封面图、`src/App.tsx` `44px`（`h-11`）顶栏 |
 | 图标体系、语言与排版方向 | `lucide-react` 线性矢量图标 + 手绘几何 SVG 封面（`ICO-1`）；全中文界面与全中文仓库文档（LTR 横排，`Noto Sans SC` + `Plus Jakarta Sans` + `Barlow Condensed` + `JetBrains Mono`） |
 | 作用域与需保留决策 | 保持外壳大厅“零冗余文案、零假状态指示器、零引擎空转”的纯净目录体验；不改动既有三款子应用的成熟核心玩法与各自题材美术风格 |
@@ -28,7 +28,7 @@
 - **视觉意图与优先级**：以克制、耐看、诚实的瑞士网格秩序呈现应用目录，让作品封面与标题成为绝对视觉主角；严格按 KFL `GOV-1..4` 排序，杜绝一切无意义的装饰条、假状态绿点与凑数文案。
 - **视觉基线**：以当前线上/本地运行的 `HomeHub` 与运行态顶栏实际渲染效果为 `Inherit` 基线，后续常规维护与新增子应用卡片直接复用该基线，无需重新生成概念设计图。
 - **内容与层级**：
-  - 顶栏仅保留左侧工作区标识 `gaistudio` 与右侧分类筛选器（`全部 / 动作 / 增量 / 策略 / 竞速`）。
+  - 顶栏仅保留左侧站点标识 `43gg` 与右侧分类筛选器（`全部 / 动作 / 增量 / 策略 / 竞速`）。
   - 每张应用卡片仅展示 `16:10` 瑞士几何线条矢量封面、应用主标题、精炼副标题与右上角启动箭头，通过删减测试（`CON-4`）剔除重复技术标签堆砌。
 - **三级对齐作用域（`ALN-2..4`）**：
   - **Page Frame**：`max-w-5xl` 居中容器，水平内边距 `px-6 sm:px-10`，顶栏与主内容网格严格共享左右内容边缘（`ALN-12`）。

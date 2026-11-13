@@ -5,7 +5,7 @@ import type {
   RunSummarySnapshot,
 } from './types.ts';
 
-const META_STORAGE_KEY = 'gaistudio.ink_blade.meta.v1';
+const META_STORAGE_KEY = '43gg.ink_blade.meta.v1';
 
 function isValidDifficulty(val: unknown): val is InkBladeDifficulty {
   return val === 'casual' || val === 'standard' || val === 'master';

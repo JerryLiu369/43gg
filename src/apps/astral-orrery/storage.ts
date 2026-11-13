@@ -12,9 +12,9 @@ import type {
   OrreryRunState,
 } from './types.ts';
 
-const RUN_STORAGE_KEY = 'gaistudio.astral_orrery.run.v1';
-const META_STORAGE_KEY = 'gaistudio.astral_orrery.meta.v1';
-const PREFS_STORAGE_KEY = 'gaistudio.astral_orrery.prefs.v1';
+const RUN_STORAGE_KEY = '43gg.astral_orrery.run.v1';
+const META_STORAGE_KEY = '43gg.astral_orrery.meta.v1';
+const PREFS_STORAGE_KEY = '43gg.astral_orrery.prefs.v1';
 
 const VALID_BUY_MODES = new Set<BuyMode>(['1', '10', 'next', 'max']);
 const VALID_CAMERAS = new Set<CameraPresetId>([

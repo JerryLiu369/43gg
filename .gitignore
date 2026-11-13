@@ -8,3 +8,6 @@ coverage/
 !.env.example
 .aistudio/**/.tempmediaStorage/
 .playwright-cli/
+
+# Google AI Studio 本地产物（计划草稿等），不入库
+.aistudio/

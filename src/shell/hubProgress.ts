@@ -11,15 +11,15 @@ export interface HubProgressSnapshot {
   progressByAppId: Record<string, string>;
 }
 
-export const HUB_LAST_PLAYED_KEY = 'gaistudio.hub.last_played.v1';
+export const HUB_LAST_PLAYED_KEY = '43gg.hub.last_played.v1';
 
-const XUANJI_META_KEY = 'gaistudio.xuanji_breach.meta.v1';
-const INK_BLADE_META_KEY = 'gaistudio.ink_blade.meta.v1';
-const ORRERY_RUN_KEY = 'gaistudio.astral_orrery.run.v1';
-const ORRERY_META_KEY = 'gaistudio.astral_orrery.meta.v1';
-const LANDLORD_RUN_KEY = 'gaistudio.lucky_landlord.active_run.v1';
-const LANDLORD_META_KEY = 'gaistudio.lucky_landlord.meta.v1';
-const RALLY_RECORDS_KEY = 'chrono_rally_stage_records_v1';
+const XUANJI_META_KEY = '43gg.xuanji_breach.meta.v1';
+const INK_BLADE_META_KEY = '43gg.ink_blade.meta.v1';
+const ORRERY_RUN_KEY = '43gg.astral_orrery.run.v1';
+const ORRERY_META_KEY = '43gg.astral_orrery.meta.v1';
+const LANDLORD_RUN_KEY = '43gg.lucky_landlord.active_run.v1';
+const LANDLORD_META_KEY = '43gg.lucky_landlord.meta.v1';
+const RALLY_RECORDS_KEY = '43gg.chrono_stage.records.v1';
 
 function safeParseJson<T>(raw: string | null): T | null {
   if (!raw) return null;

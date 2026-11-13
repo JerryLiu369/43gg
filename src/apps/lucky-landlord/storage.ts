@@ -1,9 +1,9 @@
 import { LANDLORDS_BY_ID, ROOMS_BY_ID, SYMBOLS_BY_ID } from './content.ts';
 import type { MetaSaveData, RoomTypeId, RunRecordSummary, RunState } from './types.ts';
 
-const ACTIVE_RUN_KEY = 'gaistudio.lucky_landlord.active_run.v1';
-const META_SAVE_KEY = 'gaistudio.lucky_landlord.meta.v1';
-const PREFS_KEY = 'gaistudio.lucky_landlord.prefs.v1';
+const ACTIVE_RUN_KEY = '43gg.lucky_landlord.active_run.v1';
+const META_SAVE_KEY = '43gg.lucky_landlord.meta.v1';
+const PREFS_KEY = '43gg.lucky_landlord.prefs.v1';
 
 export interface UserPrefs {
   muted: boolean;
