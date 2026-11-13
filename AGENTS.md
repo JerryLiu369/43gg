@@ -155,3 +155,4 @@
 | 2026-11-13 | 仓库转为 `Public` 并开放 PR：新增 MIT `LICENSE`、`CONTRIBUTING.md`、PR 模板与 PR 校验 CI，重写面向玩家与贡献者的 `README.md`；新建 `docs/compatibility.md` 固化应用 id、路由、存档键名（`43gg.` 前缀冻结）与注册表的长期兼容约定；单测改为通配自动发现；仓库由 `gaistudio` 改名为 `43gg`（Pages 地址变为 `/43gg/`），存档键名趁公开前统一为 `43gg.<id>.<用途>.v1`；删除 `.aistudio/` 与归档分支 `ds-stage` / `gh-pages`；记录「AI Studio 强推 + 外部 Agent/PR 维护」双轨协作模型。 | 用户明确指令 |
 | 2026-11-13 | 大厅卡片与列表新增作品署名「作者 · 模型」：`WorkspaceAppEntry` 增加必填字段 `author` / `model`（可被搜索），单测强制非空；撤销原「界面禁止出现模型代号」规则，改为模型名仅限署名位置展示。 | 用户明确指令 |
 | 2026-11-13 | 卡片底栏由全站模板文案改为各游戏必填的 `highlights` 卖点；新增 `src/shell/chunkRecovery.ts`：重新部署后旧页面请求已删除的分包导致「Failed to fetch dynamically imported module」时自动刷新一次（sessionStorage 防循环）。 | 用户反馈 |
+| 2026-11-13 | 大厅美化：首页副标题去掉「全部游戏均内置…」的全站承诺（各游戏卖点由 `highlights` 自述），加入「投稿你的游戏」链接；页脚新增投稿指南与 GitHub 源码链接（地址集中在 `src/shell/site.ts`）；隐藏搜索框原生清除按钮避免双 ×；分享元信息改为不列举具体游戏的通用描述；README 顶部加入大厅截图 `docs/images/hub.png`（界面明显变化时同步重截）。 | 用户明确指令 |

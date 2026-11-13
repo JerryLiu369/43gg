@@ -4,6 +4,8 @@
 
 **在线游玩：<https://jerryliu369.github.io/43gg/>**
 
+[![43gg 小游戏大厅](docs/images/hub.png)](https://jerryliu369.github.io/43gg/)
+
 ## 游戏列表
 
 | 游戏 | 类型 | 简介 | 作者 / 模型 | 直达 |
