@@ -28,6 +28,7 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     'carcassonne-bigbox',
     'inch-of-shade',
     'moon-mirror',
+    'mistlight-voyage',
   ];
   for (const id of PUBLISHED_IDS) {
     assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
@@ -252,6 +253,10 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
       },
     }),
   );
+  store.set('43gg.mistlight_voyage.progress.v1', JSON.stringify({ version: 1, records: {
+    'first-light': { stars: 3, moves: 1, difficulty: 'standard' },
+    'around-the-cape': { stars: 2, moves: 7, difficulty: 'standard' },
+  } }));
 
   const snap = readHubSnapshot(VALID_IDS, mockStorage);
   assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
@@ -264,6 +269,7 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
   assert.match(snap.progressByAppId['chrono-stage'], /已刷新 2 \/ 6 站/);
   assert.match(snap.progressByAppId['ticket-to-ride-europe'], /已胜出 1 局/);
   assert.match(snap.progressByAppId['carcassonne-bigbox'], /第 7 回合拼图中/);
+  assert.equal(snap.progressByAppId['mistlight-voyage'], '已通航 2 片海域 · 收集 5 枚星');
 
   // Unknown app ID in last_played is safely ignored
   recordLastPlayedApp('nonexistent-game', mockStorage);

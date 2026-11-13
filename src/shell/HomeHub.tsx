@@ -114,6 +114,24 @@ const ProceduralCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) =
 };
 
 const AppCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) => {
+  if (app.id === 'mistlight-voyage') {
+    return (
+      <svg viewBox="0 0 320 180" className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out" fill="none" aria-hidden="true">
+        <PlateRegistrationMarks />
+        <g stroke="#D8D3C7" strokeWidth="1">
+          <path d="M45 142Q83 130 116 143T192 140T274 137M51 150Q81 140 119 152T196 149T268 147" />
+          <ellipse cx="90" cy="114" rx="27" ry="12" /><ellipse cx="161" cy="114" rx="25" ry="12" /><ellipse cx="161" cy="56" rx="26" ry="12" /><ellipse cx="241" cy="56" rx="24" ry="12" />
+        </g>
+        <path d="M90 106H161V51H241" stroke="#0F766E" strokeWidth="2.5" />
+        <path d="m147 120 28-28M147 65l28-28" stroke="#1C1917" strokeWidth="4" strokeLinecap="round" />
+        <path d="M79 114 83 76h14l4 38M80 77l10-11 10 11ZM82 87h16" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.5" />
+        <path d="M230 58 234 20h14l4 38M231 21l10-11 10 11ZM233 31h16" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.5" />
+        <circle cx="90" cy="84" r="3" fill="#C2410C" /><circle cx="241" cy="28" r="3" fill="#0F766E" />
+        <path d="M202 113h29l-6 7h-18ZM217 87v25l-14-1Z" stroke="#C2410C" strokeWidth="1.5" fill="#FAF8F4" />
+        <circle cx="61" cy="42" r="14" stroke="#CFC7B8" /><path d="M61 23v38M42 42h38" stroke="#CFC7B8" /><path d="m61 31 4 11-4 11-4-11Z" fill="#0F766E" />
+      </svg>
+    );
+  }
   const { id: appId } = app;
 
   if (appId === 'xuanji-breach') {
