@@ -535,6 +535,72 @@ const AppCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) => {
     );
   }
 
+  if (appId === 'inch-of-shade') {
+    return (
+      <svg
+        viewBox="0 0 320 180"
+        className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+        fill="none"
+        aria-hidden="true"
+      >
+        <PlateRegistrationMarks />
+        <rect
+          x="64"
+          y="30"
+          width="192"
+          height="120"
+          rx="6"
+          fill="#FAF8F4"
+          stroke="#CFC7B8"
+          strokeWidth="1.5"
+        />
+        <g stroke="#EAE5DC" strokeWidth="1">
+          <line x1="96" y1="30" x2="96" y2="150" />
+          <line x1="128" y1="30" x2="128" y2="150" />
+          <line x1="160" y1="30" x2="160" y2="150" />
+          <line x1="192" y1="30" x2="192" y2="150" />
+          <line x1="224" y1="30" x2="224" y2="150" />
+          <line x1="64" y1="60" x2="256" y2="60" />
+          <line x1="64" y1="90" x2="256" y2="90" />
+          <line x1="64" y1="120" x2="256" y2="120" />
+        </g>
+        {/* 屋檐 */}
+        <rect x="64" y="30" width="192" height="30" fill="#EAE5DC" />
+        <line x1="64" y1="60" x2="256" y2="60" stroke="#1C1917" strokeWidth="1.5" />
+        {/* 午后的影子：向东延伸 */}
+        <rect x="176" y="90" width="64" height="30" fill="#1C1917" opacity="0.12" />
+        {/* 影子转动的轨迹：西 → 北 → 东 */}
+        <path
+          d="M132 105A44 44 0 0 1 220 105"
+          stroke="#0F766E"
+          strokeWidth="1.4"
+          strokeDasharray="4 3.5"
+        />
+        <polyline
+          points="213,99 220,105 225,97"
+          stroke="#0F766E"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* 晷针 */}
+        <rect x="167" y="96" width="18" height="18" rx="2" fill="#1C1917" />
+        {/* 太阳 */}
+        <circle cx="114" cy="135" r="7" fill="#C2410C" />
+        {/* 猫在影子里 */}
+        <circle cx="208" cy="105" r="5.2" fill="#C2410C" />
+        <circle cx="208" cy="105" r="9.5" stroke="#C2410C" strokeWidth="1.2" opacity="0.5" />
+        {/* 鱼干架 */}
+        <path
+          d="M232 128L240 140H224L232 128Z"
+          stroke="#1C1917"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   return <ProceduralCoverGraphic app={app} />;
 };
 

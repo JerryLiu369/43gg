@@ -26,6 +26,7 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     'chrono-stage',
     'ticket-to-ride-europe',
     'carcassonne-bigbox',
+    'inch-of-shade',
   ];
   for (const id of PUBLISHED_IDS) {
     assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
@@ -73,6 +74,7 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
   assert.equal(getAppById('chrono-stage')?.kind, 'react-lazy');
   assert.equal(getAppById('ticket-to-ride-europe')?.kind, 'react-lazy');
   assert.equal(getAppById('carcassonne-bigbox')?.kind, 'react-lazy');
+  assert.equal(getAppById('inch-of-shade')?.kind, 'react-lazy');
   assert.equal(getAppById('ds-stage'), null);
   assert.equal(getAppById('unknown-app'), null);
 });
@@ -163,6 +165,7 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   assert.match(readme, /CHRONO STAGE/);
   assert.match(readme, /经纬铁道/);
   assert.match(readme, /方寸山河/);
+  assert.match(readme, /寸阴/);
   assert.match(readme, /skills\/kasidia-frontend-law\/SKILL\.md/);
   assert.match(readme, /AGENTS\.md/);
   assert.doesNotMatch(readme, /README_zh\.md/);
@@ -224,8 +227,21 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
     JSON.stringify({ state: { finished: false, turn: { number: 7 } } }),
   );
 
+  store.set(
+    '43gg.inch_of_shade.meta.v1',
+    JSON.stringify({
+      records: {
+        'yan-xia': { solved: true, bestSteps: 9, seal: true },
+        'wu-ying': { solved: true, bestSteps: 8, seal: false },
+        'fen-qiang': { solved: false },
+        broken: 'x',
+      },
+    }),
+  );
+
   const snap = readHubSnapshot(VALID_IDS, mockStorage);
   assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
+  assert.match(snap.progressByAppId['inch-of-shade'], /已叼到 2 \/ 20 条鱼干 · 「妙」印 1/);
   assert.match(snap.progressByAppId['xuanji-breach'], /已破阵通关 1 次/);
   assert.match(snap.progressByAppId['ink-blade'], /解锁至第 3 幕/);
   assert.equal(snap.progressByAppId['astral-orrery'], undefined);
@@ -278,7 +294,10 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
   assert.equal(APP_CATEGORY_LABELS.puzzle, '解谜');
   assert.equal(APP_CATEGORY_LABELS.roguelike, '肉鸽');
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '').length, APP_REGISTRY.length + 2);
-  assert.equal(filterWorkspaceApps(extendedCatalog, 'puzzle', '').length, 1);
+  assert.equal(
+    filterWorkspaceApps(extendedCatalog, 'puzzle', '').length,
+    APP_REGISTRY.filter((app) => app.category === 'puzzle').length + 1,
+  );
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '折射').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'strategy', '罗盘').length, 1);

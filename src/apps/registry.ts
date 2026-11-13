@@ -82,6 +82,22 @@ export interface WorkspaceAppEntry {
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
   {
+    id: 'inch-of-shade',
+    title: '寸阴',
+    subtitle: '日晷光影 · 橘猫只走阴凉的解谜',
+    description: '推动时辰让影子转向，推花盆、借云影，带橘猫踩着阴凉在日落前叼到鱼干。',
+    author: 'JerryLiu369',
+    model: 'Claude Opus 5.5',
+    highlights: ['二十关解谜', '四步实战指引', '三档难度'],
+    techLabel: '光影解谜',
+    tags: ['烧脑解谜', '推箱子'],
+    category: 'puzzle',
+    accent: 'amber',
+    kind: 'react-lazy',
+    loader: () => import('./inch-of-shade/InchOfShadeApp.tsx'),
+    sourceDir: 'src/apps/inch-of-shade',
+  },
+  {
     id: 'xuanji-breach',
     title: '璇玑破阵',
     subtitle: '青铜罗盘移星 · 全明牌立体沙盘战棋',

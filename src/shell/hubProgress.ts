@@ -24,6 +24,8 @@ const TTR_META_KEY = '43gg.ticket_to_ride_europe.meta.v1';
 const TTR_RUN_KEY = '43gg.ticket_to_ride_europe.active_run.v1';
 const CARC_META_KEY = '43gg.carcassonne_bigbox.meta.v1';
 const CARC_RUN_KEY = '43gg.carcassonne_bigbox.active_run.v1';
+const INCH_OF_SHADE_META_KEY = '43gg.inch_of_shade.meta.v1';
+const INCH_OF_SHADE_LEVEL_COUNT = 20;
 
 function safeParseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -263,6 +265,26 @@ function summarizeFangcunRealms(storage: StorageReader): string | null {
   return null;
 }
 
+function summarizeInchOfShade(storage: StorageReader): string | null {
+  const meta = safeParseJson<{ records?: unknown }>(storage.getItem(INCH_OF_SHADE_META_KEY));
+  if (!meta || !meta.records || typeof meta.records !== 'object') return null;
+  let solved = 0;
+  let seals = 0;
+  for (const rec of Object.values(meta.records as Record<string, unknown>)) {
+    if (!rec || typeof rec !== 'object') continue;
+    const r = rec as { solved?: unknown; seal?: unknown };
+    if (r.solved === true) {
+      solved++;
+      if (r.seal === true) seals++;
+    }
+  }
+  if (solved === 0) return null;
+  const capped = Math.min(solved, INCH_OF_SHADE_LEVEL_COUNT);
+  return seals > 0
+    ? `已叼到 ${capped} / ${INCH_OF_SHADE_LEVEL_COUNT} 条鱼干 · 「妙」印 ${seals}`
+    : `已叼到 ${capped} / ${INCH_OF_SHADE_LEVEL_COUNT} 条鱼干`;
+}
+
 export function readHubSnapshot(
   validAppIds: ReadonlyArray<string>,
   storage: StorageReader | null = getBrowserStorage(),
@@ -290,6 +312,7 @@ export function readHubSnapshot(
     ['chrono-stage', summarizeChronoStage(storage)],
     ['ticket-to-ride-europe', summarizeMeridianRails(storage)],
     ['carcassonne-bigbox', summarizeFangcunRealms(storage)],
+    ['inch-of-shade', summarizeInchOfShade(storage)],
   ];
 
   for (const [id, text] of summaries) {
