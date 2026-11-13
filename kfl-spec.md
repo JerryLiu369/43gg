@@ -62,7 +62,7 @@
 | `INT-1..3a` | 卡片、筛选器与顶栏按钮 | default：原生按钮与调色板协调焦点 | pass | conforms | 原生 `<button>` + `aria-pressed` + 朱砂色边框焦点态，无外发光环与侧边彩条 |
 | `COL-3` | 次级辅助文字对比度 | advisory：诊断参考 | pass | intentional choice | `#78716C` 在 `#FAF8F4 / #FFFFFF` 上保持柔和次级层级且实际清晰可读 |
 | `INT-11` | 移动端触屏操控与防误触 | required：用户明确要求多端可玩 | pass | conforms | 战棋支持触屏首点预览/二次确认与紧凑双行拇指坞，动作类支持虚拟摇杆与大触控键 |
-| `VER-1 / VER-2` | 桌面 `1440×900` 与移动 `390×844` 渲染交互 | required：真实双端截图与交互验证 | pass | conforms | 经无头 Chromium 1440×900 与 390×844 双视口实机快照、新手指引与触屏链路验证 |
+| `VER-1 / VER-2` | 桌面 `1440×900` 与移动 `390×844` 渲染交互 | required：真实双端截图与交互验证 | pass | conforms | 《月镜庭》经无头 Edge 精确双视口截图与首关、三晖关实玩；移动端双阶段触摸旋转/移动、撤销、提示、解锁与零横向溢出均通过，证据见 `docs/images/moon-mirror-*.png` 与更新后的大厅截图 |
 
 ---
 
@@ -80,3 +80,4 @@
 | 2026-11-13 | 按用户指令将对外站点品牌统一为 **`43gg` / `43gg 小游戏`**（界面不再展示 `gaistudio` 与模型代号），并将首页目录升级为面向未来任意 N 款游戏可扩展的均等三列卡片网格 + 紧凑列表双视图、自动分类标签派生、实时搜索过滤、本地真实进度摘要及程序化封面兜底。 | 用户明确指令 | `src/shell/HomeHub.tsx`、`src/apps/registry.ts`、`src/App.tsx`、`index.html`、`metadata.json`（`GOV-1`、`ALN-11`、`REU-4`、`CON-3`、`INT-2..3`） |
 | 2026-11-13 | 移植并纯前端离线化《经纬铁道》（`ticket-to-ride-europe`）与《方寸山河》（`carcassonne-bigbox`）两款策略桌游子应用：移除联机/房间/登录与假状态点，保留完整纯逻辑引擎、三档难度本地 AI 对战、交互式新手指引、内置规则弹窗、独立 `43gg.*` 本地存档及桌面/移动端双端视口适配，并在 `HomeHub` 补齐瑞士几何封面。 | 用户明确指令 | `src/apps/ticket-to-ride-europe/*`、`src/apps/carcassonne-bigbox/*`、`src/apps/registry.ts`、`src/shell/*`（`GOV-1`、`STA-2`、`MIN-2`、`INT-11`、`VER-1..2`） |
 | 2026-11-13 | 新增日晷光影解谜子应用《寸阴》（`inch-of-shade`）：外壳继承瑞士暖纸卡片并新增线条封面，大厅首次出现 `解谜` 分类（自动派生）；子应用内部以 `Explore` 确立「盛夏庭院」基线——暖沙地砖、蓝紫冷阴影（正片叠底）、粉墙黛瓦与朱砂主按钮，衬线标题字体按需子集加载并在卸载时移除。触屏采用首点预览路线、再点或点「前往」执行的双阶段交互，「等日头」同样先预览后确认；预览以虚线框、白爪印（安全等待格）与橙色斜纹（即将晒到）表达，不使用 `backdrop-filter`。 | 用户自主创意新游戏指令 | `src/apps/inch-of-shade/*`、`src/apps/registry.ts`、`src/shell/HomeHub.tsx`、`src/shell/hubProgress.ts`（`GOV-1`、`MIN-5`、`INT-2`、`INT-11`、`VER-2`） |
+| 2026-11-13 | 新增光学解谜子应用《月镜庭》（`moon-mirror`）：外壳与大厅封面沿用 `Inherit` 暖纸基线；子应用采用 `Explore` 深夜水庭、月光金属与低亮玻璃色板。九关光路由确定性引擎求解验证，所有旋转/移动均提供真实预演，触屏通过二次轻点或确认键执行。 | 用户自主命题高质量新游戏指令 | `src/apps/moon-mirror/*`、`src/apps/registry.ts`、`src/shell/HomeHub.tsx`（`GOV-4`、`STA-1`、`INT-11`、`VER-1..4`） |

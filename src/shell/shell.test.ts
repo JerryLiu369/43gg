@@ -27,6 +27,7 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     'ticket-to-ride-europe',
     'carcassonne-bigbox',
     'inch-of-shade',
+    'moon-mirror',
   ];
   for (const id of PUBLISHED_IDS) {
     assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
@@ -67,6 +68,8 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     }
   }
 
+  assert.equal(getAppById('moon-mirror')?.kind, 'react-lazy');
+  assert.equal(getAppById('moon-mirror')?.model, 'Kimi K3.1 Pro');
   assert.equal(getAppById('xuanji-breach')?.kind, 'react-lazy');
   assert.equal(getAppById('ink-blade')?.kind, 'react-lazy');
   assert.equal(getAppById('astral-orrery')?.kind, 'react-lazy');
@@ -159,6 +162,8 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   );
 
   const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  assert.match(readme, /月镜庭/);
+  assert.match(readme, /Kimi K3\.1 Pro/);
   assert.match(readme, /墨刃：一闪/);
   assert.match(readme, /天枢浑仪/);
   assert.match(readme, /吉星包租公/);
@@ -209,6 +214,15 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
     '43gg.ink_blade.meta.v1',
     JSON.stringify({ highestUnlockedStage: 2, bestScore: 1850, totalKills: 36, totalVictories: 0 }),
   );
+  store.set(
+    '43gg.moon_mirror.progress.v1',
+    JSON.stringify({ records: {
+      'first-light': { bestMoves: 2, stars: 3, completed: { standard: true } },
+      'twin-dew': { bestMoves: 2, stars: 3, completed: { master: true } },
+      'far-near': { bestMoves: 2, stars: 3 },
+      unknown: { bestMoves: 1, stars: 3, completed: { master: true } },
+    } }),
+  );
   store.set('43gg.astral_orrery.meta.v1', '{corrupted_json');
   store.set(
     '43gg.lucky_landlord.active_run.v1',
@@ -242,6 +256,7 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
   const snap = readHubSnapshot(VALID_IDS, mockStorage);
   assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
   assert.match(snap.progressByAppId['inch-of-shade'], /已叼到 2 \/ 20 条鱼干 · 「妙」印 1/);
+  assert.match(snap.progressByAppId['moon-mirror'], /已唤醒 2 \/ 9 座夜庭/);
   assert.match(snap.progressByAppId['xuanji-breach'], /已破阵通关 1 次/);
   assert.match(snap.progressByAppId['ink-blade'], /解锁至第 3 幕/);
   assert.equal(snap.progressByAppId['astral-orrery'], undefined);
@@ -298,7 +313,10 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
     filterWorkspaceApps(extendedCatalog, 'puzzle', '').length,
     APP_REGISTRY.filter((app) => app.category === 'puzzle').length + 1,
   );
-  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '折射').length, 1);
+  assert.equal(
+    filterWorkspaceApps(extendedCatalog, 'all', '折射').length,
+    filterWorkspaceApps(APP_REGISTRY, 'all', '折射').length + 1,
+  );
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'strategy', '罗盘').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '不存在的游戏词条').length, 0);

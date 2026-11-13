@@ -285,6 +285,40 @@ function summarizeInchOfShade(storage: StorageReader): string | null {
     : `已叼到 ${capped} / ${INCH_OF_SHADE_LEVEL_COUNT} 条鱼干`;
 }
 
+function summarizeMoonMirror(storage: StorageReader): string | null {
+  const validLevelIds = new Set([
+    'first-light',
+    'twin-dew',
+    'far-near',
+    'two-rivers',
+    'moving-stars',
+    'color-chorus',
+    'echo-court',
+    'three-colors',
+    'full-moon',
+  ]);
+  const save = safeParseJson<{
+    records?: Record<string, {
+      bestMoves?: unknown;
+      stars?: unknown;
+      completed?: Record<string, unknown>;
+    }>;
+  }>(storage.getItem('43gg.moon_mirror.progress.v1'));
+  if (!save?.records || typeof save.records !== 'object') return null;
+  const completed = Object.entries(save.records).filter(
+    ([levelId, record]) =>
+      validLevelIds.has(levelId) &&
+      record &&
+      typeof record.bestMoves === 'number' &&
+      Number.isFinite(record.bestMoves) &&
+      record.bestMoves > 0 &&
+      typeof record.stars === 'number' &&
+      Number.isFinite(record.stars) &&
+      ['casual', 'standard', 'master'].some((tier) => record.completed?.[tier] === true),
+  ).length;
+  return completed > 0 ? `已唤醒 ${completed} / 9 座夜庭` : null;
+}
+
 export function readHubSnapshot(
   validAppIds: ReadonlyArray<string>,
   storage: StorageReader | null = getBrowserStorage(),
@@ -305,6 +339,7 @@ export function readHubSnapshot(
   const progressByAppId: Record<string, string> = {};
 
   const summaries: Array<[string, string | null]> = [
+    ['moon-mirror', summarizeMoonMirror(storage)],
     ['xuanji-breach', summarizeXuanji(storage)],
     ['ink-blade', summarizeInkBlade(storage)],
     ['astral-orrery', summarizeAstralOrrery(storage)],

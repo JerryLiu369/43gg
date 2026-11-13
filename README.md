@@ -11,6 +11,7 @@
 | 游戏 | 类型 | 简介 | 作者 / 模型 | 直达 |
 | :--- | :--- | :--- | :--- | :--- |
 | 寸阴 | 光影解谜 | 橘猫只走阴凉：推动时辰让影子转向，推花盆、借云影，二十关赶在日落前叼到鱼干。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=inch-of-shade) |
+| 月镜庭 | 光学解谜 | 九座手工夜庭，旋转与移动银镜，用分光、跃迁和三色合束点亮花铃。 | JerryLiu369 / Kimi K3.1 Pro | [开始](https://jerryliu369.github.io/43gg/?app=moon-mirror) |
 | 璇玑破阵 | 沙盘战棋 | 旋转中央璇玑环偏转敌方弹道，全明牌推演地形连锁。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=xuanji-breach) |
 | 墨刃：一闪 | 瞬身动作 | 水墨风俯视角剑戟动作，击杀刷新一闪，刹那弹反破甲。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=ink-blade) |
 | 天枢浑仪 | 增量放置 | 发条星轨共鸣，构筑星宫棱镜，约 20 分钟完成三次转生。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=astral-orrery) |
