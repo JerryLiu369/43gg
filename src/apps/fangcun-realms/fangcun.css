@@ -1,0 +1,385 @@
+.fc-app {
+  color-scheme: dark;
+  --fc-bg: #0e131b;
+  --fc-panel: rgba(17, 25, 32, 0.9);
+  --fc-ink: #f5f2e9;
+  --fc-muted: #9aa6b8;
+  --fc-line: rgba(235, 205, 130, 0.18);
+  --fc-line-light: rgba(255, 255, 255, 0.08);
+  --fc-accent: #c45d2c;
+  --fc-gold: #d4af37;
+  --fc-gold-light: #f5df97;
+  --fc-danger: #e25547;
+
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.12) 0%, rgba(14, 19, 27, 0.98) 65%),
+    #0e131b;
+  color: var(--fc-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.fc-app .fc-display {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Songti SC', 'Noto Serif SC', Georgia, serif;
+}
+
+.fc-app .fc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: 1px solid var(--fc-line);
+  background: rgba(14, 19, 27, 0.75);
+  color: var(--fc-ink);
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fc-app .fc-btn:hover:not(:disabled) {
+  border-color: var(--fc-gold);
+  background: rgba(28, 38, 54, 0.85);
+}
+
+.fc-app .fc-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.fc-app .fc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fc-app .fc-btn.primary {
+  background: linear-gradient(135deg, #c45d2c 0%, #a4491c 100%);
+  border-color: rgba(245, 223, 151, 0.35);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(196, 93, 44, 0.32);
+}
+
+.fc-app .fc-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d96d38 0%, #b85423 100%);
+  border-color: var(--fc-gold-light);
+}
+
+.fc-app .fc-btn.secondary {
+  border-color: rgba(217, 169, 78, 0.35);
+  background: rgba(217, 169, 78, 0.1);
+  color: #fbecc4;
+}
+
+.fc-app .fc-btn.secondary:hover:not(:disabled) {
+  background: rgba(217, 169, 78, 0.2);
+  border-color: var(--fc-gold);
+}
+
+.fc-app .fc-panel {
+  border: 1px solid rgba(233, 220, 196, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 45%),
+    rgba(17, 25, 32, 0.9);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+.fc-app .fc-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  flex: none;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.fc-app .fc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fc-gold-light);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  font-weight: 600;
+}
+
+/* ---------- Game layout ---------- */
+
+.fc-app .fc-topbar {
+  height: 50px;
+  min-height: 50px;
+  background: rgba(13, 19, 24, 0.94);
+  border-bottom: 1px solid rgba(217, 169, 78, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  z-index: 20;
+}
+
+.fc-app .fc-game {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 370px;
+  overflow: hidden;
+}
+
+.fc-app .fc-board {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(217, 169, 78, 0.06), transparent 70%),
+    radial-gradient(circle at 10% 15%, rgba(255, 255, 255, 0.04), transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(0, 0, 0, 0.5), transparent 60%),
+    linear-gradient(180deg, #18221b 0%, #0d1410 100%);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.fc-app .fc-board:active {
+  cursor: grabbing;
+}
+
+.fc-app .fc-board svg {
+  display: block;
+}
+
+.fc-app .board-tile {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+}
+
+.fc-app .fc-board-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fc-app .fc-board-controls button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(18, 25, 34, 0.9);
+  border: 1px solid var(--fc-line);
+  color: var(--fc-ink);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fc-app .fc-board-controls button:hover {
+  background: rgba(36, 48, 68, 0.95);
+  border-color: var(--fc-gold);
+}
+
+.fc-app .target {
+  cursor: pointer;
+}
+
+.fc-app .square-target {
+  fill: rgba(217, 169, 78, 0.16);
+  stroke: rgba(245, 221, 164, 0.8);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 5;
+  transition: all 0.2s ease;
+}
+
+.fc-app .target:hover .square-target {
+  fill: rgba(255, 238, 120, 0.4);
+  stroke: #ecc878;
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
+
+.fc-app .square-target.selected {
+  fill: rgba(255, 238, 120, 0.22);
+  stroke: #f5dda4;
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+
+.fc-app .square-label {
+  font-size: 22px;
+  font-weight: 700;
+  fill: #ffe066;
+  pointer-events: none;
+}
+
+.fc-app .feature-target {
+  fill: rgba(255, 255, 255, 0.88);
+  stroke: var(--fc-accent);
+  stroke-width: 3;
+  animation: fc-pulse 1.4s ease-in-out infinite;
+}
+
+.fc-app .feature-target.selected {
+  fill: var(--fc-gold-light);
+  stroke: var(--fc-gold);
+}
+
+@keyframes fc-pulse {
+  50% {
+    stroke-width: 6;
+  }
+}
+
+.fc-app .fc-sidebar {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(13, 19, 24, 0.94);
+  border-left: 1px solid rgba(217, 169, 78, 0.16);
+}
+
+.fc-app .fc-pending {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+}
+
+.fc-app .fc-pending.mine {
+  background: linear-gradient(180deg, rgba(217, 169, 78, 0.18), rgba(217, 169, 78, 0.08));
+  border-color: rgba(217, 169, 78, 0.5);
+  color: #fbf7ee;
+  font-weight: 600;
+}
+
+.fc-app .fc-player {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: rgba(17, 25, 32, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.fc-app .fc-player.active {
+  background: rgba(217, 169, 78, 0.14);
+  border-color: rgba(217, 169, 78, 0.6);
+  box-shadow: 0 0 18px rgba(217, 169, 78, 0.16);
+}
+
+@media (max-width: 900px) {
+  .fc-app .fc-game {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 43%) minmax(0, 1fr);
+  }
+
+  .fc-app .fc-sidebar {
+    border-left: none;
+    border-top: 1px solid rgba(217, 169, 78, 0.2);
+    padding: 10px;
+  }
+}
+
+/* ---------- Guide strip ---------- */
+.fc-app .fc-guide {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #121a17;
+  border-bottom: 1px solid rgba(217, 169, 78, 0.25);
+  flex-shrink: 0;
+  z-index: 15;
+}
+
+.fc-app .fc-guide-steps {
+  display: none;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .fc-app .fc-guide-steps {
+    display: flex;
+  }
+}
+
+.fc-app .fc-guide-steps li {
+  width: 20px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.fc-app .fc-guide-steps li.done {
+  background: rgba(217, 169, 78, 0.6);
+}
+
+.fc-app .fc-guide-steps li.current {
+  background: #ecc878;
+}
+
+.fc-app .fc-btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--fc-muted);
+}
+
+.fc-app .fc-btn.ghost:hover:not(:disabled),
+.fc-app .fc-btn.ghost:focus-visible {
+  color: var(--fc-ink);
+  border-color: rgba(217, 169, 78, 0.4);
+  outline: none;
+}
+
+.fc-app .fc-btn:focus-visible {
+  outline: none;
+  border-color: var(--fc-gold);
+}
+
+/* ---------- Handbook dialog ---------- */
+.fc-app .fc-dialog {
+  margin: auto;
+  width: min(760px, calc(100vw - 24px));
+  max-width: none;
+  padding: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(217, 169, 78, 0.25);
+  background: #111920;
+  color: var(--fc-ink);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.fc-app .fc-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.fc-app .target:focus-visible {
+  outline: none;
+}
+
+.fc-app .target:focus-visible .square-target,
+.fc-app .target:focus-visible .feature-target {
+  stroke: #f5dda4;
+  stroke-width: 4;
+  stroke-dasharray: none;
+}

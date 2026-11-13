@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "name": "经纬铁道 · 配色",
+    "description": "车厢卡、线路、玩家棋子与版图的颜色。cardColors 的键与 data/routes.json 中线路颜色的小写形式一致；万能牌键名为 locomotive（代码中的 LOCOMOTIVE），界面上称为「万能牌」。全部为本项目自定颜色。"
+  },
+  "cardColors": {
+    "red": {
+      "id": "red",
+      "name": "红",
+      "hex": "#D64535",
+      "border": "#8E2418",
+      "contrastText": "#FFFFFF"
+    },
+    "blue": {
+      "id": "blue",
+      "name": "蓝",
+      "hex": "#2D6FB7",
+      "border": "#1B4677",
+      "contrastText": "#FFFFFF"
+    },
+    "green": {
+      "id": "green",
+      "name": "绿",
+      "hex": "#3E9B5C",
+      "border": "#24613A",
+      "contrastText": "#FFFFFF"
+    },
+    "yellow": {
+      "id": "yellow",
+      "name": "黄",
+      "hex": "#E8B930",
+      "border": "#9A7612",
+      "contrastText": "#2B2111"
+    },
+    "purple": {
+      "id": "purple",
+      "name": "紫",
+      "hex": "#7D58B0",
+      "border": "#4C3175",
+      "contrastText": "#FFFFFF"
+    },
+    "orange": {
+      "id": "orange",
+      "name": "橙",
+      "hex": "#E57A2E",
+      "border": "#994914",
+      "contrastText": "#FFFFFF"
+    },
+    "white": {
+      "id": "white",
+      "name": "白",
+      "hex": "#EDE8DE",
+      "border": "#8F887A",
+      "contrastText": "#24211C"
+    },
+    "black": {
+      "id": "black",
+      "name": "黑",
+      "hex": "#34383F",
+      "border": "#15171A",
+      "contrastText": "#FFFFFF"
+    },
+    "locomotive": {
+      "id": "locomotive",
+      "name": "万能",
+      "hex": "#2A9D8F",
+      "border": "#17635A",
+      "contrastText": "#FFFFFF"
+    },
+    "gray": {
+      "id": "gray",
+      "name": "灰（仅线路）",
+      "hex": "#A7A39A",
+      "border": "#6B675F",
+      "contrastText": "#24211C"
+    }
+  },
+  "playerColors": {
+    "red": {
+      "fill": "#E0533F",
+      "stroke": "#7F2416"
+    },
+    "blue": {
+      "fill": "#3B82C4",
+      "stroke": "#1B4677"
+    },
+    "green": {
+      "fill": "#4CA35E",
+      "stroke": "#24613A"
+    },
+    "yellow": {
+      "fill": "#EFC23A",
+      "stroke": "#8A6A10"
+    },
+    "black": {
+      "fill": "#3A3F47",
+      "stroke": "#111316"
+    }
+  },
+  "board": {
+    "frame": "#172027",
+    "frameRule": "#3A4A55",
+    "sea": "#C9DCDD",
+    "seaDeep": "#B5CDD0",
+    "land": "#F0E8D7",
+    "coast": "#7E9A9C",
+    "border": "#C4B597",
+    "river": "#A9C6CB",
+    "graticule": "#8FA9AC",
+    "label": "#1E2328",
+    "labelHalo": "#FBF7EE",
+    "pinFill": "#FFFFFF",
+    "pinStroke": "#1E2328",
+    "panel": "#F6F1E6",
+    "panelStroke": "#3A4A55",
+    "panelInk": "#1E2328",
+    "panelMuted": "#5C6670",
+    "panelAccent": "#B4472E",
+    "slotStroke": 1.1,
+    "hoverStroke": "#FFFFFF",
+    "hoverStrokeWidth": 2.2,
+    "selectStroke": "#FFD54A",
+    "selectStrokeWidth": 2.6,
+    "dimmedOpacity": 0.35,
+    "tunnelStroke": "#1E2328",
+    "wildMark": "#FFFFFF"
+  }
+}

@@ -1,3 +1,5 @@
+import { APP_ID_ALIASES } from '../apps/registry.ts';
+
 export interface StorageReader {
   getItem(key: string): string | null;
 }
@@ -20,10 +22,27 @@ const ORRERY_META_KEY = '43gg.astral_orrery.meta.v1';
 const LANDLORD_RUN_KEY = '43gg.lucky_landlord.active_run.v1';
 const LANDLORD_META_KEY = '43gg.lucky_landlord.meta.v1';
 const RALLY_RECORDS_KEY = '43gg.chrono_stage.records.v1';
-const TTR_META_KEY = '43gg.ticket_to_ride_europe.meta.v1';
-const TTR_RUN_KEY = '43gg.ticket_to_ride_europe.active_run.v1';
-const CARC_META_KEY = '43gg.carcassonne_bigbox.meta.v1';
-const CARC_RUN_KEY = '43gg.carcassonne_bigbox.active_run.v1';
+const MERIDIAN_META_KEY = '43gg.meridian_rails.meta.v1';
+const MERIDIAN_RUN_KEY = '43gg.meridian_rails.active_run.v1';
+const FANGCUN_META_KEY = '43gg.fangcun_realms.meta.v1';
+const FANGCUN_RUN_KEY = '43gg.fangcun_realms.active_run.v1';
+/**
+ * Saves written under an app's retired id (see APP_ID_ALIASES). The game migrates them to the new
+ * keys the first time it opens; until then the hub keeps reading the old ones.
+ */
+const LEGACY_SAVE_KEYS: Readonly<Record<string, string>> = {
+  [MERIDIAN_META_KEY]: '43gg.ticket_to_ride_europe.meta.v1',
+  [MERIDIAN_RUN_KEY]: '43gg.ticket_to_ride_europe.active_run.v1',
+  [FANGCUN_META_KEY]: '43gg.carcassonne_bigbox.meta.v1',
+  [FANGCUN_RUN_KEY]: '43gg.carcassonne_bigbox.active_run.v1',
+};
+
+function readWithLegacy(storage: StorageReader, key: string): string | null {
+  const current = storage.getItem(key);
+  if (current !== null) return current;
+  const legacy = LEGACY_SAVE_KEYS[key];
+  return legacy ? storage.getItem(legacy) : null;
+}
 const INCH_OF_SHADE_META_KEY = '43gg.inch_of_shade.meta.v1';
 const INCH_OF_SHADE_LEVEL_COUNT = 20;
 
@@ -207,21 +226,21 @@ function summarizeChronoStage(storage: StorageReader): string | null {
 function summarizeMeridianRails(storage: StorageReader): string | null {
   const activeRun = safeParseJson<{
     state?: { status?: unknown; turnNumber?: unknown };
-  }>(storage.getItem(TTR_RUN_KEY));
+  }>(readWithLegacy(storage, MERIDIAN_RUN_KEY));
   if (
     activeRun?.state &&
     activeRun.state.status !== 'GAME_OVER' &&
     activeRun.state.status !== 'ABANDONED'
   ) {
     const turn = typeof activeRun.state.turnNumber === 'number' ? Math.floor(activeRun.state.turnNumber) : 1;
-    return `第 ${Math.max(1, turn)} 回合铁路铺设中`;
+    return `第 ${Math.max(1, turn)} 回合铺轨中`;
   }
 
   const meta = safeParseJson<{
     gamesPlayed?: unknown;
     victories?: unknown;
     bestScore?: unknown;
-  }>(storage.getItem(TTR_META_KEY));
+  }>(readWithLegacy(storage, MERIDIAN_META_KEY));
   if (!meta) return null;
   const victories = typeof meta.victories === 'number' ? Math.floor(meta.victories) : 0;
   const gamesPlayed = typeof meta.gamesPlayed === 'number' ? Math.floor(meta.gamesPlayed) : 0;
@@ -239,18 +258,18 @@ function summarizeMeridianRails(storage: StorageReader): string | null {
 function summarizeFangcunRealms(storage: StorageReader): string | null {
   const activeRun = safeParseJson<{
     state?: { finished?: unknown; turn?: { number?: unknown } };
-  }>(storage.getItem(CARC_RUN_KEY));
+  }>(readWithLegacy(storage, FANGCUN_RUN_KEY));
   if (activeRun?.state && activeRun.state.finished === false) {
     const turn =
       typeof activeRun.state.turn?.number === 'number' ? Math.floor(activeRun.state.turn.number) : 1;
-    return `第 ${Math.max(1, turn)} 回合拼图中`;
+    return `第 ${Math.max(1, turn)} 回合拼地块中`;
   }
 
   const meta = safeParseJson<{
     gamesPlayed?: unknown;
     victories?: unknown;
     bestScore?: unknown;
-  }>(storage.getItem(CARC_META_KEY));
+  }>(readWithLegacy(storage, FANGCUN_META_KEY));
   if (!meta) return null;
   const victories = typeof meta.victories === 'number' ? Math.floor(meta.victories) : 0;
   const gamesPlayed = typeof meta.gamesPlayed === 'number' ? Math.floor(meta.gamesPlayed) : 0;
@@ -343,8 +362,8 @@ export function readHubSnapshot(
   const lastRaw = safeParseJson<{ appId?: unknown }>(
     storage.getItem(HUB_LAST_PLAYED_KEY),
   );
-  const candidateId =
-    lastRaw && typeof lastRaw.appId === 'string' ? lastRaw.appId : null;
+  const rawId = lastRaw && typeof lastRaw.appId === 'string' ? lastRaw.appId : null;
+  const candidateId = rawId ? APP_ID_ALIASES[rawId] ?? rawId : null;
   const lastPlayedAppId =
     candidateId && validSet.has(candidateId) ? candidateId : null;
 
@@ -358,8 +377,8 @@ export function readHubSnapshot(
     ['astral-orrery', summarizeAstralOrrery(storage)],
     ['lucky-landlord', summarizeLuckyLandlord(storage)],
     ['chrono-stage', summarizeChronoStage(storage)],
-    ['ticket-to-ride-europe', summarizeMeridianRails(storage)],
-    ['carcassonne-bigbox', summarizeFangcunRealms(storage)],
+    ['meridian-rails', summarizeMeridianRails(storage)],
+    ['fangcun-realms', summarizeFangcunRealms(storage)],
     ['inch-of-shade', summarizeInchOfShade(storage)],
   ];
 

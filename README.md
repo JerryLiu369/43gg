@@ -18,8 +18,8 @@
 | 天枢浑仪 | 增量放置 | 发条星轨共鸣，构筑星宫棱镜，约 20 分钟完成三次转生。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=astral-orrery) |
 | 吉星包租公 | 构筑肉鸽 | 四乘五账本格子收租，装修房间、三连升星，凑够每期账单。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=lucky-landlord) |
 | CHRONO STAGE | 3D 竞速 | 六站拉力赛段、四轮悬挂物理与锦标赛模式，附[驾驶调校手册](docs/chrono-stage.md)。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=chrono-stage) |
-| 经纬铁道 | 版图策略 | 收集车厢卡铺设欧陆铁路，打通隧道渡轮并连通目的地车票（单机对战 1–4 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=ticket-to-ride-europe) |
-| 方寸山河 | 版图拼接 | 抽牌拼放中世纪城池道路与草地，含 11 个扩展自由组合（单机对战 1–5 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=carcassonne-bigbox) |
+| 经纬铁道 | 版图策略 | 攒同色车厢卡在欧陆版图上修铁路，开隧道、搭渡轮、设车站，连通手中车票（单机对战 1–4 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=meridian-rails) |
+| 方寸山河 | 板块拼接 | 拼方寸地块连成城池、驿道、寺院与田野，派随从抢地盘，十一个规则模块可自由搭配（单机对战 1–5 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=fangcun-realms) |
 
 ## 本地运行
 

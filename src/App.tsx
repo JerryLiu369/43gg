@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, RotateCw } from 'lucide-react';
-import { APP_REGISTRY, WorkspaceAppEntry, getAppById } from './apps/registry.ts';
+import { APP_ID_ALIASES, APP_REGISTRY, WorkspaceAppEntry, getAppById } from './apps/registry.ts';
 import { AppErrorBoundary } from './shell/AppErrorBoundary.tsx';
 import { withChunkRecovery } from './shell/chunkRecovery.ts';
 import { HomeHub } from './shell/HomeHub.tsx';
@@ -14,15 +14,23 @@ import {
 } from './shell/router.ts';
 
 const VALID_APP_IDS = APP_REGISTRY.map((app) => app.id);
+/** Live ids plus retired aliases: lets URL helpers recognise `/app/<old-id>` paths too. */
+const ROUTABLE_APP_IDS = [...VALID_APP_IDS, ...Object.keys(APP_ID_ALIASES)];
 
 function readActiveAppIdFromWindow(): string | null {
   if (typeof window === 'undefined') return null;
-  return parseAppIdFromLocation(
-    window.location.search,
-    window.location.hash,
-    window.location.pathname,
-    VALID_APP_IDS,
-  );
+  const { search, hash, pathname } = window.location;
+  const id = parseAppIdFromLocation(search, hash, pathname, VALID_APP_IDS, APP_ID_ALIASES);
+  // An old link (`?app=<retired-id>`) resolved through an alias: rewrite the address bar to the
+  // current id so bookmarks and shares pick up the new link.
+  if (id && parseAppIdFromLocation(search, hash, pathname, VALID_APP_IDS) === null) {
+    try {
+      window.history.replaceState(window.history.state, '', buildAppUrl(window.location.href, id, ROUTABLE_APP_IDS));
+    } catch {
+      // Sandboxed frames may refuse history writes; the alias still resolves.
+    }
+  }
+  return id;
 }
 
 function safeSessionStorage(): Storage | null {
@@ -92,14 +100,14 @@ export default function App() {
 
   const handleLaunchApp = useCallback((appId: string) => {
     recordLastPlayedApp(appId);
-    const targetUrl = buildAppUrl(window.location.href, appId, VALID_APP_IDS);
+    const targetUrl = buildAppUrl(window.location.href, appId, ROUTABLE_APP_IDS);
     window.history.pushState({ appId }, '', targetUrl);
     setActiveAppId(appId);
     setReloadToken(0);
   }, []);
 
   const handleBackToHub = useCallback(() => {
-    const homeUrl = buildHomeUrl(window.location.href, VALID_APP_IDS);
+    const homeUrl = buildHomeUrl(window.location.href, ROUTABLE_APP_IDS);
     window.history.pushState({ appId: null }, '', homeUrl);
     setActiveAppId(null);
     setReloadToken(0);
@@ -114,7 +122,7 @@ export default function App() {
 
   const iframeUrl =
     activeApp.kind === 'iframe' && activeApp.entryPath
-      ? buildIframeEntryUrl(activeApp.entryPath, window.location.href, VALID_APP_IDS)
+      ? buildIframeEntryUrl(activeApp.entryPath, window.location.href, ROUTABLE_APP_IDS)
       : null;
 
   return (

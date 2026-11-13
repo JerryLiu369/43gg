@@ -1,0 +1,1105 @@
+{
+ "module": "BASE",
+ "name_zh": "基础地块",
+ "note": "地块拓扑：edges 依次为北、东、南、西（C 城池 / R 道路 / F 田野 / S 河道）；internal_connectivity 描述地块内部哪些边相连。",
+ "tiles": [
+  {
+   "tile_type": "BASE_01",
+   "count": 2,
+   "edges": [
+    "F",
+    "F",
+    "R",
+    "F"
+   ],
+   "features": {
+    "is_monastery": true,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [
+     [
+      "S"
+     ]
+    ],
+    "fields": [
+     [
+      "N0",
+      "N1",
+      "N2",
+      "E0",
+      "E1",
+      "E2",
+      "S0",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_02",
+   "count": 4,
+   "edges": [
+    "F",
+    "F",
+    "F",
+    "F"
+   ],
+   "features": {
+    "is_monastery": true,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [],
+    "fields": [
+     [
+      "N0",
+      "N1",
+      "N2",
+      "E0",
+      "E1",
+      "E2",
+      "S0",
+      "S1",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_03",
+   "count": 1,
+   "edges": [
+    "C",
+    "C",
+    "C",
+    "C"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E",
+      "S",
+      "W"
+     ]
+    ],
+    "roads": [],
+    "fields": [],
+    "field_cities": []
+   }
+  },
+  {
+   "tile_type": "BASE_04",
+   "count": 4,
+   "edges": [
+    "C",
+    "R",
+    "F",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": true,
+    "start_tile_count": 1,
+    "regular_count": 3,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ]
+    ],
+    "roads": [
+     [
+      "E",
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "E0",
+      "W2"
+     ],
+     [
+      "E2",
+      "S0",
+      "S1",
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_05",
+   "count": 5,
+   "edges": [
+    "C",
+    "F",
+    "F",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "E0",
+      "E1",
+      "E2",
+      "S0",
+      "S1",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_06",
+   "count": 2,
+   "edges": [
+    "C",
+    "F",
+    "C",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "S"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "E0",
+      "E1",
+      "E2"
+     ],
+     [
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_07",
+   "count": 1,
+   "edges": [
+    "C",
+    "F",
+    "C",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "S"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "E0",
+      "E1",
+      "E2"
+     ],
+     [
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_08",
+   "count": 3,
+   "edges": [
+    "C",
+    "F",
+    "C",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ],
+     [
+      "S"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "E0",
+      "E1",
+      "E2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N",
+      "S"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_09",
+   "count": 2,
+   "edges": [
+    "C",
+    "C",
+    "F",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ],
+     [
+      "E"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "S0",
+      "S1",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N",
+      "E"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_10",
+   "count": 3,
+   "edges": [
+    "C",
+    "R",
+    "R",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ]
+    ],
+    "roads": [
+     [
+      "E",
+      "S"
+     ]
+    ],
+    "fields": [
+     [
+      "E0",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ],
+     [
+      "E2",
+      "S0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_11",
+   "count": 3,
+   "edges": [
+    "C",
+    "F",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ]
+    ],
+    "roads": [
+     [
+      "S",
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "E0",
+      "E1",
+      "E2",
+      "S0",
+      "W2"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_12",
+   "count": 3,
+   "edges": [
+    "C",
+    "R",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N"
+     ]
+    ],
+    "roads": [
+     [
+      "E"
+     ],
+     [
+      "S"
+     ],
+     [
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "E0",
+      "W2"
+     ],
+     [
+      "E2",
+      "S0"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     [],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_13",
+   "count": 2,
+   "edges": [
+    "C",
+    "C",
+    "F",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "S0",
+      "S1",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_14",
+   "count": 3,
+   "edges": [
+    "C",
+    "C",
+    "F",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "S0",
+      "S1",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_15",
+   "count": 2,
+   "edges": [
+    "C",
+    "C",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E"
+     ]
+    ],
+    "roads": [
+     [
+      "S",
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "S0",
+      "W2"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_16",
+   "count": 3,
+   "edges": [
+    "C",
+    "C",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E"
+     ]
+    ],
+    "roads": [
+     [
+      "S",
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "S0",
+      "W2"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_17",
+   "count": 1,
+   "edges": [
+    "C",
+    "C",
+    "F",
+    "C"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E",
+      "W"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "S0",
+      "S1",
+      "S2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_18",
+   "count": 3,
+   "edges": [
+    "C",
+    "C",
+    "F",
+    "C"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E",
+      "W"
+     ]
+    ],
+    "roads": [],
+    "fields": [
+     [
+      "S0",
+      "S1",
+      "S2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_19",
+   "count": 2,
+   "edges": [
+    "C",
+    "C",
+    "R",
+    "C"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": true,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0,
+    "road_ends_at": {
+     "S": "city"
+    }
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E",
+      "W"
+     ]
+    ],
+    "roads": [
+     [
+      "S"
+     ]
+    ],
+    "fields": [
+     [
+      "S0"
+     ],
+     [
+      "S2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_20",
+   "count": 1,
+   "edges": [
+    "C",
+    "C",
+    "R",
+    "C"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0,
+    "road_ends_at": {
+     "S": "city"
+    }
+   },
+   "internal_connectivity": {
+    "cities": [
+     [
+      "N",
+      "E",
+      "W"
+     ]
+    ],
+    "roads": [
+     [
+      "S"
+     ]
+    ],
+    "fields": [
+     [
+      "S0"
+     ],
+     [
+      "S2"
+     ]
+    ],
+    "field_cities": [
+     [
+      "N"
+     ],
+     [
+      "N"
+     ]
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_21",
+   "count": 8,
+   "edges": [
+    "R",
+    "F",
+    "R",
+    "F"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [
+     [
+      "N",
+      "S"
+     ]
+    ],
+    "fields": [
+     [
+      "N0",
+      "S2",
+      "W0",
+      "W1",
+      "W2"
+     ],
+     [
+      "N2",
+      "E0",
+      "E1",
+      "E2",
+      "S0"
+     ]
+    ],
+    "field_cities": [
+     [],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_22",
+   "count": 9,
+   "edges": [
+    "F",
+    "F",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": true,
+    "garden_count": 1
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [
+     [
+      "S",
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "N0",
+      "N1",
+      "N2",
+      "E0",
+      "E1",
+      "E2",
+      "S0",
+      "W2"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_23",
+   "count": 4,
+   "edges": [
+    "F",
+    "R",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [
+     [
+      "E"
+     ],
+     [
+      "S"
+     ],
+     [
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "N0",
+      "N1",
+      "N2",
+      "E0",
+      "W2"
+     ],
+     [
+      "E2",
+      "S0"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [],
+     [],
+     []
+    ]
+   }
+  },
+  {
+   "tile_type": "BASE_24",
+   "count": 1,
+   "edges": [
+    "R",
+    "R",
+    "R",
+    "R"
+   ],
+   "features": {
+    "is_monastery": false,
+    "has_shield": false,
+    "is_start_tile": false,
+    "has_garden": false,
+    "garden_count": 0
+   },
+   "internal_connectivity": {
+    "cities": [],
+    "roads": [
+     [
+      "N"
+     ],
+     [
+      "E"
+     ],
+     [
+      "S"
+     ],
+     [
+      "W"
+     ]
+    ],
+    "fields": [
+     [
+      "N0",
+      "W2"
+     ],
+     [
+      "N2",
+      "E0"
+     ],
+     [
+      "E2",
+      "S0"
+     ],
+     [
+      "S2",
+      "W0"
+     ]
+    ],
+    "field_cities": [
+     [],
+     [],
+     [],
+     []
+    ]
+   }
+  }
+ ]
+}

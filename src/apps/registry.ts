@@ -175,37 +175,37 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     addedAt: '2026-11-12',
   },
   {
-    id: 'ticket-to-ride-europe',
+    id: 'meridian-rails',
     title: '经纬铁道',
-    subtitle: '欧洲铁路路线竞速 · 离线单机版',
-    description: '收集车厢卡修筑横跨欧陆的铁路网，开凿隧道、乘渡轮、建车站并连通目的地车票，与 1–4 位电脑对手同台博弈。',
+    subtitle: '欧陆铁路连线 · 单机对战',
+    description: '攒同色车厢卡修筑铁路，开隧道、搭渡轮、设车站，把手中车票上的城市连起来，与 1–4 位电脑对手比拼线路网。',
     author: 'JerryLiu369',
     model: 'Claude Opus 5.5',
-    highlights: ['交互式新手导引', '三档电脑难度', '支持 1–4 对手'],
+    highlights: ['三步实战引导', '三档电脑难度', '触屏二次确认'],
     techLabel: '版图策略',
-    tags: ['铁路规划', '路线竞速', '单机对战'],
+    tags: ['铁路规划', '路线连通', '单机对战'],
     category: 'strategy',
     accent: 'amber',
     kind: 'react-lazy',
-    loader: () => import('./ticket-to-ride-europe/MeridianRailsApp.tsx'),
-    sourceDir: 'src/apps/ticket-to-ride-europe',
+    loader: () => import('./meridian-rails/MeridianRailsApp.tsx'),
+    sourceDir: 'src/apps/meridian-rails',
     addedAt: '2026-11-13',
   },
   {
-    id: 'carcassonne-bigbox',
+    id: 'fangcun-realms',
     title: '方寸山河',
-    subtitle: '中世纪版图拼接 · 11 扩展离线版',
-    description: '抽牌拼放城池、道路、修道院与草地，派遣骑士、强盗、修士和农夫争夺多数控制权，支持 11 个扩展自由组合。',
+    subtitle: '方寸地块拼山河 · 单机对战',
+    description: '一块块拼出城池、驿道、寺院与田野，派随从抢占地盘，十一个规则模块可自由搭配，与 1–5 位电脑对手同台。',
     author: 'JerryLiu369',
     model: 'Claude Opus 5.5',
-    highlights: ['11 扩展自由配', '三档深度推演 AI', '支持 1–5 对手'],
-    techLabel: '版图拼接',
-    tags: ['经典桌游', '区域控制', '单机对战'],
+    highlights: ['三步实战引导', '十一个规则模块', '三档电脑难度'],
+    techLabel: '板块拼接',
+    tags: ['板块拼接', '区域控制', '单机对战'],
     category: 'strategy',
     accent: 'emerald',
     kind: 'react-lazy',
-    loader: () => import('./carcassonne-bigbox/FangcunRealmsApp.tsx'),
-    sourceDir: 'src/apps/carcassonne-bigbox',
+    loader: () => import('./fangcun-realms/FangcunRealmsApp.tsx'),
+    sourceDir: 'src/apps/fangcun-realms',
     addedAt: '2026-11-13',
   },
   {
@@ -261,10 +261,27 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
   },
 ];
 
-export function getAppById(id: string | null | undefined): WorkspaceAppEntry | null {
+/**
+ * Retired app ids that must keep working (old links `?app=<old>`, last-played records).
+ * Maps old id -> current id. Append only; an alias never points to another alias and never
+ * shadows a live id. See docs/compatibility.md「应用 id 改名与别名」.
+ */
+export const APP_ID_ALIASES: Readonly<Record<string, string>> = {
+  'ticket-to-ride-europe': 'meridian-rails',
+  'carcassonne-bigbox': 'fangcun-realms',
+};
+
+/** Normalizes an id from a URL or storage and follows a retired alias to the current id. */
+export function resolveAppId(id: string | null | undefined): string | null {
   if (!id) return null;
   const normalized = id.trim().toLowerCase();
-  return APP_REGISTRY.find((entry) => entry.id === normalized) ?? null;
+  const target = APP_ID_ALIASES[normalized] ?? normalized;
+  return APP_REGISTRY.some((entry) => entry.id === target) ? target : null;
+}
+
+export function getAppById(id: string | null | undefined): WorkspaceAppEntry | null {
+  const resolved = resolveAppId(id);
+  return resolved ? APP_REGISTRY.find((entry) => entry.id === resolved) ?? null : null;
 }
 
 export function filterWorkspaceApps(
