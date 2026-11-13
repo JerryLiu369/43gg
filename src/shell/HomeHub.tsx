@@ -10,6 +10,69 @@ interface HomeHubProps {
 type CategoryFilter = 'all' | AppCategory;
 
 const AppCoverGraphic: React.FC<{ appId: string }> = ({ appId }) => {
+  if (appId === 'xuanji-breach') {
+    return (
+      <svg
+        viewBox="0 0 240 150"
+        className="w-full h-full"
+        fill="none"
+        aria-hidden="true"
+      >
+        {/* Minimalist Swiss Isometric Sand-Table & Rotating Bronze Luopan Ring */}
+        <polygon
+          points="120,24 196,68 120,112 44,68"
+          fill="#FAF8F4"
+          stroke="#D6D0C4"
+          strokeWidth="1.5"
+        />
+        {/* Isometric Grid Subdivisions */}
+        <line x1="82" y1="46" x2="158" y2="90" stroke="#EFECE5" strokeWidth="1" />
+        <line x1="158" y1="46" x2="82" y2="90" stroke="#EFECE5" strokeWidth="1" />
+        {/* 3D Pedestal Base Rim */}
+        <polyline
+          points="44,68 120,112 196,68"
+          stroke="#1C1917"
+          strokeWidth="1.5"
+        />
+        <polyline
+          points="44,68 44,77 120,121 196,77 196,68"
+          fill="#EFECE5"
+          stroke="#D6D0C4"
+          strokeWidth="1.2"
+        />
+        {/* Central Rotating Luopan Astrolabe Ellipse */}
+        <ellipse
+          cx="120"
+          cy="68"
+          rx="36"
+          ry="20"
+          fill="#FAF8F4"
+          stroke="#1C1917"
+          strokeWidth="1.8"
+        />
+        <ellipse
+          cx="120"
+          cy="68"
+          rx="24"
+          ry="13"
+          stroke="#C2410C"
+          strokeWidth="1.6"
+          strokeDasharray="5 3"
+        />
+        {/* Redirected Tactical Displacement Vector & Jade Node */}
+        <path
+          d="M98 68L120 55L144 68"
+          stroke="#C2410C"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="120" cy="68" r="4.5" fill="#0F766E" />
+        <circle cx="144" cy="68" r="3.5" fill="#C2410C" />
+      </svg>
+    );
+  }
+
   if (appId === 'ink-blade') {
     return (
       <svg

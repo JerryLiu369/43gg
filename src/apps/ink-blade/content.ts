@@ -3,11 +3,58 @@ import type {
   BoonId,
   EnemyArchetypeDef,
   EnemyArchetypeId,
+  InkBladeDifficulty,
+  InkBladeDifficultyDef,
   StageDef,
 } from './types.ts';
 
 export const ARENA_W = 1200;
 export const ARENA_H = 740;
+
+export const DIFFICULTY_ORDER: InkBladeDifficulty[] = [
+  'casual',
+  'standard',
+  'master',
+];
+
+export const DIFFICULTY_DEFS: Record<InkBladeDifficulty, InkBladeDifficultyDef> = {
+  casual: {
+    id: 'casual',
+    label: '剑徒·轻松',
+    subtitle: '6 血宽裕慢镜 · 每阵回血',
+    baseHp: 6,
+    baseFocus: 135,
+    windupScale: 1.26,
+    enemySpeedScale: 0.9,
+    scoreMult: 0.9,
+    maxAttackTokens: 2,
+    healOnWaveClear: true,
+  },
+  standard: {
+    id: 'standard',
+    label: '剑豪·标准',
+    subtitle: '5 血均衡刀法 · 渐进破阵',
+    baseHp: 5,
+    baseFocus: 100,
+    windupScale: 1.0,
+    enemySpeedScale: 1.0,
+    scoreMult: 1.0,
+    maxAttackTokens: 3,
+    healOnWaveClear: false,
+  },
+  master: {
+    id: 'master',
+    label: '剑圣·修罗',
+    subtitle: '4 血迅疾杀阵 · 得分 ×1.25',
+    baseHp: 4,
+    baseFocus: 95,
+    windupScale: 0.88,
+    enemySpeedScale: 1.08,
+    scoreMult: 1.25,
+    maxAttackTokens: 4,
+    healOnWaveClear: false,
+  },
+};
 
 export const ENEMY_ARCHETYPES: Record<EnemyArchetypeId, EnemyArchetypeDef> = {
   ronin: {

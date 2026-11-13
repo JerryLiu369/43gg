@@ -1,7 +1,15 @@
 import { STAGES } from './content.ts';
-import type { InkBladeSaveMeta, RunSummarySnapshot } from './types.ts';
+import type {
+  InkBladeDifficulty,
+  InkBladeSaveMeta,
+  RunSummarySnapshot,
+} from './types.ts';
 
 const META_STORAGE_KEY = 'gaistudio.ink_blade.meta.v1';
+
+function isValidDifficulty(val: unknown): val is InkBladeDifficulty {
+  return val === 'casual' || val === 'standard' || val === 'master';
+}
 
 export function createDefaultMeta(): InkBladeSaveMeta {
   return {
@@ -14,6 +22,8 @@ export function createDefaultMeta(): InkBladeSaveMeta {
     totalDeflects: 0,
     totalVictories: 0,
     muted: false,
+    tutorialCompleted: false,
+    preferredDifficulty: 'standard',
   };
 }
 
@@ -56,6 +66,10 @@ export function loadInkBladeMeta(): InkBladeSaveMeta {
           ? Math.floor(parsed.totalVictories)
           : 0,
       muted: Boolean(parsed.muted),
+      tutorialCompleted: Boolean(parsed.tutorialCompleted),
+      preferredDifficulty: isValidDifficulty(parsed.preferredDifficulty)
+        ? parsed.preferredDifficulty
+        : 'standard',
     };
   } catch {
     return createDefaultMeta();

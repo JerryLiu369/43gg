@@ -1,5 +1,5 @@
 > **在线访问 (GitHub Pages)：** [https://jerryliu369.github.io/gaistudio/](https://jerryliu369.github.io/gaistudio/)（推送 `main` 后由 GitHub Actions 自动校验并发布）  
-> 直达应用：[墨刃：一闪](https://jerryliu369.github.io/gaistudio/?app=ink-blade) | [天枢浑仪](https://jerryliu369.github.io/gaistudio/?app=astral-orrery) | [吉星包租公](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
+> 直达应用：[璇玑破阵](https://jerryliu369.github.io/gaistudio/?app=xuanji-breach) | [墨刃：一闪](https://jerryliu369.github.io/gaistudio/?app=ink-blade) | [天枢浑仪](https://jerryliu369.github.io/gaistudio/?app=astral-orrery) | [吉星包租公](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
 
 # gaistudio — 统一 React WebApp 多应用工作区
 
@@ -11,7 +11,8 @@
 
 | 应用标识 (`id`) | 名称 | 隔离方式 | 目录位置 | 直接访问路由 | 说明文档 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ink-blade` | `墨刃：一闪` | `React.lazy` 按需懒加载 + 离屏墨痕画布与音频完整释放 | `src/apps/ink-blade/` | `/?app=ink-blade` | 内置剑谱心法与敌阵图谱 |
+| `xuanji-breach` | `璇玑破阵` | `React.lazy` 按需懒加载 + 立体沙盘画布与声学合成器完整释放 | `src/apps/xuanji-breach/` | `/?app=xuanji-breach` | 内置四步实战新手指引、三档难度与键鼠/触屏双端操控 |
+| `ink-blade` | `墨刃：一闪` | `React.lazy` 按需懒加载 + 离屏墨痕画布与音频完整释放 | `src/apps/ink-blade/` | `/?app=ink-blade` | 内置三步实战教学、三档难度与移动端虚拟摇杆/刀诀键 |
 | `astral-orrery` | `天枢浑仪` | `React.lazy` 按需懒加载 + 退出完整释放 Three.js 场景与音频 | `src/apps/astral-orrery/` | `/?app=astral-orrery` | 内置天工典籍与星盘引导 |
 | `lucky-landlord` | `吉星包租公` | `React.lazy` 按需懒加载 + 本地自动存档与音频释放 | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | 内置全图鉴与规则引导 |
 | `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整释放 WebGL/音频/全局监听 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [驾驶与调校手册](docs/chrono-stage.md) |
@@ -30,6 +31,7 @@ gaistudio/
 │   ├── App.tsx                      # 统一 React 外壳：路由分发、顶部导航条、子应用隔离视口
 │   ├── apps/
 │   │   ├── registry.ts              # 唯一清晰的小应用注册清单
+│   │   ├── xuanji-breach/           # 璇玑破阵（青铜罗盘移星·全明牌立体沙盘战棋）
 │   │   ├── ink-blade/               # 墨刃：一闪（水墨瞬身弹反剑戟动作坊）
 │   │   ├── astral-orrery/           # 天枢浑仪（发条星轨共鸣增量工坊）
 │   │   ├── lucky-landlord/          # 吉星包租公（四乘五账本控盘收租构筑）

@@ -330,3 +330,23 @@ test('Minds Eye slows simulation time while draining Focus, and player defeat/bo
   assert.equal(evDefeat.runDefeat, true);
   assert.equal(run.summarySnapshot?.outcome, 'defeat');
 });
+
+test('Three difficulty tiers scale player HP, Focus, and casual wave-clear healing cleanly', () => {
+  const casual = createNewRun(0, false, 303, 'casual');
+  const standard = createNewRun(0, false, 303, 'standard');
+  const master = createNewRun(0, false, 303, 'master');
+
+  assert.equal(casual.player.maxHp, 6);
+  assert.equal(standard.player.maxHp, 5);
+  assert.equal(master.player.maxHp, 4);
+
+  assert.ok(casual.player.maxFocus > standard.player.maxFocus);
+
+  // Casual heals +1 HP upon clearing a non-final wave
+  casual.player.hp = 4;
+  casual.enemies = [];
+  const evClear = stepSimulation(casual, 1 / 60, idleInput());
+  assert.equal(evClear.waveCleared, true);
+  assert.equal(casual.player.hp, 5, 'Casual difficulty restores 1 HP on wave clear');
+});
+
