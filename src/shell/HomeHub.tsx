@@ -323,8 +323,21 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
         </div>
       </header>
 
-      {/* Pure Directory Grid */}
+      {/* Gallery Intro & Directory Grid */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 sm:px-10 py-10 sm:py-14">
+        <section className="mb-8 sm:mb-10 pb-7 border-b border-[#E7E2D8]">
+          <div className="inline-flex items-center gap-2 text-[11px] font-mono font-semibold tracking-wider uppercase text-[#78716C] mb-2.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C2410C]" aria-hidden="true" />
+            <span>Google AI Studio · App Gallery</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C1917]">
+            Carbon 小游戏合集
+          </h1>
+          <p className="mt-2.5 text-sm sm:text-[15px] leading-relaxed text-[#57534E] max-w-2xl">
+            这里收录的都是 Carbon 利用 Google AI Studio 的 App 功能生成的小游戏，我把它们集合整理成这个 Gallery，点击卡片即可直接在浏览器里试玩。
+          </p>
+        </section>
+
         <div
           className={`grid grid-cols-1 sm:grid-cols-2 ${
             apps.length >= 3 ? 'lg:grid-cols-3' : ''
@@ -334,38 +347,56 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
             <article
               key={app.id}
               data-testid={`app-card-${app.id}`}
-              className="group bg-white border border-[#E4DFD5] hover:border-[#A8A29E] focus-within:border-[#C2410C] rounded-xl overflow-hidden transition-colors"
+              className="group bg-white border border-[#E4DFD5] hover:border-[#A8A29E] rounded-xl overflow-hidden transition-colors"
             >
               <button
                 type="button"
                 data-testid={`launch-${app.id}`}
                 onClick={() => onLaunchApp(app.id)}
-                className="w-full h-full text-left flex flex-col cursor-pointer focus:outline-none"
+                className="w-full h-full text-left flex flex-col cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-inset"
               >
                 <div className="w-full aspect-[16/10] bg-[#F3F0EA] border-b border-[#EFECE5] flex items-center justify-center p-4">
                   <AppCoverGraphic appId={app.id} />
                 </div>
 
-                <div className="p-5 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-bold tracking-tight text-[#1C1917] truncate">
-                      {app.title}
-                    </h2>
-                    <p className="text-xs text-[#78716C] mt-1 truncate">
-                      {app.subtitle}
-                    </p>
+                <div className="p-5 flex-1 flex flex-col justify-between gap-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-bold tracking-tight text-[#1C1917] truncate">
+                          {app.title}
+                        </h2>
+                        <span className="px-2 py-0.5 rounded bg-[#F3F0EA] text-[11px] font-medium text-[#57534E] shrink-0">
+                          {app.techLabel}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#78716C] mt-1 truncate">
+                        {app.subtitle}
+                      </p>
+                    </div>
+
+                    <ArrowUpRight
+                      aria-hidden="true"
+                      className="w-4 h-4 mt-1 text-[#A8A29E] group-hover:text-[#1C1917] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-150 shrink-0"
+                    />
                   </div>
 
-                  <ArrowUpRight
-                    aria-hidden="true"
-                    className="w-4 h-4 text-[#A8A29E] group-hover:text-[#1C1917] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-150 shrink-0"
-                  />
+                  <p className="text-xs leading-relaxed text-[#57534E] line-clamp-2">
+                    {app.description}
+                  </p>
                 </div>
               </button>
             </article>
           ))}
         </div>
       </main>
+
+      <footer className="w-full border-t border-[#E7E2D8]">
+        <div className="max-w-5xl mx-auto px-6 sm:px-10 py-4 flex flex-wrap items-center justify-between gap-2 text-xs text-[#78716C]">
+          <span>Made by Carbon via Google AI Studio Apps</span>
+          <span>gaistudio gallery · {apps.length} games</span>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -69,7 +69,7 @@ export default function App() {
   useEffect(() => {
     document.title = activeApp
       ? `${activeApp.title} · gaistudio`
-      : 'gaistudio 统一多应用工作区';
+      : 'gaistudio // Carbon AI Studio 小游戏 Gallery';
   }, [activeApp]);
 
   const handleLaunchApp = useCallback((appId: string) => {
