@@ -254,11 +254,12 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
               <button
                 key={id}
                 type="button"
+                aria-pressed={categoryFilter === id}
                 onClick={() => setCategoryFilter(id)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`px-3 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer whitespace-nowrap shrink-0 focus:outline-none focus-visible:border-[#C2410C] focus-visible:text-[#1C1917] ${
                   categoryFilter === id
-                    ? 'bg-white text-[#1C1917]'
-                    : 'text-[#78716C] hover:text-[#1C1917]'
+                    ? 'bg-white border-[#E4DFD5] text-[#1C1917]'
+                    : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
                 }`}
               >
                 {label}
@@ -279,13 +280,13 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
             <article
               key={app.id}
               data-testid={`app-card-${app.id}`}
-              className="group bg-white border border-[#E4DFD5] hover:border-[#A8A29E] rounded-xl overflow-hidden transition-colors"
+              className="group bg-white border border-[#E4DFD5] hover:border-[#A8A29E] focus-within:border-[#C2410C] rounded-xl overflow-hidden transition-colors"
             >
               <button
                 type="button"
                 data-testid={`launch-${app.id}`}
                 onClick={() => onLaunchApp(app.id)}
-                className="w-full h-full text-left flex flex-col cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-inset"
+                className="w-full h-full text-left flex flex-col cursor-pointer focus:outline-none"
               >
                 <div className="w-full aspect-[16/10] bg-[#F3F0EA] border-b border-[#EFECE5] flex items-center justify-center p-4">
                   <AppCoverGraphic appId={app.id} />

@@ -107,7 +107,7 @@ export default function App() {
             type="button"
             data-testid="back-to-hub"
             onClick={handleBackToHub}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#F2EFE9] border border-[#D6D0C4] text-xs font-semibold text-[#1C1917] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#F2EFE9] border border-[#D6D0C4] focus:outline-none focus-visible:border-[#C2410C] text-xs font-semibold text-[#1C1917] transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>目录</span>
@@ -123,7 +123,7 @@ export default function App() {
           data-testid="reload-active-app"
           onClick={() => setReloadToken((n) => n + 1)}
           title="重新加载当前应用"
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#F2EFE9] border border-[#E4DFD5] text-xs font-medium text-[#57534E] hover:text-[#1C1917] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#F2EFE9] border border-[#E4DFD5] focus:outline-none focus-visible:border-[#C2410C] text-xs font-medium text-[#57534E] hover:text-[#1C1917] focus-visible:text-[#1C1917] transition-colors cursor-pointer whitespace-nowrap shrink-0"
         >
           <RotateCw className="w-3 h-3" />
           <span>刷新</span>

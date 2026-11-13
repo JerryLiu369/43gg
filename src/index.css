@@ -16,6 +16,9 @@
     --ink-muted: #78716c;
     --accent-seal: #c2410c;
     --accent-seal-hover: #9a3412;
+
+    scrollbar-width: thin;
+    scrollbar-color: #cfc7b8 #f2efe9;
   }
 
   * {

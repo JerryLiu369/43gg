@@ -242,10 +242,24 @@ function cmdCheck(argv) {
   const projects = discoverApps();
   console.log(`2) Discovered ${projects.length} project(s): ${projects.map((p) => p.slug).join(', ')}\n`);
 
-  for (const reqFile of ['index.html', 'package.json', 'metadata.json', 'vite.config.ts', 'src/apps/registry.ts']) {
+  for (const reqFile of [
+    'index.html',
+    'package.json',
+    'metadata.json',
+    'vite.config.ts',
+    'README.md',
+    'AGENTS.md',
+    'kfl-spec.md',
+    'skills/kasidia-frontend-law/SKILL.md',
+    'skills/kasidia-frontend-law/references/rules.md',
+    'src/apps/registry.ts',
+  ]) {
     if (!fs.existsSync(path.join(ROOT_DIR, reqFile))) {
       throw new Error(`Root workspace missing required file: ${reqFile}`);
     }
+  }
+  if (fs.existsSync(path.join(ROOT_DIR, 'README_zh.md'))) {
+    throw new Error('Duplicate README_zh.md found; repository docs must use Chinese-only README.md');
   }
 
   console.log('3) Validating unified root React shell & tests...');
