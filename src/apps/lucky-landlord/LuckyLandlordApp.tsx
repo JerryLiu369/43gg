@@ -116,6 +116,13 @@ export default function LuckyLandlordApp() {
   const [showCompendium, setShowCompendium] = useState<boolean>(false);
   const [showDeckModal, setShowDeckModal] = useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
+  const [onboardingStep, setOnboardingStep] = useState<0 | 1 | 2 | 3 | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('autostart') === '1') return null;
+    }
+    return loadUserPrefs().tutorialCompleted ? null : 0;
+  });
   const [rollingCols, setRollingCols] = useState<boolean[]>([
     false,
     false,
@@ -280,6 +287,7 @@ export default function LuckyLandlordApp() {
     setInspectedDraftDefId(null);
     const nextState = spinBoard(run);
     setRun(nextState);
+    setOnboardingStep((s) => (s === 0 ? 1 : s));
     triggerReelAnimation([0, 1, 2, 3, 4], nextState.currentEval?.totalCoins ?? 0);
   }, [run, screenState, triggerReelAnimation]);
 
@@ -291,6 +299,7 @@ export default function LuckyLandlordApp() {
       setInspectedDraftDefId(null);
       const nextState = commitSpinAndDraft(run, defId);
       setRun(nextState);
+      setOnboardingStep((s) => (s === 1 || s === 2 ? 3 : s));
       if (nextState.phase === 'rent_due') {
         audioRef.current?.playRentSuccess();
       } else {
@@ -306,6 +315,7 @@ export default function LuckyLandlordApp() {
       const nextState = rerollColumn(run, colIndex);
       if (nextState === run) return;
       setRun(nextState);
+      setOnboardingStep((s) => (s === 1 ? 2 : s));
       triggerReelAnimation([colIndex], nextState.currentEval?.totalCoins ?? 0);
     },
     [run, triggerReelAnimation],
@@ -320,6 +330,7 @@ export default function LuckyLandlordApp() {
         const nextState = toggleCellLock(run, cellIdx);
         if (nextState !== run) {
           setRun(nextState);
+          setOnboardingStep((s) => (s === 1 ? 2 : s));
           audioRef.current?.playStamp();
         }
         return;
@@ -346,6 +357,7 @@ export default function LuckyLandlordApp() {
           const nextState = swapAdjacentCells(run, swapAnchorIdx, cellIdx);
           if (nextState !== run) {
             setRun(nextState);
+            setOnboardingStep((s) => (s === 1 ? 2 : s));
             audioRef.current?.playCoinPayout(
               nextState.currentEval?.totalCoins ?? 0,
             );
@@ -412,10 +424,25 @@ export default function LuckyLandlordApp() {
     const nextState = payRentAndAdvanceCycle(run, selectedRelicId);
     if (nextState !== run) {
       setRun(nextState);
+      setOnboardingStep(null);
       setPrefs((p) => (p.tutorialCompleted ? p : { ...p, tutorialCompleted: true }));
       audioRef.current?.playRentSuccess();
     }
   }, [run, selectedRelicId]);
+
+  const handleDismissOnboarding = useCallback(() => {
+    setOnboardingStep(null);
+    setPrefs((p) => (p.tutorialCompleted ? p : { ...p, tutorialCompleted: true }));
+  }, []);
+
+  const handleReplayOnboarding = useCallback(() => {
+    setShowTutorialModal(false);
+    setShowCompendium(false);
+    setShowDeckModal(false);
+    setOnboardingStep(0);
+    setScreenState('playing');
+    audioRef.current?.playStamp();
+  }, []);
 
   const handleEnterEndless = useCallback(() => {
     const nextState = enterEndlessMode(run);
@@ -423,15 +450,30 @@ export default function LuckyLandlordApp() {
     audioRef.current?.playStamp();
   }, [run]);
 
-  // Global keyboard shortcuts (Title Enter/Space, Playing Space/1-3/L/S/R/B/M/P/Esc)
+  // Global keyboard shortcuts (Title Enter/Space, Playing Space/1-3/L/S/R/B/H/M/P/Esc)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (showCompendium || showDeckModal || showTutorialModal) return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement
       ) {
+        return;
+      }
+
+      if (showCompendium || showDeckModal || showTutorialModal) {
+        if (e.code === 'Escape' || (e.code === 'KeyH' && showTutorialModal)) {
+          e.preventDefault();
+          setShowTutorialModal(false);
+          setShowCompendium(false);
+          setShowDeckModal(false);
+        }
+        return;
+      }
+
+      if (e.code === 'KeyH') {
+        e.preventDefault();
+        setShowTutorialModal(true);
         return;
       }
 
@@ -523,6 +565,7 @@ export default function LuckyLandlordApp() {
     screenState,
     showCompendium,
     showDeckModal,
+    showTutorialModal,
     startFreshRun,
     tacticalMode,
   ]);
@@ -610,18 +653,22 @@ export default function LuckyLandlordApp() {
           <section className="space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="text-base font-bold text-[#1C1917]">
-                01. 选择当家房东与初始产业
+                选择当家房东与初始产业
               </h2>
               <div className="flex items-center gap-2 text-xs text-[#57534E]">
                 <label htmlFor="ascension-select" className="font-medium">
-                  阶梯挑战难度：
+                  挑战难度曲线：
                 </label>
                 <select
                   id="ascension-select"
+                  data-testid="ascension-select"
                   value={selectedAscension}
                   onChange={(e) => setSelectedAscension(Number(e.target.value))}
                   className="px-2.5 py-1 rounded border border-[#D6D0C4] bg-white text-[#1C1917] font-mono-num text-xs"
                 >
+                  <option value={0}>
+                    难度 0（轻松休闲 · 租金 -18% + 赠调度令）
+                  </option>
                   {Array.from({ length: 10 }, (_, idx) => idx + 1).map((lvl) => (
                     <option
                       key={lvl}
@@ -632,8 +679,8 @@ export default function LuckyLandlordApp() {
                       {lvl > meta.unlockedAscension
                         ? '（通关前一阶梯解锁）'
                         : lvl === 1
-                          ? '（标准）'
-                          : `（租金 +${(lvl - 1) * 9}%）`}
+                          ? '（标准推荐）'
+                          : `（宗师阶梯 · 租金 +${(lvl - 1) * 9}%）`}
                     </option>
                   ))}
                 </select>
@@ -700,7 +747,14 @@ export default function LuckyLandlordApp() {
         )}
 
         {showTutorialModal && (
-          <TutorialModal onClose={() => setShowTutorialModal(false)} />
+          <TutorialModal
+            onClose={() => setShowTutorialModal(false)}
+            onStartGuidedPractice={() => {
+              setShowTutorialModal(false);
+              setOnboardingStep(0);
+              startFreshRun();
+            }}
+          />
         )}
       </main>
     );
@@ -740,7 +794,8 @@ export default function LuckyLandlordApp() {
           <div className="flex flex-wrap items-center gap-5">
             <div>
               <div className="text-[11px] text-[#78716C]">
-                {landlordDef.name} · 阶梯 {run.ascension} ·{' '}
+                {landlordDef.name} ·{' '}
+                {run.ascension === 0 ? '轻松休闲' : `阶梯 ${run.ascension}`} ·{' '}
                 {run.isEndless
                   ? `无尽第 ${run.cycle} 期`
                   : `第 ${run.cycle}/${VICTORY_CYCLE} 期账单`}
@@ -934,34 +989,78 @@ export default function LuckyLandlordApp() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           {/* LEFT 8 COLS: 4x5 Board + Tactical Controls + Draft / Rent Dock */}
           <div className="lg:col-span-8 space-y-2.5">
-            {/* Step-by-Step Contextual Beginner Coach Strip (Auto-guides first-time players) */}
-            {!prefs.tutorialCompleted && run.cycle === 1 && (
+            {/* Action-Driven 4-Step Live Onboarding Coach Strip (Auto-guides first-time players & supports anytime replay) */}
+            {onboardingStep !== null && (
               <div
                 data-testid="beginner-coach-strip"
                 className="p-3 rounded-xl bg-[#FFFBEB] border border-[#F59E0B] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1 text-xs">
                   <div className="font-bold text-[#92400E]">
-                    {run.phase === 'ready' && run.spinsLeftInCycle === run.spinsPerCycle
-                      ? '新手指引 1/3 · 第一步：摇动账本收租'
-                      : run.phase === 'post_spin'
-                        ? '新手指引 2/3 · 第二步：试试控盘调换 & 三选一招募租客'
-                        : run.phase === 'rent_due'
-                          ? '新手指引 3/3 · 恭喜攒够首期房租！选枚传家宝印章过关'
-                          : '新手指引 3/3 · 紧盯左上角租金目标，善用装修与升星'}
+                    {onboardingStep === 0
+                      ? '实战带教 1/4 · 摇动账本自动收租'
+                      : onboardingStep === 1
+                        ? '实战带教 2/4 · 试试「主动调度令」控盘改命'
+                        : onboardingStep === 2
+                          ? '实战带教 3/4 · 三选一精选连携租客（不贪杂牌）'
+                          : run.phase === 'rent_due'
+                            ? '实战带教 4/4 · 账单达标！选枚传家宝印章缴租过关'
+                            : '实战带教 4/4 · 善用免费装修券改造旺铺，攒够左上角房租'}
                   </div>
                   <p className="text-[#57534E] leading-relaxed">
-                    {run.phase === 'ready' && run.spinsLeftInCycle === run.spinsPerCycle
-                      ? '点击棋盘下方的橙色按钮【摇动账本收租】（或按空格键），租客会自动落入 20 个房间并结算基础租金与相邻连携加成！'
-                      : run.phase === 'post_spin'
-                        ? '若两个有配合的符号差一格没挨着，可点上方【相邻调换】挪到一起补领差额；随后从下方 3 张候选卡挑 1 张入驻（不想要可跳过领 +2 补贴）。'
-                        : run.phase === 'rent_due'
-                          ? '下方挑选 1 枚传家宝印章即可点击绿色按钮【缴清房租进入下一期】！'
-                          : '在剩余轮数归零前攒够租金目标即可过关。有免费装修券时可点【格子装修】造收益翻倍的临街旺铺！'}
+                    {onboardingStep === 0
+                      ? '点击棋盘下方的橙色按钮【摇动账本收租】（或按空格键），租客会落入 20 间房并自动结算相邻 8 格连携加成。'
+                      : onboardingStep === 1
+                        ? '若两个有配合的租客差一格没挨着，点【相邻调换】挪到一起即可当场补领连携差额（也可点【单列重摇】或直接选牌进入下一步）。'
+                        : onboardingStep === 2
+                          ? '从下方 3 张候选卡挑选 1 张能配合当前流派的租客入驻；若无合适配合，果断点击【跳过招募领 +2 补贴】精简牌库。'
+                          : run.phase === 'rent_due'
+                            ? '下方挑选 1 枚传家宝印章并点击绿色按钮【缴清房租进入下一期】即可完成首轮实战结业！'
+                            : '盯着左上角剩余轮数与租金目标：有免费装修券时可点【格子装修】打造收益翻倍的临街旺铺，凑齐 3 张同名卡还能一键升 2★！'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {onboardingStep === 0 && run.phase === 'ready' && (
+                    <button
+                      type="button"
+                      onClick={handleSpin}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-xs font-bold text-white cursor-pointer whitespace-nowrap"
+                    >
+                      立即摇动账本
+                    </button>
+                  )}
+                  {onboardingStep === 1 &&
+                    run.phase === 'post_spin' &&
+                    run.dispatchTokens >= 1 &&
+                    tacticalMode !== 'swap' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSwapAnchorIdx(null);
+                          setTacticalMode('swap');
+                          setOnboardingStep(2);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#C2410C] hover:bg-[#9A3412] text-xs font-bold text-white cursor-pointer whitespace-nowrap"
+                      >
+                        开启相邻调换
+                      </button>
+                    )}
+                  {onboardingStep === 3 &&
+                    run.phase !== 'rent_due' &&
+                    run.renovationTickets > 0 &&
+                    tacticalMode !== 'renovate' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSwapAnchorIdx(null);
+                          setTacticalMode('renovate');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#15803D] hover:bg-[#166534] text-xs font-bold text-white cursor-pointer whitespace-nowrap"
+                      >
+                        开启格子装修
+                      </button>
+                    )}
                   <button
                     type="button"
                     onClick={() => setShowTutorialModal(true)}
@@ -972,12 +1071,10 @@ export default function LuckyLandlordApp() {
                   <button
                     type="button"
                     data-testid="dismiss-coach-btn"
-                    onClick={() =>
-                      setPrefs((p) => ({ ...p, tutorialCompleted: true }))
-                    }
+                    onClick={handleDismissOnboarding}
                     className="px-2.5 py-1.5 rounded-lg bg-[#EDE9E0] hover:bg-[#E2DDD1] text-xs font-medium text-[#57534E] hover:text-[#1C1917] cursor-pointer whitespace-nowrap"
                   >
-                    学会了
+                    {onboardingStep === 3 ? '完成带教' : '跳过指引'}
                   </button>
                 </div>
               </div>
@@ -1010,6 +1107,7 @@ export default function LuckyLandlordApp() {
                   disabled={run.phase !== 'post_spin' || run.dispatchTokens < 1}
                   onClick={() => {
                     setSwapAnchorIdx(null);
+                    setOnboardingStep((s) => (s === 1 ? 2 : s));
                     setTacticalMode((m) => (m === 'swap' ? 'none' : 'swap'));
                   }}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
@@ -1033,6 +1131,7 @@ export default function LuckyLandlordApp() {
                   }
                   onClick={() => {
                     setSwapAnchorIdx(null);
+                    setOnboardingStep((s) => (s === 1 ? 2 : s));
                     setTacticalMode((m) =>
                       m === 'reroll_col' ? 'none' : 'reroll_col',
                     );
@@ -1504,7 +1603,7 @@ export default function LuckyLandlordApp() {
                 {run.pendingRelicChoices.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-xs font-bold text-[#1C1917]">
-                      01. 挑选传家宝印章（三选一）
+                      第一步：挑选传家宝印章（三选一）
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       {run.pendingRelicChoices.map((rId) => {
@@ -1544,7 +1643,7 @@ export default function LuckyLandlordApp() {
                 {run.pendingContractChoices.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-xs font-bold text-[#1C1917]">
-                      02. 可选风险收益契约（可不签）
+                      第二步：可选风险收益契约（可不签）
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {run.pendingContractChoices.map((cId) => {
@@ -1794,6 +1893,23 @@ export default function LuckyLandlordApp() {
               </button>
               <button
                 type="button"
+                onClick={handleReplayOnboarding}
+                className="w-full py-2.5 rounded-lg bg-[#FFFBEB] hover:bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E] text-xs font-bold cursor-pointer"
+              >
+                重温四步实战带教
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setScreenState('playing');
+                  setShowTutorialModal(true);
+                }}
+                className="w-full py-2.5 rounded-lg bg-white hover:bg-[#F2EFE9] border border-[#D6D0C4] text-[#1C1917] text-xs font-semibold cursor-pointer"
+              >
+                查阅图文新手指引 [H]
+              </button>
+              <button
+                type="button"
                 onClick={startFreshRun}
                 className="w-full py-2.5 rounded-lg bg-white hover:bg-[#F2EFE9] border border-[#D6D0C4] text-[#1C1917] text-xs font-semibold cursor-pointer inline-flex items-center justify-center gap-1.5"
               >
@@ -1903,7 +2019,10 @@ export default function LuckyLandlordApp() {
       )}
 
       {showTutorialModal && (
-        <TutorialModal onClose={() => setShowTutorialModal(false)} />
+        <TutorialModal
+          onClose={() => setShowTutorialModal(false)}
+          onStartGuidedPractice={handleReplayOnboarding}
+        />
       )}
     </main>
   );

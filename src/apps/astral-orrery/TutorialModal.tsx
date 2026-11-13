@@ -1,16 +1,18 @@
 import React from 'react';
-import { Play, X } from 'lucide-react';
+import { Compass, Play, X } from 'lucide-react';
 
 interface TutorialModalProps {
   isTitleScreen: boolean;
   onClose: () => void;
   onStartFromTutorial?: () => void;
+  onReplayInteractiveGuide?: () => void;
 }
 
 export const TutorialModal: React.FC<TutorialModalProps> = ({
   isTitleScreen,
   onClose,
   onStartFromTutorial,
+  onReplayInteractiveGuide,
 }) => {
   const handlePrimaryConfirm = () => {
     if (isTitleScreen && onStartFromTutorial) {
@@ -35,7 +37,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
               天枢浑仪 · 三维天文台与智械上手指南
             </h2>
             <p className="text-xs text-[#94A3B8] mt-0.5">
-              拖拽旋转 3D 天球仪、切换四大观测机位，用齿比、星炉与可编程发条智械构筑指数增长引擎
+              拖拽/双指触控旋转 3D 天球仪、切换四大观测机位，用齿比、星炉与可编程发条智械构筑指数增长引擎
             </p>
           </div>
           <button
@@ -68,7 +70,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             </div>
             <div className="space-y-1.5">
               <div className="text-sm font-bold text-[#F8FAFC]">
-                01. 三维陀螺共面连珠 · 三态齿比微调
+                第一步：三维陀螺共面连珠 · 三态齿比微调
               </div>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 五条星轨在 3D 空间各自倾角进动，每当星体驶近正北 12 点方向的<span className="font-semibold text-[#FDE047]">「黄金子午激光门」</span>时会自动校准共面，产出<strong>星辉</strong>与<strong>星芒通量</strong>。多星同步跨门即引爆阶乘级<strong>【朔望连珠】</strong>！
@@ -95,13 +97,13 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             </div>
             <div className="space-y-1.5">
               <div className="text-sm font-bold text-[#F8FAFC]">
-                02. 底座以太星炉 · 超新星坍缩脉冲 [E]
+                第二步：底座以太星炉 · 超新星坍缩脉冲 [E]
               </div>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
                 天球底座悬浮着三座炼金反应釜：注入<strong>星芒通量</strong>即可升阶<strong>【曜火聚变】</strong>（指数星辉乘区）、<strong>【时隙曲率】</strong>（全局提速+发条回充）与<strong>【谐振结晶】</strong>（连珠增幅+自发合成以太）。
               </p>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                随时按下 <kbd className="px-1.5 py-0.5 rounded bg-[#1B2A47] border border-[#C89B54] font-mono-num text-[11px] text-[#FDE68A]">E</kbd> 释放主动技<strong>【超新星坍缩脉冲】</strong>，瞬间将全场星体强行拖拽至子午门前引爆大满贯连珠，并赋予 8 秒 ×2.0 星辉超载！
+                随时按下 <kbd className="px-1.5 py-0.5 rounded bg-[#1B2A47] border border-[#C89B54] font-mono-num text-[11px] text-[#FDE68A]">E</kbd>（或点击底栏【超新星脉冲】）释放主动技，瞬间将全场星体强行聚拢至子午门前引爆大满贯连珠，并赋予 8 秒 ×2.0 星辉超载！
               </p>
             </div>
           </section>
@@ -123,10 +125,10 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             </div>
             <div className="space-y-1.5">
               <div className="text-sm font-bold text-[#F8FAFC]">
-                03. 可编程【发条智械】· 真正的增量策略大脑
+                第三步：可编程【发条智械】· 节奏自选的增量大脑
               </div>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                告别无脑乱买！打开底部<strong>【发条智械】</strong>即可编写最多 6 轨带优先级的 <span className="font-mono-num text-[#FDE68A]">若(IF) → 则(THEN)</span> 差分机逻辑：精准计算<strong>边际性价比 (Δ产率/花费 ROI)</strong>、<strong>狙击十级突破</strong>、<strong>设置星辉底池保留比例</strong>、<strong>发条蓄能上下限迟滞超频</strong>、<strong>星宫黄金协同自走镶嵌</strong>乃至<strong>达标自动重铸转生</strong>！内置 4 套一键流派预设，开箱即用。
+                打开底部<strong>【发条智械】</strong>可一键套用 4 套流派预设（含全自动重铸悠闲托管、突破狙击精算流），也可自编最多 6 轨带优先级的 <span className="font-mono-num text-[#FDE68A]">若(IF) → 则(THEN)</span> 差分机逻辑，手机触屏与桌面键鼠皆可顺畅游玩。
               </p>
             </div>
           </section>
@@ -135,17 +137,30 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-3.5 bg-[#070C18] border-t border-[#243452] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <span className="text-xs text-[#94A3B8]">
-            提示：按 <kbd className="px-1.5 py-0.5 rounded bg-[#131F36] border border-[#334155] font-mono-num text-[11px] text-[#F8FAFC]">Tab</kbd> 可随时收起底部控制台，100% 全屏沉浸观赏 3D 浑天仪运转
+            提示：按 <kbd className="px-1.5 py-0.5 rounded bg-[#131F36] border border-[#334155] font-mono-num text-[11px] text-[#F8FAFC]">Tab</kbd> 或点「收起」可隐藏底部控制台，全屏观赏 3D 浑天仪运转
           </span>
-          <button
-            type="button"
-            data-testid="close-tutorial-btn"
-            onClick={handlePrimaryConfirm}
-            className="px-5 py-2 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-[#090D16] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>{isTitleScreen ? '明白了，启动三维浑仪！' : '明白了，继续调校'}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {onReplayInteractiveGuide && (
+              <button
+                type="button"
+                data-testid="replay-orrery-guide-btn"
+                onClick={onReplayInteractiveGuide}
+                className="px-3.5 py-2 rounded-lg bg-[#131F36] hover:bg-[#1E2F52] border border-[#C89B54]/70 text-[#FDE68A] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>重温五步实战带教</span>
+              </button>
+            )}
+            <button
+              type="button"
+              data-testid="close-tutorial-btn"
+              onClick={handlePrimaryConfirm}
+              className="px-5 py-2 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] text-[#090D16] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>{isTitleScreen ? '明白了，启动三维浑仪！' : '明白了，继续调校'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

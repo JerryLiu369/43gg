@@ -4,6 +4,7 @@ import { APP_REGISTRY, WorkspaceAppEntry, getAppById } from './apps/registry.ts'
 import { AppErrorBoundary } from './shell/AppErrorBoundary.tsx';
 import { HomeHub } from './shell/HomeHub.tsx';
 import { IframeAppHost } from './shell/IframeAppHost.tsx';
+import { recordLastPlayedApp } from './shell/hubProgress.ts';
 import {
   buildAppUrl,
   buildHomeUrl,
@@ -68,11 +69,15 @@ export default function App() {
 
   useEffect(() => {
     document.title = activeApp
-      ? `${activeApp.title} · gaistudio`
-      : 'gaistudio // Carbon AI Studio 小游戏 Gallery';
+      ? `${activeApp.title} · 43gg 小游戏`
+      : '43gg 小游戏';
+    if (activeApp) {
+      recordLastPlayedApp(activeApp.id);
+    }
   }, [activeApp]);
 
   const handleLaunchApp = useCallback((appId: string) => {
+    recordLastPlayedApp(appId);
     const targetUrl = buildAppUrl(window.location.href, appId, VALID_APP_IDS);
     window.history.pushState({ appId }, '', targetUrl);
     setActiveAppId(appId);
@@ -110,7 +115,7 @@ export default function App() {
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#F2EFE9] border border-[#D6D0C4] focus:outline-none focus-visible:border-[#C2410C] text-xs font-semibold text-[#1C1917] transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>目录</span>
+            <span>43gg 大厅</span>
           </button>
 
           <span className="text-sm font-bold text-[#1C1917] truncate">

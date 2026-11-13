@@ -193,8 +193,9 @@ export function computeCycleRentGoal(
     spinsAllowed = 7;
   }
 
-  // Ascension scaling: +9% rent per ascension step above 1, and -1 spin on late cycles at Asc >= 6
-  const ascMultiplier = 1 + Math.max(0, ascension - 1) * 0.09;
+  // Ascension scaling: Asc 0 = Casual (-18% rent), Asc 1 = Standard, +9% rent per step above 1
+  const ascMultiplier =
+    ascension <= 0 ? 0.82 : 1 + Math.max(0, ascension - 1) * 0.09;
   let rent = baseRent * ascMultiplier;
 
   if (ascension >= 6 && spinsAllowed > 5 && cycle >= 6) {
@@ -329,7 +330,9 @@ export function createNewRun(
     deckIdx++;
   }
 
-  const goal = computeCycleRentGoal(1, landlordId, ascension, [], []);
+  const clampedAsc = Math.max(0, Math.min(10, ascension));
+  const casualBonus = clampedAsc === 0 ? 1 : 0;
+  const goal = computeCycleRentGoal(1, landlordId, clampedAsc, [], []);
 
   return {
     version: 1,
@@ -337,7 +340,7 @@ export function createNewRun(
     rngState: seed || 1234567,
     nextUidCounter: uidCounter,
     landlordId,
-    ascension: Math.max(1, Math.min(10, ascension)),
+    ascension: clampedAsc,
     isEndless: false,
     phase: 'ready',
 
@@ -351,8 +354,8 @@ export function createNewRun(
     spinsPerCycle: goal.spinsAllowed,
     rentTarget: goal.rentTarget,
 
-    dispatchTokens: landlord.dispatchPerCycle,
-    maxDispatchTokens: landlord.dispatchPerCycle + 2,
+    dispatchTokens: landlord.dispatchPerCycle + casualBonus,
+    maxDispatchTokens: landlord.dispatchPerCycle + 2 + casualBonus,
     usedFreeColRerollThisSpin: false,
     removeTokens: landlord.startingRemoveTokens,
     renovationTickets: landlord.startingRenovationTickets,
@@ -2013,10 +2016,11 @@ export function payRentAndAdvanceCycle(
   }
 
   const keychainExtra = nextRelics.includes('brass_keychain') ? 1 : 0;
-  const nextMaxDispatch = landlord.dispatchPerCycle + 2 + keychainExtra;
+  const casualBonus = state.ascension === 0 ? 1 : 0;
+  const nextMaxDispatch = landlord.dispatchPerCycle + 2 + keychainExtra + casualBonus;
   const rechargedDispatch = Math.min(
     nextMaxDispatch,
-    state.dispatchTokens + landlord.dispatchPerCycle + keychainExtra,
+    state.dispatchTokens + landlord.dispatchPerCycle + keychainExtra + casualBonus,
   );
 
   // Grant 1 free renovation ticket every 2 cycles + 1 remove token every 2 cycles

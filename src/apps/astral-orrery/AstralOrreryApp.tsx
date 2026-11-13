@@ -207,6 +207,7 @@ export default function AstralOrreryApp() {
   const [showCodexModal, setShowCodexModal] = useState<boolean>(false);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
   const [eraToast, setEraToast] = useState<string | null>(null);
+  const [replayCoachStep, setReplayCoachStep] = useState<number | null>(null);
 
   const syncUiImmediate = useCallback(() => {
     setUiRun(cloneSnapshot(runRef.current));
@@ -405,6 +406,7 @@ export default function AstralOrreryApp() {
     sceneHandleRef.current?.triggerBurst({
       kind: res.isPerfect ? 'perfect_impulse' : 'impulse',
     });
+    setReplayCoachStep((s) => (s === 0 ? 1 : s));
     announceActionMilestones(prevStep, prevAch);
     syncUiImmediate();
   }, [announceActionMilestones, screenState, syncUiImmediate]);
@@ -442,10 +444,27 @@ export default function AstralOrreryApp() {
   onCatchCometRef.current = handleCatchComet;
 
   const handleSkipTutorial = useCallback(() => {
+    setReplayCoachStep(null);
     skipTutorial(runRef.current, metaRef.current);
     saveOrreryRun(runRef.current);
     saveOrreryMeta(metaRef.current);
     syncUiImmediate();
+  }, [syncUiImmediate]);
+
+  const handleStartReplayGuide = useCallback(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setShowTutorialModal(false);
+    setPrefs((p) => ({ ...p, zenMode: false, dockCollapsed: false }));
+    setDockTab('rings');
+    setReplayCoachStep(0);
+    setHasSavedRun(true);
+    saveOrreryRun(runRef.current);
+    saveOrreryMeta(metaRef.current);
+    syncUiImmediate();
+    setScreenState('playing');
+    audioRef.current?.playBrassRatchet();
   }, [syncUiImmediate]);
 
   const handleContinueOrStart = useCallback(
@@ -482,6 +501,7 @@ export default function AstralOrreryApp() {
         )
       ) {
         audioRef.current?.playBrassRatchet();
+        setReplayCoachStep((s) => (s === 1 ? 2 : s === 4 ? null : s));
         announceActionMilestones(prevStep, prevAch);
         saveOrreryRun(runRef.current);
         saveOrreryMeta(metaRef.current);
@@ -495,6 +515,7 @@ export default function AstralOrreryApp() {
     (ringId: OrbitalRingId, mode: RingGearMode) => {
       if (setRingGearMode(runRef.current, metaRef.current, ringId, mode)) {
         audioRef.current?.playBrassRatchet();
+        setReplayCoachStep((s) => (s === 1 ? 2 : s));
         saveOrreryRun(runRef.current);
         syncUiImmediate();
       }
@@ -510,6 +531,7 @@ export default function AstralOrreryApp() {
       ) {
         audioRef.current?.playBrassRatchet();
         sceneHandleRef.current?.triggerBurst({ kind: 'impulse' });
+        setReplayCoachStep((s) => (s === 4 ? null : s));
         announceActionMilestones(runRef.current.tutorialStep, prevAch);
         saveOrreryRun(runRef.current);
         saveOrreryMeta(metaRef.current);
@@ -550,6 +572,7 @@ export default function AstralOrreryApp() {
         )
       ) {
         audioRef.current?.playBrassRatchet();
+        setReplayCoachStep((s) => (s === 3 ? 4 : s));
         announceActionMilestones(prevStep, prevAch);
         saveOrreryRun(runRef.current);
         saveOrreryMeta(metaRef.current);
@@ -562,6 +585,7 @@ export default function AstralOrreryApp() {
   const handleUpgradeModule = useCallback(() => {
     if (upgradeSlotModule(runRef.current, metaRef.current, selectedSlot)) {
       audioRef.current?.playBrassRatchet();
+      setReplayCoachStep((s) => (s === 3 ? 4 : s));
       saveOrreryRun(runRef.current);
       syncUiImmediate();
     }
@@ -600,6 +624,9 @@ export default function AstralOrreryApp() {
         return;
       }
       setSelectedSlot(idx);
+      if (runRef.current.slots[idx] !== null) {
+        setReplayCoachStep((s) => (s === 3 ? 4 : s));
+      }
     },
     [swapSourceSlot, syncUiImmediate],
   );
@@ -610,6 +637,9 @@ export default function AstralOrreryApp() {
       const prevAch = getUnlockedAchievementCount(metaRef.current);
       if (setOverdriveSpeed(runRef.current, metaRef.current, speed)) {
         audioRef.current?.playBrassRatchet();
+        if (speed >= 2) {
+          setReplayCoachStep((s) => (s === 2 ? 3 : s));
+        }
         announceActionMilestones(prevStep, prevAch);
         saveOrreryRun(runRef.current);
         saveOrreryMeta(metaRef.current);
@@ -675,6 +705,7 @@ export default function AstralOrreryApp() {
     runRef.current.automator.enabled = !runRef.current.automator.enabled;
     runRef.current.autoUpgradeEnabled = runRef.current.automator.enabled;
     audioRef.current?.playBrassRatchet();
+    setReplayCoachStep((s) => (s === 4 ? null : s));
     saveOrreryRun(runRef.current);
     syncUiImmediate();
   }, [syncUiImmediate]);
@@ -845,9 +876,22 @@ export default function AstralOrreryApp() {
   const unlockedSlotsCount = getUnlockedSlotCount(uiRun);
   const installedSlotsCount = getInstalledSlotCount(uiRun);
   const activeQuest =
-    uiRun.tutorialStep < TUTORIAL_QUESTS.length
-      ? TUTORIAL_QUESTS[uiRun.tutorialStep]
-      : null;
+    replayCoachStep !== null && replayCoachStep < TUTORIAL_QUESTS.length
+      ? TUTORIAL_QUESTS[replayCoachStep]
+      : uiRun.tutorialStep < TUTORIAL_QUESTS.length
+        ? TUTORIAL_QUESTS[uiRun.tutorialStep]
+        : null;
+
+  const handleFocusQuestTarget = useCallback(() => {
+    if (!activeQuest) return;
+    setPrefs((p) => ({ ...p, dockCollapsed: false }));
+    if (activeQuest.targetArea === 'zodiac') {
+      setDockTab('zodiac');
+    } else {
+      setDockTab('rings');
+    }
+    audioRef.current?.playBrassRatchet();
+  }, [activeQuest]);
 
   const perfectWindow = uiMeta.ascensionNodes.wide_meridian ? 0.42 : 0.28;
   const isMeridianReady = ORBITAL_RINGS.some(
@@ -1251,26 +1295,46 @@ export default function AstralOrreryApp() {
                   ) : activeQuest ? (
                     <div
                       data-testid="active-tutorial-quest"
-                      className="pointer-events-auto max-w-2xl px-3.5 py-1.5 rounded-lg bg-[#0B1426]/95 border border-[#C89B54]/75 text-xs flex flex-wrap items-center justify-between gap-3 shadow-lg"
+                      className="pointer-events-auto max-w-3xl px-3.5 py-1.5 rounded-lg bg-[#0B1426]/95 border border-[#C89B54]/75 text-xs flex flex-wrap items-center justify-between gap-3 shadow-lg"
                     >
                       <div className="min-w-0">
                         <span className="font-bold text-[#FDE68A] mr-2">
-                          {activeQuest.title}
+                          {replayCoachStep !== null
+                            ? `实战温习 ${replayCoachStep + 1}/${TUTORIAL_QUESTS.length}`
+                            : activeQuest.title}
                         </span>
                         <span className="text-[#E2E8F0]">
                           {activeQuest.instruction}
                         </span>
-                        <span className="text-[#38BDF8] font-mono-num ml-2">
-                          ({activeQuest.rewardText})
-                        </span>
+                        {replayCoachStep === null && (
+                          <span className="text-[#38BDF8] font-mono-num ml-2">
+                            ({activeQuest.rewardText})
+                          </span>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleSkipTutorial}
-                        className="text-[11px] text-[#94A3B8] hover:text-white underline cursor-pointer whitespace-nowrap"
-                      >
-                        跳过指引
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleFocusQuestTarget}
+                          className="px-2 py-0.5 rounded bg-[#15223B] hover:bg-[#1E3054] border border-[#C89B54]/60 text-[11px] font-semibold text-[#FDE68A] cursor-pointer whitespace-nowrap"
+                        >
+                          定位面板
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTutorialModal(true)}
+                          className="px-2 py-0.5 rounded bg-[#131F36] hover:bg-[#1C2D4F] border border-[#334155] text-[11px] text-[#CBD5E1] hover:text-white cursor-pointer whitespace-nowrap"
+                        >
+                          图文指南
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSkipTutorial}
+                          className="text-[11px] text-[#94A3B8] hover:text-white underline cursor-pointer whitespace-nowrap"
+                        >
+                          {replayCoachStep !== null ? '结束带教' : '跳过指引'}
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -2035,8 +2099,22 @@ export default function AstralOrreryApp() {
               </button>
               <button
                 type="button"
+                onClick={handleStartReplayGuide}
+                className="w-full py-2 rounded-lg bg-[#15223B] hover:bg-[#1E3054] border border-[#C89B54]/60 text-xs font-semibold text-[#FDE68A] cursor-pointer"
+              >
+                重温五步实战带教
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTutorialModal(true)}
+                className="w-full py-2 rounded-lg bg-[#131F36] hover:bg-[#1C2D4F] border border-[#334155] text-xs font-medium text-[#E2E8F0] cursor-pointer"
+              >
+                查阅三维图文指南 [H]
+              </button>
+              <button
+                type="button"
                 onClick={() => setScreenState('title')}
-                className="w-full py-2 rounded-lg bg-[#131F36] hover:bg-[#1C2D4F] border border-[#334155] text-xs font-medium text-[#CBD5E1] cursor-pointer"
+                className="w-full py-2 rounded-lg bg-[#101829] hover:bg-[#18243D] border border-[#243452] text-xs font-medium text-[#94A3B8] hover:text-white cursor-pointer"
               >
                 返回标题星台
               </button>
@@ -2141,6 +2219,7 @@ export default function AstralOrreryApp() {
           isTitleScreen={screenState === 'title'}
           onClose={() => setShowTutorialModal(false)}
           onStartFromTutorial={() => handleContinueOrStart(false)}
+          onReplayInteractiveGuide={handleStartReplayGuide}
         />
       )}
     </div>

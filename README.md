@@ -1,9 +1,9 @@
 > **在线访问 (GitHub Pages)：** [https://jerryliu369.github.io/gaistudio/](https://jerryliu369.github.io/gaistudio/)（推送 `main` 后由 GitHub Actions 自动校验并发布）  
 > 直达应用：[璇玑破阵](https://jerryliu369.github.io/gaistudio/?app=xuanji-breach) | [墨刃：一闪](https://jerryliu369.github.io/gaistudio/?app=ink-blade) | [天枢浑仪](https://jerryliu369.github.io/gaistudio/?app=astral-orrery) | [吉星包租公](https://jerryliu369.github.io/gaistudio/?app=lucky-landlord) | [CHRONO STAGE](https://jerryliu369.github.io/gaistudio/?app=chrono-stage)
 
-# gaistudio — 统一 React WebApp 多应用工作区
+# 43gg 小游戏（`gaistudio` 统一多应用工作区）
 
-`gaistudio` 是一个基于 React 19 + Vite 8 + TypeScript + Tailwind CSS 4 的统一 WebApp 外壳工作区，通过单一入口与单一预览端口收口多个相互隔离的小应用、增量工坊与 3D 模拟原型。
+**43gg 小游戏**是一个基于 React 19 + Vite 8 + TypeScript + Tailwind CSS 4 构建的独立网页小游戏大厅与多应用隔离工作区，支持随注册表持续扩展新游戏（自动派生分类筛选、实时检索、卡片/列表双视图与程序化瑞士几何封面兜底）。
 
 ---
 
@@ -13,9 +13,9 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `xuanji-breach` | `璇玑破阵` | `React.lazy` 按需懒加载 + 立体沙盘画布与声学合成器完整释放 | `src/apps/xuanji-breach/` | `/?app=xuanji-breach` | 内置四步实战新手指引、三档难度与键鼠/触屏双端操控 |
 | `ink-blade` | `墨刃：一闪` | `React.lazy` 按需懒加载 + 离屏墨痕画布与音频完整释放 | `src/apps/ink-blade/` | `/?app=ink-blade` | 内置三步实战教学、三档难度与移动端虚拟摇杆/刀诀键 |
-| `astral-orrery` | `天枢浑仪` | `React.lazy` 按需懒加载 + 退出完整释放 Three.js 场景与音频 | `src/apps/astral-orrery/` | `/?app=astral-orrery` | 内置天工典籍与星盘引导 |
-| `lucky-landlord` | `吉星包租公` | `React.lazy` 按需懒加载 + 本地自动存档与音频释放 | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | 内置全图鉴与规则引导 |
-| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整释放 WebGL/音频/全局监听 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | [驾驶与调校手册](docs/chrono-stage.md) |
+| `astral-orrery` | `天枢浑仪` | `React.lazy` 按需懒加载 + 退出完整释放 Three.js 场景与音频 | `src/apps/astral-orrery/` | `/?app=astral-orrery` | 内置五步实战带教、图文三维星盘手册与桌面/触屏双端适配 |
+| `lucky-landlord` | `吉星包租公` | `React.lazy` 按需懒加载 + 本地自动存档与音频释放 | `src/apps/lucky-landlord/` | `/?app=lucky-landlord` | 内置四步实战带教、轻松至高阶多档难度与全图鉴指引 |
+| `chrono-stage` | `CHRONO STAGE` | `React.lazy` 按需懒加载 + 退出完整释放 WebGL/音频/全局监听 | `src/apps/chrono-stage/` | `/?app=chrono-stage` | 内置四步领航实战带教、路书图解、三档难度与[驾驶调校手册](docs/chrono-stage.md) |
 
 ---
 

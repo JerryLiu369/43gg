@@ -5,6 +5,7 @@ import type {
   DrivingAssistPreset,
   InputSettings,
   MistakeRecord,
+  RallyDifficulty,
   StageDefinition,
   SurfaceType,
   TireCompound,
@@ -12,6 +13,46 @@ import type {
   WeatherType,
   WheelState,
 } from './types.ts';
+
+export interface RallyDifficultyDef {
+  id: RallyDifficulty;
+  labelZh: string;
+  shortZh: string;
+  summaryZh: string;
+  damageScale: number;
+  recoveryPenaltySec: number;
+  aiTimeScale: number;
+}
+
+export const RALLY_DIFFICULTY_DEFS: Record<RallyDifficulty, RallyDifficultyDef> = {
+  relaxed: {
+    id: 'relaxed',
+    labelZh: '轻松领航',
+    shortZh: '轻松',
+    summaryZh: '碰撞车损减半 · 救援罚时仅 +8s · AI 标杆放宽 8%',
+    damageScale: 0.45,
+    recoveryPenaltySec: 8,
+    aiTimeScale: 1.08,
+  },
+  standard: {
+    id: 'standard',
+    labelZh: '标准竞技',
+    shortZh: '标准',
+    summaryZh: '标准物理车损 · 救援罚时 +15s · FIA 厂队标杆配速',
+    damageScale: 1.0,
+    recoveryPenaltySec: 15,
+    aiTimeScale: 1.0,
+  },
+  master: {
+    id: 'master',
+    labelZh: '宗师拟真',
+    shortZh: '宗师',
+    summaryZh: '拟真严苛车损(+45%) · 救援罚时 +18s · 传奇车神配速',
+    damageScale: 1.45,
+    recoveryPenaltySec: 18,
+    aiTimeScale: 0.96,
+  },
+};
 
 export const FIXED_DT = 1 / 120;
 
@@ -79,6 +120,7 @@ export const SPORT_INPUT_SETTINGS: InputSettings = {
   autoClutch: true,
   absAssist: true,
   tcsAssist: false,
+  difficulty: 'standard',
 };
 
 export const PRO_INPUT_SETTINGS: InputSettings = {
@@ -470,6 +512,7 @@ export function stepCarPhysics(
   dt: number = FIXED_DT,
 ): void {
   if (dt <= 0) return;
+  const diffDef = RALLY_DIFFICULTY_DEFS[inputSettings.difficulty ?? 'standard'];
 
   // 1. Shape Inputs (steer < 0 = LEFT [A/ArrowLeft], steer > 0 = RIGHT [D/ArrowRight])
   const steerShaped =
@@ -644,7 +687,7 @@ export function stepCarPhysics(
         w.bottomedOutImpact = Math.min(1, impactVy / 9.5);
       }
       if (impactVy > 9.5) {
-        const suspWear = Math.min(0.14, (impactVy - 9.5) * 0.015);
+        const suspWear = Math.min(0.14, (impactVy - 9.5) * 0.015) * diffDef.damageScale;
         state.damage.suspension = Math.min(0.85, state.damage.suspension + suspWear);
         mistakes?.push({
           id: `land_${Math.round(stageTimeSec * 10)}`,
@@ -889,7 +932,10 @@ export function stepCarPhysics(
       w.angularVel = locked ? 0 : vLong / WHEEL_RADIUS_M + w.slipRatio * 18;
     }
 
-    state.damage.tires = Math.min(0.85, state.damage.tires + (combF + combR) * 0.00012 * dt);
+    state.damage.tires = Math.min(
+      0.85,
+      state.damage.tires + (combF + combR) * 0.00012 * diffDef.damageScale * dt,
+    );
   } else {
     yawMomentNm = -state.yawRate * 950;
   }
@@ -969,7 +1015,7 @@ export function stepCarPhysics(
       }
 
       if (impactSpeed > 7.5) {
-        const hitDmg = Math.min(0.12, (impactSpeed - 7.5) * 0.008);
+        const hitDmg = Math.min(0.12, (impactSpeed - 7.5) * 0.008) * diffDef.damageScale;
         state.damage.steering = Math.min(0.75, state.damage.steering + hitDmg * 0.6);
         state.damage.lights = Math.min(0.8, state.damage.lights + hitDmg * 0.7);
         state.damage.engine = Math.min(0.75, state.damage.engine + hitDmg * 0.4);

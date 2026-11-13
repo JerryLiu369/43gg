@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PacenoteSignSvg } from '../../components/PacenoteSignSvg.tsx';
+import { RallyTutorialModal } from '../../components/RallyTutorialModal.tsx';
 import { SetupAndGarageModal } from '../../components/SetupAndGarageModal.tsx';
 import { StageFinishModal } from '../../components/StageFinishModal.tsx';
 import {
@@ -8,6 +9,7 @@ import {
   recordChampionshipStageResult,
 } from '../../game/championship.ts';
 import {
+  RALLY_DIFFICULTY_DEFS,
   applyDrivingPreset,
   createInitialDamageState,
   getDrivingPreset,
@@ -23,10 +25,12 @@ import type {
 import { getAllStages } from '../../game/stages.ts';
 import {
   loadInputSettings,
+  loadRallyOnboardingCompleted,
   loadSavedTuningPresets,
   loadStageRecords,
   saveCustomTuningPreset,
   saveInputSettings,
+  saveRallyOnboardingCompleted,
 } from '../../game/storage.ts';
 import type {
   CameraMode,
@@ -35,6 +39,7 @@ import type {
   InputSettings,
   LaunchControlState,
   PacenoteItem,
+  RallyDifficulty,
   RallyEventMode,
   SplitNotification,
   StageRecord,
@@ -42,6 +47,30 @@ import type {
   TuningSetup,
   WeatherType,
 } from '../../game/types.ts';
+
+type RallyCoachStep = 0 | 1 | 2 | 3;
+
+const RALLY_COACH_STEPS: Array<{
+  title: string;
+  detail: string;
+}> = [
+  {
+    title: '领航带教 1/4 · 给油发车驶过 100m',
+    detail: '按住 W / ↑（手机按住右下「油门」）沿赛道加速，驶过前 100 米热身直道。',
+  },
+  {
+    title: '领航带教 2/4 · 入弯前直线点刹移重',
+    detail: '观察上方领航路书牌，在直道按 S / ↓（或「刹车」）减速，把重心压向前轮再顺势打方向。',
+  },
+  {
+    title: '领航带教 3/4 · 切换四款驾驶视角 [C]',
+    detail: '按键盘 C 键或点击下方「切换视角 [C]」，在近追尾、远追尾、引擎盖与座舱视角间选择最顺手视野。',
+  },
+  {
+    title: '领航带教 4/4 · 听路书稳节奏冲线',
+    detail: '绿牌缓弯稳油、橙红急弯提前慢进快出；若不慎冲出路肩，随时按 R 键或右上「救援」一键复位。',
+  },
+];
 
 const WEATHER_OPTIONS: Array<{ id: WeatherType; label: string }> = [
   { id: 'clear', label: '晴朗' },
@@ -131,6 +160,14 @@ export default function ChronoStageApp() {
 
   const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
   const [setupModalDefaultService, setSetupModalDefaultService] = useState<boolean>(false);
+  const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
+  const [onboardingStep, setOnboardingStep] = useState<RallyCoachStep | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('autostart') === '1') return null;
+    }
+    return loadRallyOnboardingCompleted() ? null : 0;
+  });
   const [finishSummary, setFinishSummary] = useState<StageFinishSummary | null>(null);
 
   // Mutable refs so single-mount engine callbacks always read fresh React state
@@ -142,11 +179,18 @@ export default function ChronoStageApp() {
   inputSettingsRef.current = inputSettings;
   const isMutedRef = useRef<boolean>(isMuted);
   isMutedRef.current = isMuted;
+  const onboardingStepRef = useRef<RallyCoachStep | null>(onboardingStep);
+  onboardingStepRef.current = onboardingStep;
+  const showTutorialModalRef = useRef<boolean>(showTutorialModal);
+  showTutorialModalRef.current = showTutorialModal;
+  const tutorialPausedFromPlayingRef = useRef<boolean>(false);
   const splitTimerRef = useRef<number | null>(null);
 
   const activeStage = stages.find((s) => s.id === selectedStageId) || stages[0];
   const activeStageBest: StageRecord | null = stageRecords[activeStage.id] || null;
   const drivingPreset = getDrivingPreset(inputSettings);
+  const activeDifficulty: RallyDifficulty = inputSettings.difficulty ?? 'standard';
+  const activeDiffDef = RALLY_DIFFICULTY_DEFS[activeDifficulty];
   const champStanding = championship ? getPlayerOverallStanding(championship) : null;
 
   // Mount WebGLRenderer & RallySimulationEngine once
@@ -193,6 +237,18 @@ export default function ChronoStageApp() {
       setDamage({ ...carState.damage });
       setSectorTimes([secs[0], secs[1], secs[2]]);
       setServiceMinutesLeft(srvMins);
+
+      const curStep = onboardingStepRef.current;
+      if (curStep === 0 && carState.distanceAlongStageM >= 95) {
+        onboardingStepRef.current = 1;
+        setOnboardingStep(1);
+      } else if (
+        curStep === 1 &&
+        ((carState.brake > 0.22 && carState.forwardSpeedMs > 5.5) || carState.handbrake > 0.3)
+      ) {
+        onboardingStepRef.current = 2;
+        setOnboardingStep(2);
+      }
     };
 
     engine.onLaunchControlUpdate = (lc) => {
@@ -210,12 +266,18 @@ export default function ChronoStageApp() {
     };
 
     engine.onStageFinish = (summary) => {
+      if (onboardingStepRef.current !== null) {
+        onboardingStepRef.current = null;
+        setOnboardingStep(null);
+        saveRallyOnboardingCompleted(true);
+      }
       if (eventModeRef.current === 'championship' && championshipRef.current) {
         const nextChamp = recordChampionshipStageResult(
           championshipRef.current,
           summary.stage,
           summary.completed,
-          summary.totalTimeSec
+          summary.totalTimeSec,
+          inputSettingsRef.current.difficulty ?? 'standard'
         );
         championshipRef.current = nextChamp;
         setChampionship(nextChamp);
@@ -231,6 +293,10 @@ export default function ChronoStageApp() {
 
     engine.onCameraModeChanged = (mode) => {
       setCameraMode(mode);
+      if (onboardingStepRef.current === 2) {
+        onboardingStepRef.current = 3;
+        setOnboardingStep(3);
+      }
     };
 
     engine.onRequestTransmissionToggle = () => {
@@ -252,7 +318,40 @@ export default function ChronoStageApp() {
       engine.audio.setMuted(next);
     };
 
+    engine.onRequestHelpToggle = () => {
+      const curPhase = engine.getPhase();
+      if (showTutorialModalRef.current) {
+        showTutorialModalRef.current = false;
+        setShowTutorialModal(false);
+        if (tutorialPausedFromPlayingRef.current && curPhase === 'paused') {
+          tutorialPausedFromPlayingRef.current = false;
+          engine.setPhase('playing');
+          setPhase('playing');
+        }
+        return;
+      }
+      if (curPhase === 'playing') {
+        tutorialPausedFromPlayingRef.current = true;
+        engine.setPhase('paused');
+        setPhase('paused');
+      } else {
+        tutorialPausedFromPlayingRef.current = false;
+      }
+      showTutorialModalRef.current = true;
+      setShowTutorialModal(true);
+    };
+
     engine.onRequestPauseToggle = () => {
+      if (showTutorialModalRef.current) {
+        showTutorialModalRef.current = false;
+        setShowTutorialModal(false);
+        if (tutorialPausedFromPlayingRef.current && engine.getPhase() === 'paused') {
+          tutorialPausedFromPlayingRef.current = false;
+          engine.setPhase('playing');
+          setPhase('playing');
+        }
+        return;
+      }
       const curPhase = engine.getPhase();
       if (curPhase === 'playing') {
         engine.setPhase('paused');
@@ -309,7 +408,7 @@ export default function ChronoStageApp() {
 
   // Bind Enter / Space on Title Screen to launch stage immediately
   useEffect(() => {
-    if (phase !== 'title' || showSetupModal) return;
+    if (phase !== 'title' || showSetupModal || showTutorialModal) return;
     const onTitleKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') return;
@@ -320,7 +419,7 @@ export default function ChronoStageApp() {
     };
     window.addEventListener('keydown', onTitleKey);
     return () => window.removeEventListener('keydown', onTitleKey);
-  }, [phase, showSetupModal, eventMode, selectedStageId, weather, timeOfDay, tuning, inputSettings]);
+  }, [phase, showSetupModal, showTutorialModal, eventMode, selectedStageId, weather, timeOfDay, tuning, inputSettings]);
 
   const handleSelectStage = (stageId: string) => {
     const st = stages.find((s) => s.id === stageId) || stages[0];
@@ -539,6 +638,56 @@ export default function ChronoStageApp() {
     handleUpdateInputSettings(next);
   };
 
+  const handleDifficultySwitch = (difficulty: RallyDifficulty) => {
+    handleUpdateInputSettings({
+      ...inputSettings,
+      difficulty,
+    });
+  };
+
+  const handleOpenTutorialFromHud = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.blur();
+    if (engineRef.current && phase === 'playing') {
+      tutorialPausedFromPlayingRef.current = true;
+      engineRef.current.setPhase('paused');
+      setPhase('paused');
+    } else {
+      tutorialPausedFromPlayingRef.current = false;
+    }
+    showTutorialModalRef.current = true;
+    setShowTutorialModal(true);
+  };
+
+  const handleCloseTutorialModal = () => {
+    showTutorialModalRef.current = false;
+    setShowTutorialModal(false);
+    if (tutorialPausedFromPlayingRef.current && engineRef.current?.getPhase() === 'paused') {
+      tutorialPausedFromPlayingRef.current = false;
+      engineRef.current.setPhase('playing');
+      setPhase('playing');
+    }
+  };
+
+  const handleDismissOnboarding = () => {
+    onboardingStepRef.current = null;
+    setOnboardingStep(null);
+    saveRallyOnboardingCompleted(true);
+  };
+
+  const handleStartGuidedDrive = () => {
+    saveRallyOnboardingCompleted(false);
+    onboardingStepRef.current = 0;
+    setOnboardingStep(0);
+    showTutorialModalRef.current = false;
+    setShowTutorialModal(false);
+    tutorialPausedFromPlayingRef.current = false;
+    if (phase === 'title') {
+      handleStartStage();
+    } else if (phase === 'paused') {
+      handleResumeStage();
+    }
+  };
+
   const handleToggleTransmissionHud = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.blur();
     handleQuickPresetSwitch(drivingPreset === 'sport' ? 'pro' : 'sport');
@@ -686,17 +835,46 @@ export default function ChronoStageApp() {
                 </div>
               </div>
 
-              {/* Primary CTA & Secondary Garage Button */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
+              {/* Three-Tier Difficulty Selector */}
+              <div className="bg-[#0e131b] border border-slate-800 rounded p-2 space-y-1.5">
+                <div className="flex items-center justify-between gap-2 text-[10px] font-mono-num">
+                  <span className="text-slate-400">挑战难度 (DIFFICULTY)</span>
+                  <span className="text-[#fbbf24] truncate">{activeDiffDef.summaryZh}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['relaxed', 'standard', 'master'] as RallyDifficulty[]).map((diffId) => {
+                    const def = RALLY_DIFFICULTY_DEFS[diffId];
+                    const selected = activeDifficulty === diffId;
+                    return (
+                      <button
+                        key={diffId}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => handleDifficultySwitch(diffId)}
+                        className={`py-1.5 px-2 text-xs font-bold rounded transition-colors cursor-pointer whitespace-nowrap ${
+                          selected
+                            ? 'bg-[#f59e0b] text-black'
+                            : 'bg-[#141b25] text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {def.labelZh}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Primary CTA & Secondary Garage / Tutorial Buttons */}
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
                 <button
                   type="button"
                   data-start="true"
                   onClick={handleStartStage}
-                  className="px-5 py-2.5 text-sm font-bold bg-[#f59e0b] hover:bg-[#d97706] text-black rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="px-4 py-2.5 text-sm font-bold bg-[#f59e0b] hover:bg-[#d97706] text-black rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   {eventMode === 'championship'
-                    ? '开启 WRC 6站锦标赛 (SS01 发车)'
-                    : '发车进入赛段 (START STAGE)'}
+                    ? '开启 WRC 6站锦标赛'
+                    : '发车进入赛段 (START)'}
                 </button>
                 <button
                   type="button"
@@ -704,21 +882,31 @@ export default function ChronoStageApp() {
                     setSetupModalDefaultService(false);
                     setShowSetupModal(true);
                   }}
-                  className="px-4 py-2.5 text-xs font-semibold bg-[#141a23] hover:bg-slate-800 text-slate-100 border border-slate-700 rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="px-3 py-2.5 text-xs font-semibold bg-[#141a23] hover:bg-slate-800 text-slate-100 border border-slate-700 rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  底盘调校与外设 ({tuning.drivetrain})
+                  底盘调校 ({tuning.drivetrain})
+                </button>
+                <button
+                  type="button"
+                  data-testid="open-rally-tutorial-title"
+                  onClick={() => {
+                    tutorialPausedFromPlayingRef.current = false;
+                    showTutorialModalRef.current = true;
+                    setShowTutorialModal(true);
+                  }}
+                  className="px-3 py-2.5 text-xs font-semibold bg-[#141a23] hover:bg-slate-800 text-[#fbbf24] border border-[#f59e0b]/50 rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  路书与新手指引 [H]
                 </button>
               </div>
 
               {/* Active Setup & Record Quick Summary */}
               <div className="pt-2.5 border-t border-slate-800/90 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400 font-mono-num">
+                <span>难度: {activeDiffDef.shortZh}</span>
+                <span>·</span>
                 <span>驱动: {tuning.drivetrain}</span>
                 <span>·</span>
                 <span>轮胎: {tuning.tireCompound.toUpperCase()}</span>
-                <span>·</span>
-                <span>
-                  换挡: {drivingPreset === 'sport' ? 'SPORT自动序列' : 'PRO手排+离合'}
-                </span>
                 <span>·</span>
                 <span className="text-[#f59e0b]">
                   {activeStageBest
@@ -854,11 +1042,8 @@ export default function ChronoStageApp() {
           phase === 'playing' ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Top-Center: Functional 3D Rear-View Mirror Bezel + Co-Driver Pacenote Strip + Sector Split Toast */}
-        <div
-          style={{ top: '2.2%' }}
-          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
-        >
+        {/* Top-Center: Functional 3D Rear-View Mirror Bezel + Co-Driver Pacenote Strip + Live Onboarding Coach + Sector Split Toast */}
+        <div className="absolute top-[134px] sm:top-[2.2%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none w-[min(94vw,480px)]">
           {/* Bezel frame aligning with WebGL scissor rear-view mirror pass */}
           <div
             ref={mirrorFrameElRef}
@@ -876,15 +1061,15 @@ export default function ChronoStageApp() {
 
           {/* Co-Driver Pacenote Callout Strip */}
           {inputSettings.pacenoteVisualEnabled && activePacenote && (
-            <div className="flex items-center gap-3 px-4 py-2 bg-[#090b0e]/90 border border-slate-800 rounded-lg shadow-xl">
-              <PacenoteSignSvg note={activePacenote} size={50} />
-              <div className="min-w-[165px]">
+            <div className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#090b0e]/90 border border-slate-800 rounded-lg shadow-xl max-w-full">
+              <PacenoteSignSvg note={activePacenote} size={44} />
+              <div className="min-w-[135px] sm:min-w-[165px]">
                 <div className="flex items-center gap-2">
-                  <span className="font-display text-lg font-bold text-white tracking-wide">
+                  <span className="font-display text-base sm:text-lg font-bold text-white tracking-wide">
                     {activePacenote.calloutTextZh}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-300 font-mono-num">
+                <div className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-300 font-mono-num">
                   {activePacenote.modifier && (
                     <span className="text-[#f59e0b] font-semibold">
                       [{activePacenote.modifier}]
@@ -904,6 +1089,51 @@ export default function ChronoStageApp() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Non-Blocking 4-Step Live Co-Driver Onboarding Coach (Shown once 3-2-1 launch lights clear) */}
+          {onboardingStep !== null && !launchState.active && (
+            <div
+              data-testid="rally-onboarding-coach"
+              className="w-full px-3 py-2 rounded-lg bg-[#0d131d]/92 border border-[#f59e0b]/60 shadow-xl pointer-events-auto"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#fbbf24] truncate">
+                  {RALLY_COACH_STEPS[onboardingStep].title}
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {onboardingStep === 2 && (
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={handleToggleCamera}
+                      className="px-2 py-0.5 rounded bg-[#f59e0b] text-black text-[11px] font-bold cursor-pointer"
+                    >
+                      切换视角 [C]
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={handleOpenTutorialFromHud}
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] border border-slate-700 cursor-pointer"
+                  >
+                    图解
+                  </button>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={handleDismissOnboarding}
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] border border-slate-700 cursor-pointer"
+                  >
+                    {onboardingStep === 3 ? '完成带教' : '跳过'}
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-200 leading-snug mt-1">
+                {RALLY_COACH_STEPS[onboardingStep].detail}
+              </p>
             </div>
           )}
 
@@ -980,13 +1210,13 @@ export default function ChronoStageApp() {
         )}
 
         {/* Top-Left Cluster: Stage Timer, Delta vs PB Ghost & Stage Progress */}
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-[#090b0e]/88 border border-slate-800 rounded-lg p-3 w-56 sm:w-64 space-y-2 shadow-lg">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono-num">
-            <span>
+        <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 bg-[#090b0e]/88 border border-slate-800 rounded-lg p-2 sm:p-3 w-44 sm:w-64 space-y-1.5 sm:space-y-2 shadow-lg">
+          <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-slate-400 font-mono-num">
+            <span className="truncate">
               {activeStage.code} · {tuning.drivetrain}
               {eventMode === 'championship' && champStanding ? ` · P${champStanding.rank}` : ''}
             </span>
-            <span ref={surfaceBadgeElRef} className="text-[#f59e0b] font-semibold">
+            <span ref={surfaceBadgeElRef} className="text-[#f59e0b] font-semibold truncate">
               砂石 (Gravel)
             </span>
           </div>
@@ -995,13 +1225,13 @@ export default function ChronoStageApp() {
             <div className="text-[10px] text-slate-400 tracking-wider">STAGE TIME</div>
             <div
               ref={stageTimeElRef}
-              className="font-mono-num text-2xl sm:text-3xl font-bold text-white leading-tight stroke-text"
+              className="font-mono-num text-xl sm:text-3xl font-bold text-white leading-tight stroke-text"
             >
               00:00.000
             </div>
             <div
               ref={deltaTimeElRef}
-              className="font-mono-num text-xs font-semibold text-emerald-400 mt-0.5"
+              className="font-mono-num text-[11px] sm:text-xs font-semibold text-emerald-400 mt-0.5"
             >
               +0.00s vs PAR
             </div>
@@ -1009,9 +1239,9 @@ export default function ChronoStageApp() {
 
           {/* Stage Distance Progress Bar with Sector Split Ticks */}
           <div className="space-y-1 pt-1 border-t border-slate-800/80">
-            <div className="flex justify-between text-[11px] font-mono-num text-slate-300">
-              <span>PROGRESS</span>
-              <span ref={progressTextElRef}>
+            <div className="flex justify-between text-[10px] sm:text-[11px] font-mono-num text-slate-300">
+              <span className="hidden sm:inline">PROGRESS</span>
+              <span ref={progressTextElRef} className="whitespace-nowrap">
                 0.00 / {(activeStage.lengthM / 1000).toFixed(2)} km (0%)
               </span>
             </div>
@@ -1044,14 +1274,26 @@ export default function ChronoStageApp() {
         </div>
 
         {/* Top-Right Cluster: Quick Controls + Bespoke SVG 6-Zone WRC Car Damage Diagram */}
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex flex-col items-end gap-2">
-          <div className="flex items-center gap-1.5 pointer-events-auto">
+        <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 flex flex-col items-end gap-2 max-w-[184px] sm:max-w-none">
+          <div className="flex flex-wrap sm:flex-nowrap justify-end items-center gap-1 sm:gap-1.5 pointer-events-auto">
+            <button
+              type="button"
+              tabIndex={-1}
+              data-testid="open-rally-tutorial-hud"
+              aria-label="路书与驾驶指引 (快捷键 H)"
+              onClick={handleOpenTutorialFromHud}
+              className="px-2 sm:px-2.5 h-8 sm:h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-[#f59e0b]/60 rounded text-[11px] sm:text-xs font-semibold text-[#fbbf24] flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <span>指引</span>
+              <span className="hidden sm:inline text-[10px] font-mono-num text-amber-300/80">[H]</span>
+            </button>
+
             <button
               type="button"
               tabIndex={-1}
               aria-label="切换自动或手动换挡 (Gearbox G)"
               onClick={handleToggleTransmissionHud}
-              className="px-2.5 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-xs font-mono-num text-slate-200 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+              className="hidden sm:flex px-2.5 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-xs font-mono-num text-slate-200 items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
             >
               <span className="text-[#f59e0b] font-bold">
                 {drivingPreset === 'sport' ? 'AUTO' : 'MAN'}
@@ -1064,24 +1306,24 @@ export default function ChronoStageApp() {
               tabIndex={-1}
               aria-label="切换视角 (Camera C)"
               onClick={handleToggleCamera}
-              className="px-2.5 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-xs font-mono-num text-slate-200 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+              className="px-2 sm:px-2.5 h-8 sm:h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-[11px] sm:text-xs font-mono-num text-slate-200 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>视角:{CAMERA_LABELS_ZH[cameraMode]}</span>
-              <span className="text-[10px] text-slate-400">[C]</span>
+              <span>{CAMERA_LABELS_ZH[cameraMode]}</span>
+              <span className="hidden sm:inline text-[10px] text-slate-400">[C]</span>
             </button>
 
             <button
               type="button"
               tabIndex={-1}
-              aria-label="赛段救援复位 (快捷键 R, +15秒罚时)"
+              aria-label={`赛段救援复位 (快捷键 R, +${activeDiffDef.recoveryPenaltySec}秒罚时)`}
               onClick={(e) => {
                 e.currentTarget.blur();
                 engineRef.current?.recoverCarToRoadWithPenalty();
               }}
-              className="px-2.5 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-xs font-mono-num text-amber-400 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+              className="px-2 sm:px-2.5 h-8 sm:h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded text-[11px] sm:text-xs font-mono-num text-amber-400 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>救援[R]</span>
-              <span className="text-[10px]">+15s</span>
+              <span>救援</span>
+              <span className="text-[10px]">+{activeDiffDef.recoveryPenaltySec}s</span>
             </button>
 
             <button
@@ -1089,9 +1331,9 @@ export default function ChronoStageApp() {
               tabIndex={-1}
               aria-label={isMuted ? '取消静音 (Unmute M)' : '静音 (Mute M)'}
               onClick={handleToggleMute}
-              className="w-9 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded flex items-center justify-center text-slate-200 cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded flex items-center justify-center text-slate-200 cursor-pointer shrink-0"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 {!isMuted ? (
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
@@ -1106,17 +1348,17 @@ export default function ChronoStageApp() {
               tabIndex={-1}
               aria-label="暂停与维修设定 (Pause P)"
               onClick={handleTogglePauseButton}
-              className="w-9 h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded flex items-center justify-center text-slate-200 cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 bg-[#090b0e]/90 hover:bg-slate-800 border border-slate-700 rounded flex items-center justify-center text-slate-200 cursor-pointer shrink-0"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="6" y="4" width="4" height="16" />
                 <rect x="14" y="4" width="4" height="16" />
               </svg>
             </button>
           </div>
 
-          {/* 6-Zone WRC Car Silhouette + Partitioned Damage Telemetry */}
-          <div className="bg-[#090b0e]/88 border border-slate-800 rounded-lg p-2.5 w-60 shadow-lg flex items-center gap-2.5">
+          {/* 6-Zone WRC Car Silhouette + Partitioned Damage Telemetry (Desktop/Tablet) */}
+          <div className="hidden sm:flex bg-[#090b0e]/88 border border-slate-800 rounded-lg p-2.5 w-60 shadow-lg items-center gap-2.5">
             {/* Top-Down WRC Car Subsystem SVG Silhouette */}
             <svg
               width="52"
@@ -1237,10 +1479,10 @@ export default function ChronoStageApp() {
           </div>
         </div>
 
-        {/* Bottom-Right Cluster: 12-LED Shift Cluster, Tachometer, Gear, Speed, Boost & Pedals */}
-        <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 bg-[#090b0e]/90 border border-slate-800 rounded-lg p-3.5 w-68 sm:w-76 shadow-2xl space-y-2">
+        {/* Bottom-Right Cluster: 12-LED Shift Cluster, Tachometer, Gear, Speed, Boost & Pedals (Anchored above touch pedals on <lg) */}
+        <div className="absolute bottom-28 right-2.5 sm:bottom-32 sm:right-4 lg:bottom-5 lg:right-5 bg-[#090b0e]/90 border border-slate-800 rounded-lg p-2.5 sm:p-3.5 w-56 sm:w-76 shadow-2xl space-y-1.5 sm:space-y-2">
           {/* 12-Segment WRC LED Shift Light Cluster */}
-          <div ref={rpmLedContainerElRef} className="grid grid-cols-12 gap-1 h-2">
+          <div ref={rpmLedContainerElRef} className="grid grid-cols-12 gap-1 h-1.5 sm:h-2">
             {Array.from({ length: 12 }).map((_, idx) => (
               <div
                 key={idx}
@@ -1251,7 +1493,7 @@ export default function ChronoStageApp() {
 
           {/* Shift Light & RPM Bar */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px] font-mono-num">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono-num">
               <span className="text-slate-400">
                 RPM{' '}
                 <span ref={rpmTextElRef} className="text-slate-200 font-semibold">
@@ -1261,12 +1503,12 @@ export default function ChronoStageApp() {
               <span
                 ref={shiftLightElRef}
                 style={{ opacity: 0.15 }}
-                className="px-1.5 py-0.5 text-[10px] font-bold bg-rose-600 text-white rounded"
+                className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold bg-rose-600 text-white rounded"
               >
                 SHIFT UP
               </span>
             </div>
-            <div className="w-full h-2 bg-slate-900 rounded overflow-hidden border border-slate-800">
+            <div className="w-full h-1.5 sm:h-2 bg-slate-900 rounded overflow-hidden border border-slate-800">
               <div
                 ref={rpmBarElRef}
                 className="h-full bg-emerald-500 transition-none"
@@ -1276,15 +1518,15 @@ export default function ChronoStageApp() {
           </div>
 
           {/* Primary Readout: Gear + Speed + Pedal Bars */}
-          <div className="flex items-center justify-between gap-3 pt-0.5">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 pt-0.5">
             {/* Gear Indicator */}
-            <div className="w-14 h-16 bg-[#121721] border border-slate-700 rounded flex flex-col items-center justify-center shrink-0">
+            <div className="w-11 h-13 sm:w-14 sm:h-16 bg-[#121721] border border-slate-700 rounded flex flex-col items-center justify-center shrink-0">
               <span className="text-[9px] font-mono-num text-slate-400 leading-none">
                 {drivingPreset === 'sport' ? 'AUTO' : 'GEAR'}
               </span>
               <div
                 ref={gearElRef}
-                className="font-display text-4xl font-bold text-[#f59e0b] leading-none mt-0.5"
+                className="font-display text-3xl sm:text-4xl font-bold text-[#f59e0b] leading-none mt-0.5"
               >
                 1
               </div>
@@ -1292,36 +1534,36 @@ export default function ChronoStageApp() {
 
             {/* Speed & Turbo Boost */}
             <div className="flex-1 text-right">
-              <div className="flex items-baseline justify-end gap-1.5">
+              <div className="flex items-baseline justify-end gap-1">
                 <span
                   ref={speedElRef}
-                  className="font-mono-num text-4xl sm:text-5xl font-bold text-white leading-none stroke-text"
+                  className="font-mono-num text-3xl sm:text-5xl font-bold text-white leading-none stroke-text"
                 >
                   0
                 </span>
-                <span className="text-xs font-mono-num text-slate-400 font-semibold">KM/H</span>
+                <span className="text-[10px] sm:text-xs font-mono-num text-slate-400 font-semibold">KM/H</span>
               </div>
-              <div className="text-[11px] font-mono-num text-slate-400 mt-1">
+              <div className="text-[10px] sm:text-[11px] font-mono-num text-slate-400 mt-0.5 sm:mt-1">
                 TURBO <span ref={boostTextElRef} className="text-cyan-400">+0.00 BAR</span>
               </div>
             </div>
 
             {/* Live Linear Pedal Telemetry Bars (CLU / BRK / THR) */}
-            <div className="flex items-end gap-1.5 h-14 pl-2 border-l border-slate-800">
+            <div className="flex items-end gap-1 sm:gap-1.5 h-12 sm:h-14 pl-1.5 sm:pl-2 border-l border-slate-800">
               <div className="flex flex-col items-center gap-0.5 h-full">
-                <div className="w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
+                <div className="w-2 sm:w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
                   <div ref={clutchBarElRef} className="w-full bg-cyan-400" style={{ height: '0%' }} />
                 </div>
                 <span className="text-[9px] font-mono-num text-slate-400">C</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 h-full">
-                <div className="w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
+                <div className="w-2 sm:w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
                   <div ref={brakeBarElRef} className="w-full bg-rose-500" style={{ height: '0%' }} />
                 </div>
                 <span className="text-[9px] font-mono-num text-slate-400">B</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 h-full">
-                <div className="w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
+                <div className="w-2 sm:w-2.5 flex-1 bg-slate-900 rounded overflow-hidden flex items-end">
                   <div
                     ref={throttleBarElRef}
                     className="w-full bg-emerald-400"
@@ -1344,104 +1586,121 @@ export default function ChronoStageApp() {
           </div>
         </div>
 
-        {/* Mobile / Touch Virtual Controls Layout (Visible on mobile/tablet screens <= 900px) */}
-        <div className="absolute bottom-3 left-3 right-3 z-20 flex lg:hidden items-end justify-between pointer-events-none">
-          <div className="bg-[#090b0e]/85 border border-slate-700 rounded-lg p-2.5 flex flex-col gap-2 pointer-events-auto w-44">
-            <div className="text-[10px] font-mono-num text-slate-400 text-center">
-              STEERING (TOUCH SLIDER)
-            </div>
-            <input
-              type="range"
-              aria-label="触控线性方向盘"
-              min="-1"
-              max="1"
-              step="0.02"
-              defaultValue="0"
-              onChange={(e) => {
-                if (engineRef.current) {
-                  engineRef.current.input.touchSteer = parseFloat(e.target.value);
-                }
-              }}
-              onTouchEnd={(e) => {
-                e.currentTarget.value = '0';
-                if (engineRef.current) engineRef.current.input.touchSteer = 0;
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.value = '0';
-                if (engineRef.current) engineRef.current.input.touchSteer = 0;
-              }}
-              className="w-full h-8 accent-[#f59e0b]"
-            />
-            <div className="grid grid-cols-2 gap-1.5">
+        {/* Mobile / Tablet Ergonomic Dual-Thumb Touch Controls (< 1024px) */}
+        <div
+          data-testid="rally-mobile-controls"
+          className="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex lg:hidden items-end justify-between gap-2 pointer-events-none"
+        >
+          {/* Left Thumb: Tactile Left / Right Steering Hold Buttons (+ Manual Shift Row in PRO) */}
+          <div className="flex flex-col gap-1.5 pointer-events-auto">
+            {drivingPreset === 'pro' && (
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => engineRef.current?.input.triggerTouchAction('shiftDown')}
+                  className="py-1.5 px-2.5 bg-[#0f141d]/92 border border-slate-700 active:bg-[#f59e0b] active:text-black text-[11px] font-bold rounded text-slate-200 touch-none"
+                >
+                  降挡 [Q]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => engineRef.current?.input.triggerTouchAction('shiftUp')}
+                  className="py-1.5 px-2.5 bg-[#0f141d]/92 border border-slate-700 active:bg-[#f59e0b] active:text-black text-[11px] font-bold rounded text-slate-200 touch-none"
+                >
+                  升挡 [E]
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => engineRef.current?.input.triggerTouchAction('shiftDown')}
-                className="py-2 bg-slate-800 active:bg-[#f59e0b] active:text-black text-xs font-bold rounded text-slate-200"
+                aria-label="向左转向"
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture?.(e.pointerId);
+                  if (engineRef.current) engineRef.current.input.touchSteer = -0.88;
+                }}
+                onPointerUp={() => {
+                  if (engineRef.current) engineRef.current.input.touchSteer = 0;
+                }}
+                onPointerCancel={() => {
+                  if (engineRef.current) engineRef.current.input.touchSteer = 0;
+                }}
+                className="w-16 h-16 sm:w-20 sm:h-18 bg-[#0f141d]/92 active:bg-[#f59e0b] active:text-black border border-slate-700 rounded-lg text-xs font-bold text-slate-100 flex flex-col items-center justify-center gap-0.5 touch-none select-none shadow-lg"
               >
-                降挡 (Q)
+                <span className="text-base leading-none">◀</span>
+                <span>左转</span>
               </button>
               <button
                 type="button"
-                onClick={() => engineRef.current?.input.triggerTouchAction('shiftUp')}
-                className="py-2 bg-slate-800 active:bg-[#f59e0b] active:text-black text-xs font-bold rounded text-slate-200"
+                aria-label="向右转向"
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture?.(e.pointerId);
+                  if (engineRef.current) engineRef.current.input.touchSteer = 0.88;
+                }}
+                onPointerUp={() => {
+                  if (engineRef.current) engineRef.current.input.touchSteer = 0;
+                }}
+                onPointerCancel={() => {
+                  if (engineRef.current) engineRef.current.input.touchSteer = 0;
+                }}
+                className="w-16 h-16 sm:w-20 sm:h-18 bg-[#0f141d]/92 active:bg-[#f59e0b] active:text-black border border-slate-700 rounded-lg text-xs font-bold text-slate-100 flex flex-col items-center justify-center gap-0.5 touch-none select-none shadow-lg"
               >
-                升挡 (E)
+                <span className="text-base leading-none">▶</span>
+                <span>右转</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-end gap-2 pointer-events-auto">
+          {/* Right Thumb: Handbrake, Brake/Reverse & Throttle Pedals */}
+          <div className="flex items-end gap-1.5 sm:gap-2 pointer-events-auto">
             <button
               type="button"
-              onTouchStart={() => {
+              aria-label="手刹甩尾"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture?.(e.pointerId);
                 if (engineRef.current) engineRef.current.input.touchHandbrake = 1;
               }}
-              onTouchEnd={() => {
+              onPointerUp={() => {
                 if (engineRef.current) engineRef.current.input.touchHandbrake = 0;
               }}
-              onMouseDown={() => {
-                if (engineRef.current) engineRef.current.input.touchHandbrake = 1;
-              }}
-              onMouseUp={() => {
+              onPointerCancel={() => {
                 if (engineRef.current) engineRef.current.input.touchHandbrake = 0;
               }}
-              className="w-12 h-16 bg-amber-950/90 border border-amber-600 rounded text-xs font-bold text-amber-300"
+              className="w-12 h-15 sm:w-14 sm:h-16 bg-amber-950/92 active:bg-amber-500 active:text-black border border-amber-600 rounded-lg text-xs font-bold text-amber-200 touch-none select-none shadow-lg"
             >
               手刹
             </button>
             <button
               type="button"
-              onTouchStart={() => {
+              aria-label="刹车与倒车"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture?.(e.pointerId);
                 if (engineRef.current) engineRef.current.input.touchBrake = 1;
               }}
-              onTouchEnd={() => {
+              onPointerUp={() => {
                 if (engineRef.current) engineRef.current.input.touchBrake = 0;
               }}
-              onMouseDown={() => {
-                if (engineRef.current) engineRef.current.input.touchBrake = 1;
-              }}
-              onMouseUp={() => {
+              onPointerCancel={() => {
                 if (engineRef.current) engineRef.current.input.touchBrake = 0;
               }}
-              className="w-14 h-20 bg-rose-950/90 border border-rose-600 rounded text-xs font-bold text-rose-200"
+              className="w-14 h-18 sm:w-16 sm:h-20 bg-rose-950/92 active:bg-rose-500 active:text-white border border-rose-600 rounded-lg text-xs font-bold text-rose-200 touch-none select-none shadow-lg"
             >
               刹车
             </button>
             <button
               type="button"
-              onTouchStart={() => {
+              aria-label="油门加速"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture?.(e.pointerId);
                 if (engineRef.current) engineRef.current.input.touchThrottle = 1;
               }}
-              onTouchEnd={() => {
+              onPointerUp={() => {
                 if (engineRef.current) engineRef.current.input.touchThrottle = 0;
               }}
-              onMouseDown={() => {
-                if (engineRef.current) engineRef.current.input.touchThrottle = 1;
-              }}
-              onMouseUp={() => {
+              onPointerCancel={() => {
                 if (engineRef.current) engineRef.current.input.touchThrottle = 0;
               }}
-              className="w-14 h-24 bg-emerald-950/90 border border-emerald-600 rounded text-xs font-bold text-emerald-200"
+              className="w-16 h-21 sm:w-18 sm:h-24 bg-emerald-950/92 active:bg-emerald-500 active:text-black border border-emerald-500 rounded-lg text-xs font-bold text-emerald-200 touch-none select-none shadow-lg"
             >
               油门
             </button>
@@ -1450,16 +1709,16 @@ export default function ChronoStageApp() {
       </div>
 
       {/* 4. PAUSED MODAL */}
-      {phase === 'paused' && !showSetupModal && (
+      {phase === 'paused' && !showSetupModal && !showTutorialModal && (
         <div
           className="absolute inset-0 z-30 flex items-center justify-center bg-[#090b0e]/88 p-4 pointer-events-auto"
           role="dialog"
           aria-label="比赛已暂停"
         >
-          <div className="w-full max-w-md bg-[#0f1319] border border-slate-800 rounded-lg p-6 shadow-2xl space-y-5">
+          <div className="w-full max-w-md bg-[#0f1319] border border-slate-800 rounded-lg p-6 shadow-2xl space-y-4">
             <div>
               <div className="text-xs font-mono-num text-[#f59e0b]">
-                {activeStage.code} · {activeStage.nameZh}
+                {activeStage.code} · {activeStage.nameZh} · {activeDiffDef.labelZh}
               </div>
               <h2 className="font-display text-3xl font-bold text-white tracking-wide mt-0.5">
                 赛段暂停 (STAGE PAUSED)
@@ -1479,7 +1738,7 @@ export default function ChronoStageApp() {
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <button
                 type="button"
                 onClick={handleResumeStage}
@@ -1490,11 +1749,31 @@ export default function ChronoStageApp() {
 
               <button
                 type="button"
+                onClick={handleStartGuidedDrive}
+                className="w-full py-2 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-[#fbbf24] border border-[#f59e0b]/50 rounded transition-colors cursor-pointer"
+              >
+                重温四步领航实战带教
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  tutorialPausedFromPlayingRef.current = false;
+                  showTutorialModalRef.current = true;
+                  setShowTutorialModal(true);
+                }}
+                className="w-full py-2 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-slate-200 border border-slate-700 rounded transition-colors cursor-pointer"
+              >
+                查阅领航路书与过弯指南 [H]
+              </button>
+
+              <button
+                type="button"
                 onClick={() => {
                   setSetupModalDefaultService(true);
                   setShowSetupModal(true);
                 }}
-                className="w-full py-2.5 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-slate-100 border border-slate-700 rounded transition-colors cursor-pointer"
+                className="w-full py-2 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-slate-100 border border-slate-700 rounded transition-colors cursor-pointer"
               >
                 进入维修车间抢修与调校 (Service &amp; Setup)
               </button>
@@ -1502,7 +1781,7 @@ export default function ChronoStageApp() {
               <button
                 type="button"
                 onClick={handleRestartCurrentStage}
-                className="w-full py-2.5 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-slate-200 border border-slate-800 rounded transition-colors cursor-pointer"
+                className="w-full py-2 px-4 text-xs font-semibold bg-[#161c26] hover:bg-slate-800 text-slate-200 border border-slate-800 rounded transition-colors cursor-pointer"
               >
                 从起点重新发车 (Restart Stage)
               </button>
@@ -1513,7 +1792,7 @@ export default function ChronoStageApp() {
                   engineRef.current?.setPhase('title');
                   setPhase('title');
                 }}
-                className="w-full py-2.5 px-4 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded transition-colors cursor-pointer"
+                className="w-full py-2 px-4 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded transition-colors cursor-pointer"
               >
                 退回赛事主界面 (Return to Title)
               </button>
@@ -1543,8 +1822,16 @@ export default function ChronoStageApp() {
         />
       )}
 
-      {/* 6. STAGE COMPLETE / RETIRED TELEMETRY MODAL */}
-      {phase === 'gameover' && finishSummary && !showSetupModal && (
+      {/* 6. RALLY PACENOTE & DRIVING TUTORIAL MODAL */}
+      {showTutorialModal && (
+        <RallyTutorialModal
+          onClose={handleCloseTutorialModal}
+          onStartGuidedDrive={handleStartGuidedDrive}
+        />
+      )}
+
+      {/* 7. STAGE COMPLETE / RETIRED TELEMETRY MODAL */}
+      {phase === 'gameover' && finishSummary && !showSetupModal && !showTutorialModal && (
         <StageFinishModal
           summary={finishSummary}
           eventMode={eventMode}
