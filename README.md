@@ -6,13 +6,13 @@
 
 ## 游戏列表
 
-| 游戏 | 类型 | 简介 | 直达 |
-| :--- | :--- | :--- | :--- |
-| 璇玑破阵 | 沙盘战棋 | 旋转中央璇玑环偏转敌方弹道，全明牌推演地形连锁。 | [开始](https://jerryliu369.github.io/43gg/?app=xuanji-breach) |
-| 墨刃：一闪 | 瞬身动作 | 水墨风俯视角剑戟动作，击杀刷新一闪，刹那弹反破甲。 | [开始](https://jerryliu369.github.io/43gg/?app=ink-blade) |
-| 天枢浑仪 | 增量放置 | 发条星轨共鸣，构筑星宫棱镜，约 20 分钟完成三次转生。 | [开始](https://jerryliu369.github.io/43gg/?app=astral-orrery) |
-| 吉星包租公 | 构筑肉鸽 | 四乘五账本格子收租，装修房间、三连升星，凑够每期账单。 | [开始](https://jerryliu369.github.io/43gg/?app=lucky-landlord) |
-| CHRONO STAGE | 3D 竞速 | 六站拉力赛段、四轮悬挂物理与锦标赛模式，附[驾驶调校手册](docs/chrono-stage.md)。 | [开始](https://jerryliu369.github.io/43gg/?app=chrono-stage) |
+| 游戏 | 类型 | 简介 | 作者 / 模型 | 直达 |
+| :--- | :--- | :--- | :--- | :--- |
+| 璇玑破阵 | 沙盘战棋 | 旋转中央璇玑环偏转敌方弹道，全明牌推演地形连锁。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=xuanji-breach) |
+| 墨刃：一闪 | 瞬身动作 | 水墨风俯视角剑戟动作，击杀刷新一闪，刹那弹反破甲。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=ink-blade) |
+| 天枢浑仪 | 增量放置 | 发条星轨共鸣，构筑星宫棱镜，约 20 分钟完成三次转生。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=astral-orrery) |
+| 吉星包租公 | 构筑肉鸽 | 四乘五账本格子收租，装修房间、三连升星，凑够每期账单。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=lucky-landlord) |
+| CHRONO STAGE | 3D 竞速 | 六站拉力赛段、四轮悬挂物理与锦标赛模式，附[驾驶调校手册](docs/chrono-stage.md)。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=chrono-stage) |
 
 ## 本地运行
 

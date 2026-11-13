@@ -25,11 +25,11 @@ npm run apps:check
 ## 新增一款游戏
 
 1. 在 `src/apps/<id>/` 下实现游戏，`id` 只用小写字母、数字和连字符。推荐结构：`types.ts` 类型、`content.ts` 配置、`engine.ts` 纯逻辑、`engine.test.ts` 单测、`storage.ts` 存档、`audio.ts` 音效、`<Name>App.tsx` 视图（默认导出）。
-2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 中添加一条，`kind: 'react-lazy'`，`loader` 指向视图组件。大厅的分类、搜索和封面会自动生成；需要专属封面时，在 `src/shell/HomeHub.tsx` 的 `AppCoverGraphic` 中添加。
+2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 中添加一条，`kind: 'react-lazy'`，`loader` 指向视图组件。必须填写 `author`（你的 GitHub 用户名或署名）和 `model`（开发时主要用的 AI 模型，多个用 ` + ` 连接；纯手写就填 `无`），它们会显示在大厅卡片上。大厅的分类、搜索和封面会自动生成；需要专属封面时，在 `src/shell/HomeHub.tsx` 的 `AppCoverGraphic` 中添加。
 3. 组件卸载时完整清理：动画帧、定时器、全局事件监听、WebGL 资源、`AudioContext`。
 4. 存档键名按 [`docs/compatibility.md`](docs/compatibility.md) 的规则命名，读到损坏数据时安全回退。
 5. 游戏要求：内置可跳过的分步新手引导、至少三档难度（默认「标准」）、支持触屏操作。具体标准见 [`AGENTS.md`](AGENTS.md) 中的「游戏设计三大铁律」。
-6. 上线后，把新 `id` 追加到 `src/shell/shell.test.ts` 的 `PUBLISHED_IDS` 中，并在 `README.md` 的游戏列表中添加一行。
+6. 上线后，把新 `id` 追加到 `src/shell/shell.test.ts` 的 `PUBLISHED_IDS` 中，并在 `README.md` 的游戏列表中添加一行（含作者与模型）。
 
 不依赖 React 的纯静态 HTML 游戏也可以接入：把目录放到 `apps/<id>/`（需包含 `index.html`），注册表中使用 `kind: 'iframe'` 和 `entryPath: 'apps/<id>/index.html'`。
 

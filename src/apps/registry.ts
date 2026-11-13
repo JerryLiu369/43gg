@@ -45,6 +45,10 @@ export interface WorkspaceAppEntry {
   subtitle: string;
   /** Short description for the Home Hub card */
   description: string;
+  /** Creator credited on the Home Hub card (GitHub handle or display name) */
+  author: string;
+  /** AI model(s) used to build the game, credited on the Home Hub card, e.g. `Gemini 4 Carbon` */
+  model: string;
   /** Stack badge shown on the card */
   techLabel: string;
   /** Compact feature descriptors */
@@ -77,6 +81,8 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     title: '璇玑破阵',
     subtitle: '青铜罗盘移星 · 全明牌立体沙盘战棋',
     description: '三尊青铜神机协同、中央璇玑内环 90° 扭转敌方弹道、水脉导电与地形连锁绝杀。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Carbon',
     techLabel: '沙盘战棋',
     tags: ['战棋策略'],
     category: 'strategy',
@@ -90,6 +96,8 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     title: '墨刃：一闪',
     subtitle: '水墨瞬身弹反剑戟动作坊',
     description: '心眼慢镜刀路推演、击杀即刻一闪刷新、刹那弹反破甲与十二刀铭秘传。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Carbon',
     techLabel: '瞬身动作',
     tags: ['剑戟动作'],
     category: 'action',
@@ -103,6 +111,8 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     title: '天枢浑仪',
     subtitle: '发条星轨共鸣增量工坊',
     description: '五曜子午交汇、十二星宫棱镜构筑、朔望连珠阶乘爆发与星盘转生。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Carbon',
     techLabel: '物理增量',
     tags: ['放置构筑'],
     category: 'incremental',
@@ -116,6 +126,8 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     title: '吉星包租公',
     subtitle: '桌面收租构筑游戏',
     description: '四乘五账本控盘、格子装修与三连升星构筑。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Carbon',
     techLabel: '策略构筑',
     tags: ['桌面策略'],
     category: 'strategy',
@@ -129,6 +141,8 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     title: 'CHRONO STAGE',
     subtitle: '3D 拟真世界拉力锦标赛',
     description: '六站世界赛段、WRC 锦标赛模式、四轮悬挂物理与手自一体序列排挡。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Carbon',
     techLabel: '3D 竞速',
     tags: ['拟真竞速'],
     category: 'racing',
@@ -163,6 +177,8 @@ export function filterWorkspaceApps(
       app.subtitle,
       app.description,
       app.techLabel,
+      app.author,
+      app.model,
       categoryLabel,
       ...app.tags,
     ]

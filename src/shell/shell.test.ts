@@ -32,6 +32,8 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     assert.ok(app.title.trim().length > 0);
     assert.ok(app.description.trim().length > 0);
     assert.ok(app.techLabel.trim().length > 0);
+    assert.ok(app.author.trim().length > 0, `${app.id} must credit an author`);
+    assert.ok(app.model.trim().length > 0, `${app.id} must credit the model used`);
     assert.ok(app.tags.length > 0);
 
     const absSourceDir = path.join(REPO_ROOT, app.sourceDir);
@@ -220,6 +222,8 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
       title: '镜渊折光',
       subtitle: '光学折射机关解谜',
       description: '旋转棱镜引导双色光束点亮古碑。',
+      author: 'tester',
+      model: 'test-model',
       techLabel: '光学解谜',
       tags: ['烧脑解谜', '关卡'],
       category: 'puzzle' as const,
@@ -232,6 +236,8 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
       title: '骰子地牢坊',
       subtitle: '回合骰面构筑肉鸽',
       description: '锻造六面点数触发连锁奇物。',
+      author: 'tester',
+      model: 'test-model',
       techLabel: '骰子肉鸽',
       tags: ['地牢探索'],
       category: 'roguelike' as const,
