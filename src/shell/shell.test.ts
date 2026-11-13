@@ -18,7 +18,15 @@ const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 test('APP_REGISTRY keeps every published app id and each entry has valid metadata and existing paths', () => {
   // Published ids are part of the public URL (?app=<id>) and save-key contract; they may be added to, never removed.
   // See docs/compatibility.md.
-  const PUBLISHED_IDS = ['xuanji-breach', 'ink-blade', 'astral-orrery', 'lucky-landlord', 'chrono-stage'];
+  const PUBLISHED_IDS = [
+    'xuanji-breach',
+    'ink-blade',
+    'astral-orrery',
+    'lucky-landlord',
+    'chrono-stage',
+    'ticket-to-ride-europe',
+    'carcassonne-bigbox',
+  ];
   for (const id of PUBLISHED_IDS) {
     assert.ok(VALID_IDS.includes(id), `Published app id must stay registered: ${id}`);
   }
@@ -63,6 +71,8 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
   assert.equal(getAppById('astral-orrery')?.kind, 'react-lazy');
   assert.equal(getAppById('lucky-landlord')?.kind, 'react-lazy');
   assert.equal(getAppById('chrono-stage')?.kind, 'react-lazy');
+  assert.equal(getAppById('ticket-to-ride-europe')?.kind, 'react-lazy');
+  assert.equal(getAppById('carcassonne-bigbox')?.kind, 'react-lazy');
   assert.equal(getAppById('ds-stage'), null);
   assert.equal(getAppById('unknown-app'), null);
 });
@@ -151,6 +161,8 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   assert.match(readme, /天枢浑仪/);
   assert.match(readme, /吉星包租公/);
   assert.match(readme, /CHRONO STAGE/);
+  assert.match(readme, /经纬铁道/);
+  assert.match(readme, /方寸山河/);
   assert.match(readme, /skills\/kasidia-frontend-law\/SKILL\.md/);
   assert.match(readme, /AGENTS\.md/);
   assert.doesNotMatch(readme, /README_zh\.md/);
@@ -203,6 +215,14 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
     '43gg.chrono_stage.records.v1',
     JSON.stringify({ ss1: { bestTimeSec: 104.2 }, ss2: { bestTimeSec: 112.8 } }),
   );
+  store.set(
+    '43gg.ticket_to_ride_europe.meta.v1',
+    JSON.stringify({ gamesPlayed: 2, victories: 1, bestScore: 132 }),
+  );
+  store.set(
+    '43gg.carcassonne_bigbox.active_run.v1',
+    JSON.stringify({ state: { finished: false, turn: { number: 7 } } }),
+  );
 
   const snap = readHubSnapshot(VALID_IDS, mockStorage);
   assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
@@ -211,6 +231,8 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
   assert.equal(snap.progressByAppId['astral-orrery'], undefined);
   assert.match(snap.progressByAppId['lucky-landlord'], /第 4 周期收租进行中/);
   assert.match(snap.progressByAppId['chrono-stage'], /已刷新 2 \/ 6 站/);
+  assert.match(snap.progressByAppId['ticket-to-ride-europe'], /已胜出 1 局/);
+  assert.match(snap.progressByAppId['carcassonne-bigbox'], /第 7 回合拼图中/);
 
   // Unknown app ID in last_played is safely ignored
   recordLastPlayedApp('nonexistent-game', mockStorage);
@@ -255,7 +277,7 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
 
   assert.equal(APP_CATEGORY_LABELS.puzzle, '解谜');
   assert.equal(APP_CATEGORY_LABELS.roguelike, '肉鸽');
-  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '').length, 7);
+  assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '').length, APP_REGISTRY.length + 2);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'puzzle', '').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '折射').length, 1);
   assert.equal(filterWorkspaceApps(extendedCatalog, 'all', '肉鸽').length, 1);

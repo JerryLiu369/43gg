@@ -20,6 +20,10 @@ const ORRERY_META_KEY = '43gg.astral_orrery.meta.v1';
 const LANDLORD_RUN_KEY = '43gg.lucky_landlord.active_run.v1';
 const LANDLORD_META_KEY = '43gg.lucky_landlord.meta.v1';
 const RALLY_RECORDS_KEY = '43gg.chrono_stage.records.v1';
+const TTR_META_KEY = '43gg.ticket_to_ride_europe.meta.v1';
+const TTR_RUN_KEY = '43gg.ticket_to_ride_europe.active_run.v1';
+const CARC_META_KEY = '43gg.carcassonne_bigbox.meta.v1';
+const CARC_RUN_KEY = '43gg.carcassonne_bigbox.active_run.v1';
 
 function safeParseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
@@ -198,6 +202,67 @@ function summarizeChronoStage(storage: StorageReader): string | null {
   return null;
 }
 
+function summarizeMeridianRails(storage: StorageReader): string | null {
+  const activeRun = safeParseJson<{
+    state?: { status?: unknown; turnNumber?: unknown };
+  }>(storage.getItem(TTR_RUN_KEY));
+  if (
+    activeRun?.state &&
+    activeRun.state.status !== 'GAME_OVER' &&
+    activeRun.state.status !== 'ABANDONED'
+  ) {
+    const turn = typeof activeRun.state.turnNumber === 'number' ? Math.floor(activeRun.state.turnNumber) : 1;
+    return `第 ${Math.max(1, turn)} 回合铁路铺设中`;
+  }
+
+  const meta = safeParseJson<{
+    gamesPlayed?: unknown;
+    victories?: unknown;
+    bestScore?: unknown;
+  }>(storage.getItem(TTR_META_KEY));
+  if (!meta) return null;
+  const victories = typeof meta.victories === 'number' ? Math.floor(meta.victories) : 0;
+  const gamesPlayed = typeof meta.gamesPlayed === 'number' ? Math.floor(meta.gamesPlayed) : 0;
+  const bestScore = typeof meta.bestScore === 'number' ? Math.floor(meta.bestScore) : 0;
+
+  if (victories > 0) {
+    return `已胜出 ${victories} 局 · 最高 ${bestScore} 分`;
+  }
+  if (gamesPlayed > 0) {
+    return `已完赛 ${gamesPlayed} 局 · 最高 ${bestScore} 分`;
+  }
+  return null;
+}
+
+function summarizeFangcunRealms(storage: StorageReader): string | null {
+  const activeRun = safeParseJson<{
+    state?: { finished?: unknown; turn?: { number?: unknown } };
+  }>(storage.getItem(CARC_RUN_KEY));
+  if (activeRun?.state && activeRun.state.finished === false) {
+    const turn =
+      typeof activeRun.state.turn?.number === 'number' ? Math.floor(activeRun.state.turn.number) : 1;
+    return `第 ${Math.max(1, turn)} 回合拼图中`;
+  }
+
+  const meta = safeParseJson<{
+    gamesPlayed?: unknown;
+    victories?: unknown;
+    bestScore?: unknown;
+  }>(storage.getItem(CARC_META_KEY));
+  if (!meta) return null;
+  const victories = typeof meta.victories === 'number' ? Math.floor(meta.victories) : 0;
+  const gamesPlayed = typeof meta.gamesPlayed === 'number' ? Math.floor(meta.gamesPlayed) : 0;
+  const bestScore = typeof meta.bestScore === 'number' ? Math.floor(meta.bestScore) : 0;
+
+  if (victories > 0) {
+    return `已胜出 ${victories} 局 · 最高 ${bestScore} 分`;
+  }
+  if (gamesPlayed > 0) {
+    return `已完赛 ${gamesPlayed} 局 · 最高 ${bestScore} 分`;
+  }
+  return null;
+}
+
 export function readHubSnapshot(
   validAppIds: ReadonlyArray<string>,
   storage: StorageReader | null = getBrowserStorage(),
@@ -223,6 +288,8 @@ export function readHubSnapshot(
     ['astral-orrery', summarizeAstralOrrery(storage)],
     ['lucky-landlord', summarizeLuckyLandlord(storage)],
     ['chrono-stage', summarizeChronoStage(storage)],
+    ['ticket-to-ride-europe', summarizeMeridianRails(storage)],
+    ['carcassonne-bigbox', summarizeFangcunRealms(storage)],
   ];
 
   for (const [id, text] of summaries) {
