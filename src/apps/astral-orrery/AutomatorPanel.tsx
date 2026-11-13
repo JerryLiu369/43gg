@@ -6,6 +6,7 @@ import {
   AUTOMATOR_CONDITIONS,
   AUTOMATOR_CONDITIONS_BY_ID,
   AUTOMATOR_PRESETS,
+  ERAS,
 } from './content.ts';
 import {
   getAutomatorIntervalSec,
@@ -172,8 +173,8 @@ export const AutomatorPanel: React.FC<AutomatorPanelProps> = ({
           if (!slotUnlocked) {
             const unlockLabel =
               idx < 4
-                ? '进入【第二纪 · 朔望谐振】(累计 120 星辉) 解锁该逻辑轨'
-                : '进入【第三纪 · 以太炼金】(18K 星辉) 或解锁【高频差分智械核】开放该逻辑轨';
+                ? `进入【第二纪 · 朔望谐振】(累计 ${formatNum(ERAS[1].unlockLuminance)} 星辉) 解锁该逻辑轨`
+                : `进入【第三纪 · 以太炼金】(${formatNum(ERAS[2].unlockLuminance)} 星辉) 或解锁【高频差分智械核】开放该逻辑轨`;
             return (
               <div
                 key={rule.id}

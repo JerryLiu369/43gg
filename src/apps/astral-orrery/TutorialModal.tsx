@@ -62,7 +62,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
                 <circle cx="50" cy="31" r="4.2" fill="#F59E0B" stroke="#F8FAFC" strokeWidth="1.3" />
                 <circle cx="50" cy="52" r="7.5" fill="#F59E0B" stroke="#FEF9C3" strokeWidth="1.6" />
                 <text x="50" y="90" textAnchor="middle" fill="#FDE047" fontSize="10" fontWeight="700">
-                  共面连珠 ×180
+                  五曜连珠 ×45+
                 </text>
               </svg>
             </div>
@@ -101,7 +101,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
                 天球底座悬浮着三座炼金反应釜：注入<strong>星芒通量</strong>即可升阶<strong>【曜火聚变】</strong>（指数星辉乘区）、<strong>【时隙曲率】</strong>（全局提速+发条回充）与<strong>【谐振结晶】</strong>（连珠增幅+自发合成以太）。
               </p>
               <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                随时按下 <kbd className="px-1.5 py-0.5 rounded bg-[#1B2A47] border border-[#C89B54] font-mono-num text-[11px] text-[#FDE68A]">E</kbd> 释放主动技<strong>【超新星坍缩脉冲】</strong>，瞬间将全场星体强行拖拽至子午门前引爆大满贯连珠，并赋予 8 秒 ×2.5 超载！
+                随时按下 <kbd className="px-1.5 py-0.5 rounded bg-[#1B2A47] border border-[#C89B54] font-mono-num text-[11px] text-[#FDE68A]">E</kbd> 释放主动技<strong>【超新星坍缩脉冲】</strong>，瞬间将全场星体强行拖拽至子午门前引爆大满贯连珠，并赋予 8 秒 ×2.0 星辉超载！
               </p>
             </div>
           </section>

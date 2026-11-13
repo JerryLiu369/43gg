@@ -130,7 +130,7 @@ export function createNewOrreryRun(
     },
   );
 
-  const baseMaxTension = meta.ascensionNodes.perpetual_spring ? 900 : 360;
+  const baseMaxTension = meta.ascensionNodes.perpetual_spring ? 600 : 240;
 
   const automator: AutomatorState = previousAutomator
     ? {
@@ -146,12 +146,12 @@ export function createNewOrreryRun(
   return {
     seed: Math.floor(Math.random() * 1_000_000_000),
     era: hasStarSeed ? 2 : 1,
-    luminance: hasStarSeed ? 250 : 0,
-    totalLuminanceRun: hasStarSeed ? 250 : 0,
+    luminance: hasStarSeed ? 900 : 0,
+    totalLuminanceRun: hasStarSeed ? 900 : 0,
     aether: 0,
     totalAetherRun: 0,
     luminancePerSec: 0,
-    springTensionSec: hasStarSeed ? 60 : 24,
+    springTensionSec: hasStarSeed ? 40 : 18,
     maxSpringTensionSec: baseMaxTension,
     overdriveSpeed: 1,
     impulseBoost: 0,
@@ -163,9 +163,9 @@ export function createNewOrreryRun(
       startAngle: 0.6,
       endAngle: 3.9,
     },
-    nextCometSpawnSec: 16,
+    nextCometSpawnSec: 26,
     resonatorCharges: 0,
-    maxResonatorCharges: 12,
+    maxResonatorCharges: 6,
     harmonicOvertoneBonus: 0,
     rings: {
       mercury: {
@@ -221,8 +221,8 @@ export function createNewOrreryRun(
       prime_ignition: false,
     },
     crucible: {
-      stellarFlux: hasStarSeed ? 40 : 0,
-      totalFluxRun: hasStarSeed ? 40 : 0,
+      stellarFlux: hasStarSeed ? 32 : 0,
+      totalFluxRun: hasStarSeed ? 32 : 0,
       chambers: {
         fusion: 0,
         dilation: 0,
@@ -272,7 +272,7 @@ export function getCrucibleChamberCost(
   const lv = state.crucible.chambers[chamberId];
   const flux = Math.floor(def.baseFluxCost * Math.pow(def.costGrowth, lv));
   const aether =
-    chamberId === 'crystallizer' && lv >= 4 ? Math.floor((lv - 3) * 2) : 0;
+    chamberId === 'crystallizer' && lv >= 3 ? Math.floor((lv - 2) * 3) : 0;
   return { flux, aether };
 }
 
@@ -280,14 +280,14 @@ export function getFluxMultiplier(
   state: OrreryRunState,
   meta: OrreryMetaState,
 ): number {
-  let mult = 1 + state.crucible.chambers.crystallizer * 0.25;
-  if (meta.ascensionNodes.aether_fountain) mult *= 3.0;
-  if (state.crucible.supernovaSecondsLeft > 0) mult *= 2.5;
+  let mult = 1 + state.crucible.chambers.crystallizer * 0.15;
+  if (meta.ascensionNodes.aether_fountain) mult *= 2.0;
+  if (state.crucible.supernovaSecondsLeft > 0) mult *= 1.8;
   return mult;
 }
 
 export function getSupernovaMaxCooldown(state: OrreryRunState): number {
-  return Math.max(12, 34 - state.crucible.chambers.dilation * 1.8);
+  return Math.max(26, 58 - state.crucible.chambers.dilation * 2.0);
 }
 
 export function triggerSupernovaPulse(
@@ -310,12 +310,12 @@ export function triggerSupernovaPulse(
     alignedPlanets++;
   }
 
-  const tensionBonus = 4;
+  const tensionBonus = 3;
   state.springTensionSec = Math.min(
     state.maxSpringTensionSec,
     state.springTensionSec + tensionBonus,
   );
-  state.impulseBoost = Math.min(2.1, state.impulseBoost + 0.85);
+  state.impulseBoost = Math.min(1.8, state.impulseBoost + 0.65);
   state.luminancePerSec = estimateLuminancePerSec(state, meta);
 
   return { alignedPlanets, tensionBonus };
@@ -405,8 +405,8 @@ export function getModulePowerScale(
   meta: OrreryMetaState,
 ): number {
   let scale = 1;
-  if (state.directives.quadrant_unlock_8) scale *= 1.25;
-  if (meta.ascensionNodes.cosmic_architect) scale *= 1.75;
+  if (state.directives.quadrant_unlock_8) scale *= 1.15;
+  if (meta.ascensionNodes.cosmic_architect) scale *= 1.3;
   return scale;
 }
 
@@ -421,25 +421,25 @@ export function getGlobalLuminanceMultiplier(
   meta: OrreryMetaState,
 ): number {
   let mult = 1;
-  // Unspent Stardust passive: +25% each
-  mult *= 1 + meta.stardust * 0.25;
+  // Unspent Stardust passive: +12% each (so spending Stardust on Constellation nodes is always net-positive)
+  mult *= 1 + meta.stardust * 0.12;
   // Unlocked Horological Achievements: +12% each
   mult *= 1 + getUnlockedAchievementCount(meta) * 0.12;
-  // Alchemical Crucible Solar Fusion exponential multiplier: x1.32^Lv
+  // Alchemical Crucible Solar Fusion exponential multiplier: x1.18^Lv
   if (state.crucible.chambers.fusion > 0) {
-    mult *= Math.pow(1.32, state.crucible.chambers.fusion);
+    mult *= Math.pow(1.18, state.crucible.chambers.fusion);
   }
-  if (state.directives.meridian_chime) mult *= 2.0;
+  if (state.directives.meridian_chime) mult *= 1.6;
   if (
     state.directives.quadrant_unlock_12 &&
     getInstalledSlotCount(state) === TOTAL_SLOTS
   ) {
-    mult *= 3.0;
+    mult *= 2.0;
   }
-  if (meta.ascensionNodes.cosmic_architect) mult *= 4.0;
+  if (meta.ascensionNodes.cosmic_architect) mult *= 2.5;
   mult *= 1 + state.harmonicOvertoneBonus;
-  if (state.frenzySecondsLeft > 0) mult *= 3.0;
-  if (state.crucible.supernovaSecondsLeft > 0) mult *= 2.5;
+  if (state.frenzySecondsLeft > 0) mult *= 2.5;
+  if (state.crucible.supernovaSecondsLeft > 0) mult *= 2.0;
   if (state.primeIgnited) mult *= 2.5;
   return mult;
 }
@@ -449,7 +449,7 @@ export function getRingMilestoneMultiplier(
   meta: OrreryMetaState,
 ): { mult: number; nextLevel: number | null; nextMult: number | null } {
   let mult = 1;
-  const bonusScale = meta.ascensionNodes.golden_ratio ? 1.5 : 1.0;
+  const bonusScale = meta.ascensionNodes.golden_ratio ? 1.15 : 1.0;
   let nextLevel: number | null = null;
   let nextMult: number | null = null;
 
@@ -471,7 +471,7 @@ export function getSingleLevelCostAt(
 ): number {
   const def = RINGS_BY_ID[ringId];
   const growth = meta.ascensionNodes.golden_ratio
-    ? 1 + (def.costGrowth - 1) * 0.84
+    ? 1 + (def.costGrowth - 1) * 0.9
     : def.costGrowth;
   return Math.floor(def.baseUpgradeCost * Math.pow(growth, currentLevel - 1));
 }
@@ -583,21 +583,21 @@ export function getGlobalSpeedMultiplier(
   for (let i = 0; i < TOTAL_SLOTS; i++) {
     const mod = state.slots[i];
     if (!mod || mod.typeId !== 'mainspring') continue;
-    let boost = 0.16 * mod.tier * modScale;
+    let boost = 0.09 * mod.tier * modScale;
     const [left, right] = getAdjacentSlots(i);
     if (
       state.slots[left]?.typeId === 'chrono' ||
       state.slots[right]?.typeId === 'chrono'
     ) {
-      boost *= 1.35;
+      boost *= 1.2;
     }
     mainspringBonus += boost;
   }
 
-  const dilationScale = 1 + state.crucible.chambers.dilation * 0.09;
+  const dilationScale = 1 + state.crucible.chambers.dilation * 0.06;
   let speed =
     (1 + mainspringBonus) * (1 + state.impulseBoost) * dilationScale;
-  if (meta.ascensionNodes.cosmic_architect) speed *= 1.35;
+  if (meta.ascensionNodes.cosmic_architect) speed *= 1.2;
   return speed;
 }
 
@@ -609,7 +609,7 @@ export function getRingAngularVelocity(
   const def = RINGS_BY_ID[ringId];
   const ring = state.rings[ringId];
   if (!ring.unlocked) return 0;
-  const levelSpeedScale = 1 + Math.min(0.6, (ring.level - 1) * 0.008);
+  const levelSpeedScale = 1 + Math.min(0.45, (ring.level - 1) * 0.006);
   const gearSpeed =
     ring.gearMode === 'blitz'
       ? 1.38
@@ -633,39 +633,39 @@ export function getSyzygyWindowRad(
   let lensRad = 0;
   for (const mod of state.slots) {
     if (mod?.typeId === 'lens') {
-      lensRad += 0.045 * mod.tier * modScale;
+      lensRad += 0.031 * mod.tier * modScale;
     }
   }
-  let win = 0.27 + lensRad;
-  if (state.impulseBoost > 0.5) win += 0.06;
-  if (state.crucible.supernovaSecondsLeft > 0) win += 0.12;
-  if (meta.ascensionNodes.wide_meridian) win *= 1.55;
+  let win = 0.24 + lensRad;
+  if (state.impulseBoost > 0.5) win += 0.05;
+  if (state.crucible.supernovaSecondsLeft > 0) win += 0.08;
+  if (meta.ascensionNodes.wide_meridian) win *= 1.4;
   if (ringId && state.rings[ringId].gearMode === 'syzygy') {
     win *= 1.35;
   }
-  return Math.min(1.18, win);
+  return Math.min(1.02, win);
 }
 
 export function computeMaxSpringTension(
   state: OrreryRunState,
   meta: OrreryMetaState,
 ): number {
-  const base = meta.ascensionNodes.perpetual_spring ? 900 : 360;
+  const base = meta.ascensionNodes.perpetual_spring ? 600 : 240;
   const modScale = getModulePowerScale(state, meta);
   let extra = 0;
   for (const mod of state.slots) {
     if (mod?.typeId === 'chrono') {
-      extra += Math.round(180 * mod.tier * modScale);
+      extra += Math.round(100 * mod.tier * modScale);
     }
   }
   return base + extra;
 }
 
 export function computeMaxResonatorCharges(state: OrreryRunState): number {
-  let base = 10;
+  let base = 6;
   for (const mod of state.slots) {
     if (mod?.typeId === 'resonator') {
-      base += 6 * mod.tier;
+      base += 3 * mod.tier;
     }
   }
   return base;
@@ -692,20 +692,20 @@ export function computeSyzygyMultiplier(
 ): number {
   if (bodyCount < 2) return 1;
   const baseTable: Record<number, number> = {
-    2: 2.6,
+    2: 2.2,
     3: 9.0,
-    4: 38.0,
-    5: 180.0,
+    4: 20.0,
+    5: 45.0,
   };
-  let mult = baseTable[Math.min(5, bodyCount)] ?? 180;
+  let mult = baseTable[Math.min(5, bodyCount)] ?? 45;
   if (state.directives.syzygy_cascade) {
-    mult *= Math.pow(1.85, bodyCount - 1);
+    mult *= Math.pow(1.28, bodyCount - 1);
   }
   if (resonatorCharges > 0) {
-    mult *= 1 + resonatorCharges * 0.28;
+    mult *= 1 + resonatorCharges * 0.1;
   }
   if (state.crucible.chambers.crystallizer > 0) {
-    mult *= 1 + state.crucible.chambers.crystallizer * 0.18;
+    mult *= 1 + state.crucible.chambers.crystallizer * 0.1;
   }
   return mult;
 }
@@ -717,11 +717,11 @@ export function getModuleInstallCost(
   const def = MODULES_BY_ID[typeId];
   const existingCount = state.slots.filter((m) => m?.typeId === typeId).length;
   const lum = Math.floor(
-    def.baseCostLuminance * Math.pow(1.65, existingCount),
+    def.baseCostLuminance * Math.pow(1.85, existingCount),
   );
   const aeth =
     def.baseCostAether > 0
-      ? Math.floor(def.baseCostAether * Math.pow(1.4, existingCount))
+      ? Math.floor(def.baseCostAether * Math.pow(1.5, existingCount))
       : 0;
   return { luminance: lum, aether: aeth };
 }
@@ -731,13 +731,13 @@ export function getModuleUpgradeCost(module: InstalledModule): {
   aether: number;
 } {
   const def = MODULES_BY_ID[module.typeId];
-  const lum = Math.floor(def.baseCostLuminance * Math.pow(3.4, module.tier));
+  const lum = Math.floor(def.baseCostLuminance * Math.pow(4.2, module.tier));
   const aeth =
-    module.tier >= 3 || def.baseCostAether > 0
+    module.tier >= 2 || def.baseCostAether > 0
       ? Math.max(
           1,
           Math.floor(
-            (def.baseCostAether + 2) * Math.pow(1.8, module.tier - 1),
+            (def.baseCostAether + 2) * Math.pow(1.9, module.tier - 1),
           ),
         )
       : 0;
@@ -755,19 +755,19 @@ export function estimateLuminancePerSec(
   for (let i = 0; i < TOTAL_SLOTS; i++) {
     const mod = state.slots[i];
     if (!mod || mod.typeId !== 'prism') continue;
-    let frac = (0.4 + 0.22 * (mod.tier - 1)) * modScale;
+    let frac = (0.24 + 0.12 * (mod.tier - 1)) * modScale;
     const [left, right] = getAdjacentSlots(i);
     if (
       state.slots[left]?.typeId === 'prism' ||
       state.slots[left]?.typeId === 'resonator'
     ) {
-      frac *= 1.35;
+      frac *= 1.2;
     }
     if (
       state.slots[right]?.typeId === 'prism' ||
       state.slots[right]?.typeId === 'resonator'
     ) {
-      frac *= 1.35;
+      frac *= 1.2;
     }
     prismEchoFractionPerOrbit += frac;
   }
@@ -897,17 +897,31 @@ export function catchGoldenComet(
   if (!state.comet.active) return null;
   state.comet.active = false;
   state.comet.progress = 0;
-  state.nextCometSpawnSec = 24 + Math.random() * 12;
+  state.nextCometSpawnSec = 32 + Math.random() * 14;
   state.cometsCaughtRun += 1;
 
+  // Strip temporary spikes (Overdrive, Frenzy, Supernova, Impulse) so Comets award steady unbuffed production
+  const prevOverdrive = state.overdriveSpeed;
+  const prevFrenzy = state.frenzySecondsLeft;
+  const prevSuper = state.crucible.supernovaSecondsLeft;
+  const prevImpulse = state.impulseBoost;
+  state.overdriveSpeed = 1;
+  state.frenzySecondsLeft = 0;
+  state.crucible.supernovaSecondsLeft = 0;
+  state.impulseBoost = 0;
+  const steadyRate = Math.max(4, estimateLuminancePerSec(state, meta));
+  state.overdriveSpeed = prevOverdrive;
+  state.frenzySecondsLeft = prevFrenzy;
+  state.crucible.supernovaSecondsLeft = prevSuper;
+  state.impulseBoost = prevImpulse;
+
   const potency = isAutoCapture ? 0.65 : 1.0;
-  const baseRate = Math.max(6, estimateLuminancePerSec(state, meta));
-  const gainedLuminance = Math.floor(baseRate * 8 * potency);
+  const gainedLuminance = Math.floor(steadyRate * 8 * potency);
   const frenzyAddedSec = isAutoCapture ? 8 : 15;
-  const gainedAether = state.era >= 2 && !isAutoCapture ? 1 : 0;
+  const gainedAether = state.era >= 3 && !isAutoCapture ? 1 : 0;
   const gainedFlux = Math.max(
-    4,
-    Math.round(16 * potency * getFluxMultiplier(state, meta)),
+    2,
+    Math.round(9 * potency * getFluxMultiplier(state, meta)),
   );
 
   state.luminance += gainedLuminance;
@@ -917,7 +931,7 @@ export function catchGoldenComet(
   state.crucible.stellarFlux += gainedFlux;
   state.crucible.totalFluxRun += gainedFlux;
   state.frenzySecondsLeft = Math.min(
-    35,
+    30,
     state.frenzySecondsLeft + frenzyAddedSec,
   );
   evaluateEraUnlocks(state);
@@ -1170,6 +1184,28 @@ function executeAutomatorAction(
     }
 
     case 'buy_best_roi_ring': {
+      // Do not drain Luminance on minor levels when within ~15s of unlocking the next orbital ring or Prime Ignition
+      for (let i = 1; i < ORBITAL_RINGS.length; i++) {
+        const prev = ORBITAL_RINGS[i - 1];
+        const cur = ORBITAL_RINGS[i];
+        if (state.rings[prev.id].unlocked && !state.rings[cur.id].unlocked) {
+          if (
+            state.luminance >= cur.unlockCost * 0.35 &&
+            state.luminance + state.luminancePerSec * 16 >= cur.unlockCost
+          ) {
+            return { executed: false };
+          }
+          break;
+        }
+      }
+      if (
+        state.era >= 4 &&
+        !state.primeIgnited &&
+        state.luminance >= 220_000_000_000 &&
+        state.luminance + state.luminancePerSec * 22 >= 1_000_000_000_000
+      ) {
+        return { executed: false };
+      }
       const target = findBestRoiRing(state, meta, budget);
       if (!target) return { executed: false };
       return { executed: upgradeOrUnlockRing(state, meta, target, '1') };
@@ -1371,13 +1407,14 @@ export function stepOrrery(
   // Passive Aether synthesis from Crystallizer chamber (Lv.2+)
   const crystLv = state.crucible.chambers.crystallizer;
   if (crystLv >= 2) {
-    const synthPeriod = Math.max(6, 26 - crystLv * 2.2);
-    state.crucible.aetherSynthProgress += (dt * state.overdriveSpeed) / synthPeriod;
+    const synthPeriod = Math.max(9, 30 - crystLv * 2.2);
+    state.crucible.aetherSynthProgress +=
+      (dt * Math.sqrt(state.overdriveSpeed)) / synthPeriod;
     if (state.crucible.aetherSynthProgress >= 1) {
       const batches = Math.floor(state.crucible.aetherSynthProgress);
       state.crucible.aetherSynthProgress -= batches;
-      const aetherMult = meta.ascensionNodes.aether_fountain ? 3 : 1;
-      const gained = batches * aetherMult;
+      const aetherMult = meta.ascensionNodes.aether_fountain ? 2.0 : 1;
+      const gained = Math.max(1, Math.round(batches * aetherMult));
       state.aether += gained;
       state.totalAetherRun += gained;
     }
@@ -1392,7 +1429,7 @@ export function stepOrrery(
     } else if (state.comet.progress >= 1) {
       state.comet.active = false;
       state.comet.progress = 0;
-      state.nextCometSpawnSec = 24 + Math.random() * 12;
+      state.nextCometSpawnSec = 36 + Math.random() * 14;
     }
   } else {
     state.nextCometSpawnSec -= dt;
@@ -1413,21 +1450,21 @@ export function stepOrrery(
   let chronoRegenPerSec = 0;
   for (const mod of state.slots) {
     if (mod?.typeId === 'chrono') {
-      chronoRegenPerSec += 0.4 * mod.tier * modScale;
+      chronoRegenPerSec += 0.2 * mod.tier * modScale;
     }
   }
-  const dilationRegenMult = 1 + state.crucible.chambers.dilation * 0.22;
+  const dilationRegenMult = 1 + state.crucible.chambers.dilation * 0.15;
   const passiveRegen =
-    ((state.overdriveSpeed === 1 ? 0.24 : 0) + chronoRegenPerSec) *
+    ((state.overdriveSpeed === 1 ? 0.16 : 0) + chronoRegenPerSec) *
     dilationRegenMult;
-  const springMult = meta.ascensionNodes.perpetual_spring ? 2.5 : 1.0;
+  const springMult = meta.ascensionNodes.perpetual_spring ? 1.8 : 1.0;
   state.springTensionSec = Math.min(
     state.maxSpringTensionSec,
     state.springTensionSec + passiveRegen * springMult * dt,
   );
 
   if (state.overdriveSpeed > 1) {
-    const drain = (state.overdriveSpeed - 1) * 0.55 * dt;
+    const drain = (state.overdriveSpeed - 1) * 0.85 * dt;
     if (state.springTensionSec >= drain) {
       state.springTensionSec -= drain;
     } else {
@@ -1441,7 +1478,7 @@ export function stepOrrery(
 
   // Decay manual impulse boost smoothly
   if (state.impulseBoost > 0) {
-    state.impulseBoost = Math.max(0, state.impulseBoost - dt * 0.52);
+    state.impulseBoost = Math.max(0, state.impulseBoost - dt * 0.55);
   }
 
   // Auto-impulse pendulum
@@ -1449,7 +1486,7 @@ export function stepOrrery(
     state.autoImpulseTimer += simDt;
     if (state.autoImpulseTimer >= 2.4) {
       state.autoImpulseTimer %= 2.4;
-      state.impulseBoost = Math.min(1.65, state.impulseBoost + 0.45);
+      state.impulseBoost = Math.min(1.4, state.impulseBoost + 0.38);
     }
   }
 
@@ -1459,8 +1496,8 @@ export function stepOrrery(
     if (mod?.typeId === 'lens') lensCount += mod.tier;
   }
   const baseCoupling =
-    (state.directives.phase_coupler ? 0.16 : 0.03) +
-    lensCount * 0.045 * modScale +
+    (state.directives.phase_coupler ? 0.15 : 0.025) +
+    lensCount * 0.04 * modScale +
     (state.crucible.supernovaSecondsLeft > 0 ? 0.22 : 0);
 
   const leadAngle = state.rings.mercury.angle;
@@ -1475,7 +1512,7 @@ export function stepOrrery(
       lensCount === 0 &&
       r.gearMode !== 'syzygy' &&
       state.crucible.supernovaSecondsLeft <= 0
-        ? 0.03
+        ? 0.025
         : 0);
     if (strength <= 0) continue;
 
@@ -1489,7 +1526,7 @@ export function stepOrrery(
 
   // Advance orbital angles & detect Meridian + Zodiac sector crossings
   const crossedRings: OrbitalRingId[] = [];
-  const aetherMult = meta.ascensionNodes.aether_fountain ? 3.0 : 1.0;
+  const aetherMult = meta.ascensionNodes.aether_fountain ? 2.0 : 1.0;
   const fluxMult = getFluxMultiplier(state, meta);
 
   for (const ringId of RING_ORDER) {
@@ -1514,19 +1551,19 @@ export function stepOrrery(
       if (!mod) continue;
 
       if (mod.typeId === 'prism') {
-        let frac = (0.4 + 0.22 * (mod.tier - 1)) * modScale * blitzPotency;
+        let frac = (0.24 + 0.12 * (mod.tier - 1)) * modScale * blitzPotency;
         const [left, right] = getAdjacentSlots(slotIdx);
         if (
           state.slots[left]?.typeId === 'prism' ||
           state.slots[left]?.typeId === 'resonator'
         ) {
-          frac *= 1.35;
+          frac *= 1.2;
         }
         if (
           state.slots[right]?.typeId === 'prism' ||
           state.slots[right]?.typeId === 'resonator'
         ) {
-          frac *= 1.35;
+          frac *= 1.2;
         }
         const bonusLum = baseStrike * frac;
         state.luminance += bonusLum;
@@ -1557,8 +1594,8 @@ export function stepOrrery(
           state.slots[left]?.typeId === 'prism' ||
           state.slots[right]?.typeId === 'prism';
         const chance = Math.min(
-          0.95,
-          0.18 * mod.tier * blitzPotency * (adjPrism ? 2.0 : 1.0),
+          0.75,
+          0.1 * mod.tier * blitzPotency * (adjPrism ? 2.0 : 1.0),
         );
         if (Math.random() < chance) {
           const gainedAether = Math.max(1, Math.round(aetherMult));
@@ -1587,7 +1624,7 @@ export function stepOrrery(
 
       const gearFlux = ring.gearMode === 'harmonic' ? 1.35 : 1.0;
       const fluxGain =
-        (1 + def.index * 0.85) * wraps * fluxMult * gearFlux;
+        (0.75 + def.index * 0.55) * wraps * fluxMult * gearFlux;
       state.crucible.stellarFlux += fluxGain;
       state.crucible.totalFluxRun += fluxGain;
 
@@ -1619,30 +1656,34 @@ export function stepOrrery(
       state.luminance += syzPayout;
       state.totalLuminanceRun += syzPayout;
 
-      const syzFlux = bodyCount * bodyCount * 2.5 * fluxMult;
+      const syzFlux = bodyCount * bodyCount * 1.4 * fluxMult;
       state.crucible.stellarFlux += syzFlux;
       state.crucible.totalFluxRun += syzFlux;
 
       let condenserMult = 1;
       for (const mod of state.slots) {
         if (mod?.typeId === 'condenser') {
-          condenserMult += 0.45 * mod.tier;
+          condenserMult += 0.25 * mod.tier;
         }
       }
       let aetherEarned = 0;
-      if (state.era >= 3 || bodyCount >= 3) {
-        const baseAeth =
-          bodyCount - 1 + (state.directives.syzygy_cascade ? bodyCount : 0);
+      const rawBaseAeth =
+        (bodyCount >= 3 ? bodyCount - 2 : 0) +
+        (state.directives.syzygy_cascade ? 1 : 0);
+      if (rawBaseAeth > 0) {
         aetherEarned = Math.max(
           1,
-          Math.round(baseAeth * condenserMult * aetherMult),
+          Math.round(rawBaseAeth * condenserMult * aetherMult),
         );
         state.aether += aetherEarned;
         state.totalAetherRun += aetherEarned;
       }
 
       if (meta.ascensionNodes.harmonic_overtone) {
-        state.harmonicOvertoneBonus += 0.025 * (bodyCount - 1);
+        state.harmonicOvertoneBonus = Math.min(
+          1.5,
+          state.harmonicOvertoneBonus + 0.006 * (bodyCount - 1),
+        );
       }
 
       state.totalSyzygies += 1;
@@ -1712,9 +1753,9 @@ export function triggerManualImpulse(
   state.totalImpulses += 1;
   state.impulseBoost = Math.min(1.85, state.impulseBoost + 0.65);
 
-  const perfectWin = meta.ascensionNodes.wide_meridian ? 0.44 : 0.28;
+  const perfectWin = meta.ascensionNodes.wide_meridian ? 0.42 : 0.28;
   let nearMeridianCount = 0;
-  let strongestStrike = 4;
+  let strongestStrike = 1.5;
 
   for (const rid of RING_ORDER) {
     const r = state.rings[rid];
@@ -1729,7 +1770,7 @@ export function triggerManualImpulse(
   const isPerfect = nearMeridianCount > 0;
   const critMult = isPerfect
     ? meta.ascensionNodes.wide_meridian
-      ? 5.0
+      ? 4.2
       : 3.0
     : 1.0;
 
@@ -1737,7 +1778,7 @@ export function triggerManualImpulse(
     state.perfectImpulses += 1;
     state.springTensionSec = Math.min(
       state.maxSpringTensionSec,
-      state.springTensionSec + 2.0,
+      state.springTensionSec + 1.5,
     );
     for (const rid of RING_ORDER) {
       const r = state.rings[rid];
@@ -1753,8 +1794,8 @@ export function triggerManualImpulse(
     }
   }
 
-  const gained = Math.max(2, strongestStrike * 0.55 * critMult);
-  const gainedFlux = (isPerfect ? 3.5 : 0.8) * getFluxMultiplier(state, meta);
+  const gained = Math.max(1.5, strongestStrike * 0.5 * critMult);
+  const gainedFlux = (isPerfect ? 1.8 : 0.45) * getFluxMultiplier(state, meta);
 
   state.luminance += gained;
   state.totalLuminanceRun += gained;
@@ -1938,13 +1979,13 @@ export function setOverdriveSpeed(
   return true;
 }
 
-export const ASCENSION_MIN_LUMINANCE = 150_000;
+export const ASCENSION_MIN_LUMINANCE = 1_500_000;
 
 export function calculatePendingStardust(state: OrreryRunState): number {
   if (state.totalLuminanceRun < ASCENSION_MIN_LUMINANCE) return 0;
   const raw = Math.pow(
     state.totalLuminanceRun / ASCENSION_MIN_LUMINANCE,
-    0.34,
+    0.305,
   );
   const primeBonus = state.primeIgnited ? 8 : 0;
   return Math.max(1, Math.floor(raw)) + primeBonus;
@@ -1970,6 +2011,7 @@ export function performAstrolabeAscension(
 export function unlockAscensionNode(
   meta: OrreryMetaState,
   nodeId: AscensionNodeId,
+  currentRun?: OrreryRunState,
 ): boolean {
   if (meta.ascensionNodes[nodeId]) return false;
   const def = ASCENSION_NODES_BY_ID[nodeId];
@@ -1978,6 +2020,38 @@ export function unlockAscensionNode(
 
   meta.stardust -= def.costStardust;
   meta.ascensionNodes[nodeId] = true;
+
+  if (currentRun) {
+    if (nodeId === 'star_seed') {
+      if (!currentRun.rings.venus.unlocked) {
+        currentRun.rings.venus.unlocked = true;
+        currentRun.rings.venus.level = Math.max(1, currentRun.rings.venus.level);
+      }
+      if (currentRun.totalLuminanceRun < 900) {
+        const delta = 900 - currentRun.totalLuminanceRun;
+        currentRun.luminance += delta;
+        currentRun.totalLuminanceRun += delta;
+      }
+      if (currentRun.crucible.totalFluxRun < 32) {
+        const fluxDelta = 32 - currentRun.crucible.totalFluxRun;
+        currentRun.crucible.stellarFlux += fluxDelta;
+        currentRun.crucible.totalFluxRun += fluxDelta;
+      }
+      currentRun.era = Math.max(2, currentRun.era) as EraIndex;
+      currentRun.springTensionSec = Math.min(
+        computeMaxSpringTension(currentRun, meta),
+        Math.max(40, currentRun.springTensionSec),
+      );
+    } else if (nodeId === 'aether_fountain') {
+      currentRun.directives.quadrant_unlock_8 = true;
+    } else if (nodeId === 'cosmic_architect') {
+      currentRun.directives.auto_architect = true;
+      currentRun.automator.enabled = true;
+      currentRun.autoUpgradeEnabled = true;
+    }
+    currentRun.maxSpringTensionSec = computeMaxSpringTension(currentRun, meta);
+    currentRun.luminancePerSec = estimateLuminancePerSec(currentRun, meta);
+  }
   return true;
 }
 
@@ -2006,7 +2080,7 @@ export function applyOfflineProgress(
 
   const unlockedRings = getUnlockedRingCount(state);
   const fluxGained = Math.floor(
-    (clamped / 6) * unlockedRings * getFluxMultiplier(state, meta),
+    (clamped / 8) * unlockedRings * getFluxMultiplier(state, meta),
   );
   state.crucible.stellarFlux += fluxGained;
   state.crucible.totalFluxRun += fluxGained;
@@ -2023,9 +2097,9 @@ export function applyOfflineProgress(
         : 0;
     const totalAetherPower = condenserTiers + crystBonus;
     if (totalAetherPower > 0) {
-      const aetherMult = meta.ascensionNodes.aether_fountain ? 3 : 1;
+      const aetherMult = meta.ascensionNodes.aether_fountain ? 2.0 : 1;
       aetherGained = Math.floor(
-        (clamped / 42) * totalAetherPower * aetherMult,
+        (clamped / 50) * totalAetherPower * aetherMult,
       );
       state.aether += aetherGained;
       state.totalAetherRun += aetherGained;
@@ -2034,8 +2108,8 @@ export function applyOfflineProgress(
 
   state.maxSpringTensionSec = computeMaxSpringTension(state, meta);
   const springRate =
-    (meta.ascensionNodes.perpetual_spring ? 0.9 : 0.45) *
-    (1 + state.crucible.chambers.dilation * 0.22);
+    (meta.ascensionNodes.perpetual_spring ? 0.54 : 0.3) *
+    (1 + state.crucible.chambers.dilation * 0.15);
   const beforeTension = state.springTensionSec;
   state.springTensionSec = Math.min(
     state.maxSpringTensionSec,
