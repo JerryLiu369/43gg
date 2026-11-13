@@ -230,7 +230,8 @@ function verifyBuiltDist() {
 }
 
 function runBin(cmd, args, cwd) {
-  execFileSync(cmd, args, { cwd, stdio: 'inherit' });
+  const windowsCmd = process.platform === 'win32' && fs.existsSync(`${cmd}.cmd`) ? `${cmd}.cmd` : cmd;
+  execFileSync(windowsCmd, args, { cwd, stdio: 'inherit', shell: windowsCmd !== cmd });
 }
 
 function cmdCheck(argv) {

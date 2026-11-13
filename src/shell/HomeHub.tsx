@@ -372,6 +372,38 @@ const AppCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) => {
     );
   }
 
+  if (appId === 'moon-mirror') {
+    return (
+      <svg
+        viewBox="0 0 320 180"
+        className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+        fill="none"
+        aria-hidden="true"
+      >
+        <PlateRegistrationMarks />
+        <rect x="48" y="22" width="224" height="136" rx="8" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.5" />
+        <circle cx="160" cy="72" r="31" fill="#F1E8CC" stroke="#1C1917" strokeWidth="1.4" />
+        <path d="M143 59C151 53 164 53 171 58M145 84C155 89 168 87 175 80" stroke="#C9BD99" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M67 127H139L183 83H246" stroke="#0F766E" strokeWidth="7" strokeOpacity="0.08" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M67 127H139L183 83H246" stroke="#0F766E" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+        <g transform="translate(161 105) rotate(-45)">
+          <circle r="23" fill="#FAF8F4" stroke="#78716C" strokeWidth="1.2" />
+          <line x1="-17" y1="0" x2="17" y2="0" stroke="#1C1917" strokeWidth="5" strokeLinecap="round" />
+          <line x1="-17" y1="-1" x2="17" y2="-1" stroke="#D8E5DF" strokeWidth="2" strokeLinecap="round" />
+          <circle r="3" fill="#C2410C" />
+        </g>
+        <g transform="translate(247 83)" stroke="#C2410C" strokeWidth="1.3">
+          <ellipse cx="0" cy="-10" rx="5" ry="10" />
+          <ellipse cx="0" cy="-10" rx="5" ry="10" transform="rotate(60)" />
+          <ellipse cx="0" cy="-10" rx="5" ry="10" transform="rotate(120)" />
+          <circle r="4" fill="#C2410C" stroke="none" />
+        </g>
+        <circle cx="67" cy="127" r="5" fill="#C2410C" />
+        <path d="M72 143Q117 135 158 143T249 141" stroke="#CFC7B8" strokeWidth="1.1" />
+      </svg>
+    );
+  }
+
   if (appId === 'chrono-stage') {
     return (
       <svg
