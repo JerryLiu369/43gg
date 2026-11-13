@@ -7,6 +7,7 @@
 - [ ] 本地 `npm run apps:check` 通过
 - [ ] 涉及界面：已在桌面和手机竖屏（390×844）实际打开检查，截图附在下方
 - [ ] 没有修改或删除已发布的应用 id、存档键名（见 `docs/compatibility.md`），或已在上方说明迁移方案
-- [ ] 新游戏：已登记到 `registry.ts`、`PUBLISHED_IDS` 和 README 游戏列表
+- [ ] 新游戏：已追加到 `registry.ts` 末尾（含 `addedAt`）、`PUBLISHED_IDS` 和 README 游戏列表
+- [ ] 新游戏：已对照现有游戏和进行中的 PR，品类、核心玩法和题材没有撞车（差异写在上方）
 
 ## 截图

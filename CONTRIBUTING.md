@@ -24,8 +24,10 @@ npm run apps:check
 
 ## 新增一款游戏
 
+动手前先看看大厅里已有哪些游戏，再用 `gh pr list` 看看别人正在做什么，尽量做一款玩法和题材都不一样的原创游戏。
+
 1. 在 `src/apps/<id>/` 下实现游戏，`id` 只用小写字母、数字和连字符。推荐结构：`types.ts` 类型、`content.ts` 配置、`engine.ts` 纯逻辑、`engine.test.ts` 单测、`storage.ts` 存档、`audio.ts` 音效、`<Name>App.tsx` 视图（默认导出）。
-2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` 中添加一条，`kind: 'react-lazy'`，`loader` 指向视图组件。必须填写 `author`（你的 GitHub 用户名或署名）、`model`（开发时主要用的 AI 模型，多个用 ` + ` 连接；纯手写就填 `无`）和 `highlights`（2–3 个简短卖点，如 `['四步实战指引', '三档难度', '触屏可玩']`），它们会显示在大厅卡片上，是你作品的展示位。大厅的分类、搜索和封面会自动生成；需要专属封面时，在 `src/shell/HomeHub.tsx` 的 `AppCoverGraphic` 中添加。
+2. 在 `src/apps/registry.ts` 的 `APP_REGISTRY` **末尾**添加一条（填写上架日期 `addedAt: 'YYYY-MM-DD'`；大厅默认每天随机排列，放在前面不会更靠前），`kind: 'react-lazy'`，`loader` 指向视图组件。必须填写 `author`（你的 GitHub 用户名或署名）、`model`（开发时主要用的 AI 模型，多个用 ` + ` 连接；纯手写就填 `无`）和 `highlights`（2–3 个简短卖点，如 `['四步实战指引', '三档难度', '触屏可玩']`），它们会显示在大厅卡片上，是你作品的展示位。大厅的分类、搜索和封面会自动生成；需要专属封面时，在 `src/shell/HomeHub.tsx` 的 `AppCoverGraphic` 中添加。
 3. 组件卸载时完整清理：动画帧、定时器、全局事件监听、WebGL 资源、`AudioContext`。
 4. 存档键名按 [`docs/compatibility.md`](docs/compatibility.md) 的规则命名，读到损坏数据时安全回退。
 5. 游戏要求：内置可跳过的分步新手引导、至少三档难度（默认「标准」）、支持触屏操作。具体标准见 [`AGENTS.md`](AGENTS.md) 中的「游戏设计三大铁律」。
