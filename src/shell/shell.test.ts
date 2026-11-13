@@ -34,6 +34,10 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     assert.ok(app.techLabel.trim().length > 0);
     assert.ok(app.author.trim().length > 0, `${app.id} must credit an author`);
     assert.ok(app.model.trim().length > 0, `${app.id} must credit the model used`);
+    assert.ok(
+      app.highlights.length > 0 && app.highlights.every((item) => item.trim().length > 0),
+      `${app.id} must list at least one highlight`,
+    );
     assert.ok(app.tags.length > 0);
 
     const absSourceDir = path.join(REPO_ROOT, app.sourceDir);
@@ -224,6 +228,7 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
       description: '旋转棱镜引导双色光束点亮古碑。',
       author: 'tester',
       model: 'test-model',
+      highlights: ['测试'],
       techLabel: '光学解谜',
       tags: ['烧脑解谜', '关卡'],
       category: 'puzzle' as const,
@@ -238,6 +243,7 @@ test('filterWorkspaceApps scales across arbitrary N future games, categories, an
       description: '锻造六面点数触发连锁奇物。',
       author: 'tester',
       model: 'test-model',
+      highlights: ['测试'],
       techLabel: '骰子肉鸽',
       tags: ['地牢探索'],
       category: 'roguelike' as const,

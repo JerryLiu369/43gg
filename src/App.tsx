@@ -2,6 +2,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'reac
 import { ArrowLeft, RotateCw } from 'lucide-react';
 import { APP_REGISTRY, WorkspaceAppEntry, getAppById } from './apps/registry.ts';
 import { AppErrorBoundary } from './shell/AppErrorBoundary.tsx';
+import { withChunkRecovery } from './shell/chunkRecovery.ts';
 import { HomeHub } from './shell/HomeHub.tsx';
 import { IframeAppHost } from './shell/IframeAppHost.tsx';
 import { recordLastPlayedApp } from './shell/hubProgress.ts';
@@ -24,6 +25,14 @@ function readActiveAppIdFromWindow(): string | null {
   );
 }
 
+function safeSessionStorage(): Storage | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 const lazyComponentCache = new Map<
   string,
   React.LazyExoticComponent<React.ComponentType>
@@ -35,7 +44,12 @@ function getLazyAppComponent(
   if (!entry.loader) return null;
   let cached = lazyComponentCache.get(entry.id);
   if (!cached) {
-    cached = React.lazy(entry.loader);
+    cached = React.lazy(
+      withChunkRecovery(entry.loader, {
+        storage: safeSessionStorage(),
+        reload: () => window.location.reload(),
+      }),
+    );
     lazyComponentCache.set(entry.id, cached);
   }
   return cached;

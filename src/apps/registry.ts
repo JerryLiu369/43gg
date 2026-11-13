@@ -49,6 +49,11 @@ export interface WorkspaceAppEntry {
   author: string;
   /** AI model(s) used to build the game, credited on the Home Hub card, e.g. `Gemini 4 Carbon` */
   model: string;
+  /**
+   * Author-written selling points shown on the card footer (joined with " · "), e.g.
+   * `['四步实战指引', '三档难度', '触屏可玩']`. Keep it to 2–3 short items so it fits one line.
+   */
+  highlights: string[];
   /** Stack badge shown on the card */
   techLabel: string;
   /** Compact feature descriptors */
@@ -83,6 +88,7 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     description: '三尊青铜神机协同、中央璇玑内环 90° 扭转敌方弹道、水脉导电与地形连锁绝杀。',
     author: 'JerryLiu369',
     model: 'Gemini 4 Carbon',
+    highlights: ['四步实战指引', '三档难度', '键鼠 / 触屏双端'],
     techLabel: '沙盘战棋',
     tags: ['战棋策略'],
     category: 'strategy',
@@ -98,6 +104,7 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     description: '心眼慢镜刀路推演、击杀即刻一闪刷新、刹那弹反破甲与十二刀铭秘传。',
     author: 'JerryLiu369',
     model: 'Gemini 4 Carbon',
+    highlights: ['三步实战教学', '三档难度', '虚拟摇杆触屏操作'],
     techLabel: '瞬身动作',
     tags: ['剑戟动作'],
     category: 'action',
@@ -113,6 +120,7 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     description: '五曜子午交汇、十二星宫棱镜构筑、朔望连珠阶乘爆发与星盘转生。',
     author: 'JerryLiu369',
     model: 'Gemini 4 Carbon',
+    highlights: ['五步实战带教', '三维星盘手册', '桌面 / 触屏双端'],
     techLabel: '物理增量',
     tags: ['放置构筑'],
     category: 'incremental',
@@ -128,6 +136,7 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     description: '四乘五账本控盘、格子装修与三连升星构筑。',
     author: 'JerryLiu369',
     model: 'Gemini 4 Carbon',
+    highlights: ['四步实战带教', '多档难度', '全图鉴'],
     techLabel: '策略构筑',
     tags: ['桌面策略'],
     category: 'strategy',
@@ -143,6 +152,7 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     description: '六站世界赛段、WRC 锦标赛模式、四轮悬挂物理与手自一体序列排挡。',
     author: 'JerryLiu369',
     model: 'Gemini 4 Carbon',
+    highlights: ['四步领航带教', '路书图解', '三档难度'],
     techLabel: '3D 竞速',
     tags: ['拟真竞速'],
     category: 'racing',
@@ -179,6 +189,7 @@ export function filterWorkspaceApps(
       app.techLabel,
       app.author,
       app.model,
+      ...app.highlights,
       categoryLabel,
       ...app.tags,
     ]
