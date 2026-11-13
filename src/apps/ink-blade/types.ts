@@ -1,5 +1,20 @@
 export type GameScreenState = 'title' | 'playing' | 'paused' | 'gameover';
 
+export type InkBladeDifficulty = 'casual' | 'standard' | 'master';
+
+export interface InkBladeDifficultyDef {
+  id: InkBladeDifficulty;
+  label: string;
+  subtitle: string;
+  baseHp: number;
+  baseFocus: number;
+  windupScale: number;
+  enemySpeedScale: number;
+  scoreMult: number;
+  maxAttackTokens: number;
+  healOnWaveClear: boolean;
+}
+
 export type RunPhase =
   | 'fighting'
   | 'wave_clear_pause'
@@ -304,6 +319,7 @@ export interface InkBladeRunState {
   seed: number;
   rngState: number;
   nextUid: number;
+  difficulty: InkBladeDifficulty;
   isEndless: boolean;
   endlessLoop: number;
   phase: RunPhase;
@@ -361,4 +377,6 @@ export interface InkBladeSaveMeta {
   totalDeflects: number;
   totalVictories: number;
   muted: boolean;
+  tutorialCompleted: boolean;
+  preferredDifficulty: InkBladeDifficulty;
 }

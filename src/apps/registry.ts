@@ -42,6 +42,19 @@ export interface WorkspaceAppEntry {
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
   {
+    id: 'xuanji-breach',
+    title: '璇玑破阵',
+    subtitle: '青铜罗盘移星 · 全明牌立体沙盘战棋',
+    description: '三尊青铜神机协同、中央璇玑内环 90° 扭转敌方弹道、水脉导电与地形连锁绝杀。',
+    techLabel: '沙盘战棋',
+    tags: ['战棋策略'],
+    category: 'strategy',
+    accent: 'emerald',
+    kind: 'react-lazy',
+    loader: () => import('./xuanji-breach/XuanjiBreachApp.tsx'),
+    sourceDir: 'src/apps/xuanji-breach',
+  },
+  {
     id: 'ink-blade',
     title: '墨刃：一闪',
     subtitle: '水墨瞬身弹反剑戟动作坊',

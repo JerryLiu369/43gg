@@ -2,6 +2,7 @@ import {
   ARENA_H,
   ARENA_W,
   BOON_DEFS,
+  DIFFICULTY_DEFS,
   ENEMY_ARCHETYPES,
   STAGES,
 } from './content.ts';
@@ -10,6 +11,7 @@ import type {
   BoonId,
   EnemyArchetypeId,
   EnemyEntity,
+  InkBladeDifficulty,
   InkBladeRunState,
   PlayerInputFrame,
   PlayerState,
@@ -275,9 +277,17 @@ export function createEmptyEvents(): SimulationEvents {
   };
 }
 
-function createInitialPlayer(spawn: Vec2, boons: BoonId[] = [], prevHp?: number): PlayerState {
-  const maxHp = 5 + (boons.includes('crimson_siphon') ? 1 : 0);
-  const maxFocus = boons.includes('deep_mind') ? 140 : 100;
+function createInitialPlayer(
+  spawn: Vec2,
+  boons: BoonId[] = [],
+  prevHp?: number,
+  difficulty: InkBladeDifficulty = 'standard',
+): PlayerState {
+  const diffDef = DIFFICULTY_DEFS[difficulty];
+  const maxHp = diffDef.baseHp + (boons.includes('crimson_siphon') ? 1 : 0);
+  const maxFocus = boons.includes('deep_mind')
+    ? Math.round(diffDef.baseFocus * 1.4)
+    : diffDef.baseFocus;
   const maxSlashCooldown = boons.includes('wind_stride')
     ? BASE_SLASH_COOLDOWN * 0.72
     : BASE_SLASH_COOLDOWN;
@@ -388,8 +398,19 @@ export function spawnWaveEnemies(state: InkBladeRunState): void {
 
   for (const entry of waveTemplate) {
     const extraCount = state.isEndless ? Math.min(3, state.endlessLoop) : 0;
+    let baseCount = entry.count;
+    // Gentle warm-up in Stage 0 Wave 0 on casual/standard
+    if (
+      !state.isEndless &&
+      state.stageIndex === 0 &&
+      state.waveIndex === 0 &&
+      entry.archetype === 'ronin' &&
+      state.difficulty !== 'master'
+    ) {
+      baseCount = Math.max(2, baseCount - 1);
+    }
     const total =
-      entry.archetype === 'shogun_boss' ? entry.count : entry.count + extraCount;
+      entry.archetype === 'shogun_boss' ? entry.count : baseCount + extraCount;
     for (let i = 0; i < total; i++) {
       flatList.push(entry.archetype);
     }
@@ -434,6 +455,7 @@ export function createNewRun(
   startStageIndex = 0,
   isEndless = false,
   seed = Date.now() >>> 0,
+  difficulty: InkBladeDifficulty = 'standard',
 ): InkBladeRunState {
   const clampedStage = clamp(startStageIndex, 0, STAGES.length - 1);
   const stage = STAGES[clampedStage];
@@ -442,6 +464,7 @@ export function createNewRun(
     seed,
     rngState: (seed ^ 0x9e3779b9) >>> 0,
     nextUid: 1,
+    difficulty,
     isEndless,
     endlessLoop: isEndless ? 1 : 0,
     phase: 'fighting',
@@ -467,7 +490,7 @@ export function createNewRun(
     boons: [],
     pendingBoonChoices: [],
 
-    player: createInitialPlayer(stage.playerSpawn),
+    player: createInitialPlayer(stage.playerSpawn, [], undefined, difficulty),
     obstacles: cloneStageObstacles(stage),
     jars: cloneStageJars(stage),
     enemies: [],
@@ -684,7 +707,8 @@ function damageEnemy(
 
     const def = ENEMY_ARCHETYPES[enemy.archetype];
     const comboMult = 1 + Math.min(2.5, state.combo * 0.15);
-    state.score += Math.round(def.scoreValue * comboMult);
+    const diffMult = DIFFICULTY_DEFS[state.difficulty].scoreMult;
+    state.score += Math.round(def.scoreValue * comboMult * diffMult);
 
     events.decalCommands.push({
       kind: 'splatter',
@@ -1242,7 +1266,8 @@ function tryAcquireAttackToken(state: InkBladeRunState, enemy: EnemyEntity): boo
     enemy.hasAttackToken = true;
     return true;
   }
-  const limit = MAX_CONCURRENT_TOKENS + (state.isEndless ? 1 : 0);
+  const baseLimit = DIFFICULTY_DEFS[state.difficulty].maxAttackTokens;
+  const limit = baseLimit + (state.isEndless ? 1 : 0);
   if (countActiveAttackTokens(state) < limit) {
     enemy.hasAttackToken = true;
     return true;
@@ -1388,7 +1413,8 @@ function updateEnemies(
         }
       }
 
-      const speed = def.moveSpeed;
+      const diffDef = DIFFICULTY_DEFS[state.difficulty];
+      const speed = def.moveSpeed * diffDef.enemySpeedScale;
       e.vx = e.vx * Math.exp(-10 * simDt) + moveDirX * speed * (1 - Math.exp(-10 * simDt));
       e.vy = e.vy * Math.exp(-10 * simDt) + moveDirY * speed * (1 - Math.exp(-10 * simDt));
 
@@ -1413,10 +1439,11 @@ function updateEnemies(
 
       if (e.attackCooldown <= 0 && inTriggerRange && tryAcquireAttackToken(state, e)) {
         e.aiPhase = 'windup';
-        e.phaseTimer =
+        const baseWindup =
           e.archetype === 'shogun_boss' && e.bossPhase === 2
             ? def.windupSec * 0.78
             : def.windupSec;
+        e.phaseTimer = baseWindup * diffDef.windupScale;
         e.lockedAngle = angleToPlayer;
         e.lockedTargetX = clamp(p.x + p.vx * 0.22, 60, state.arenaWidth - 60);
         e.lockedTargetY = clamp(p.y + p.vy * 0.22, 60, state.arenaHeight - 60);
@@ -1809,10 +1836,19 @@ export function selectBoonAndAdvance(
   state.slashArcs = [];
   state.shockwaves = [];
 
-  const healAmount = 1 + (hasBoon(state, 'relentless_edge') ? 1 : 0) + (boonId === 'crimson_siphon' ? 1 : 0);
-  const nextMaxHp = 5 + (hasBoon(state, 'crimson_siphon') ? 1 : 0);
+  const diffDef = DIFFICULTY_DEFS[state.difficulty];
+  const healAmount =
+    1 +
+    (hasBoon(state, 'relentless_edge') ? 1 : 0) +
+    (boonId === 'crimson_siphon' ? 1 : 0);
+  const nextMaxHp = diffDef.baseHp + (hasBoon(state, 'crimson_siphon') ? 1 : 0);
   const restoredHp = clamp(state.player.hp + healAmount, 1, nextMaxHp);
-  state.player = createInitialPlayer(nextStage.playerSpawn, state.boons, restoredHp);
+  state.player = createInitialPlayer(
+    nextStage.playerSpawn,
+    state.boons,
+    restoredHp,
+    state.difficulty,
+  );
   state.phase = 'fighting';
 
   spawnWaveEnemies(state);
@@ -2040,6 +2076,12 @@ export function stepSimulation(
         state.phase = 'wave_clear_pause';
         state.phaseTransitionTimer = 0.85;
         events.waveCleared = true;
+        if (
+          DIFFICULTY_DEFS[state.difficulty].healOnWaveClear &&
+          p.hp < p.maxHp
+        ) {
+          p.hp += 1;
+        }
         addCallout(
           state,
           p.x,

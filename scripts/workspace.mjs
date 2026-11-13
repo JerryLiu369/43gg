@@ -279,10 +279,11 @@ function cmdCheck(argv) {
       'src/apps/lucky-landlord/engine.test.ts',
       'src/apps/astral-orrery/engine.test.ts',
       'src/apps/ink-blade/engine.test.ts',
+      'src/apps/xuanji-breach/engine.test.ts',
     ],
     ROOT_DIR,
   );
-  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord + astral-orrery + ink-blade)');
+  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord + astral-orrery + ink-blade + xuanji-breach)');
 
   if (!skipBuild) {
     const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');

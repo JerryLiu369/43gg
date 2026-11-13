@@ -12,8 +12,8 @@
 | 维度 | 已确立事实 / 来源 / 关键范围界定 |
 | :--- | :--- |
 | 核心任务与主操作 | 用户在工作区目录快速浏览、按类别筛选并一键启动隔离的 WebApp / 游戏原型；运行态可随时一键返回目录或重新加载当前应用 |
-| 支持平台、输入与窗口范围 | 桌面端为主（1280–1920 CSS px 常规视口），外壳目录与自适应子应用兼容平板与移动端视口（390px+）；支持鼠标/触控板、键盘焦点导航，子应用按需支持手柄（Gamepad API）与触屏 |
-| 真实内容与数据来源 | 注册表 `src/apps/registry.ts` 中的真实内置应用（`墨刃：一闪`、`天枢浑仪`、`吉星包租公`、`CHRONO STAGE`）；各子应用进度持久化于浏览器本地独立命名空间 `localStorage` |
+| 支持平台、输入与窗口范围 | 全端覆盖：桌面端（1280–1920 CSS px 常规视口）与平板/手机竖屏视口（`390×844` 起）同等支持；输入同时兼容鼠标/键盘、触屏（战棋双点确认预览、动作类虚拟摇杆+技能键）与手柄（Gamepad API） |
+| 真实内容与数据来源 | 注册表 `src/apps/registry.ts` 中的真实内置应用（`璇玑破阵`、`墨刃：一闪`、`天枢浑仪`、`吉星包租公`、`CHRONO STAGE`）；各子应用进度、难度偏好与新手指引状态持久化于浏览器本地独立命名空间 `localStorage` |
 | 品牌、主题与几何语言 | 品牌名 `gaistudio`；外壳采用单色明亮瑞士暖纸主题（`#FAF8F4` 纸底 + `#FFFFFF` 卡片 + `#1C1917` 主墨色 + `#C2410C` 朱砂印章色）；克制小圆角体系（按钮/标签 `6px`、筛选组 `8px`、应用卡片 `12px`） |
 | 既有系统与界面基线 | `src/index.css` 语义变量、`src/shell/HomeHub.tsx` 纯净卡片网格与几何线条封面图、`src/App.tsx` `44px`（`h-11`）顶栏 |
 | 图标体系、语言与排版方向 | `lucide-react` 线性矢量图标 + 手绘几何 SVG 封面（`ICO-1`）；全中文界面与全中文仓库文档（LTR 横排，`Noto Sans SC` + `Plus Jakarta Sans` + `Barlow Condensed` + `JetBrains Mono`） |
@@ -61,7 +61,8 @@
 | `SCR-1 / SCR-3` | 全局滚动容器 | default：共享克制滚动条样式 | pass | conforms | `src/index.css` 同时配置标准 `scrollbar-color/width` 与 WebKit 样式 |
 | `INT-1..3a` | 卡片、筛选器与顶栏按钮 | default：原生按钮与调色板协调焦点 | pass | conforms | 原生 `<button>` + `aria-pressed` + 朱砂色边框焦点态，无外发光环与侧边彩条 |
 | `COL-3` | 次级辅助文字对比度 | advisory：诊断参考 | pass | intentional choice | `#78716C` 在 `#FAF8F4 / #FFFFFF` 上保持柔和次级层级且实际清晰可读 |
-| `VER-1` | 外壳桌面视口与交互链路 | required：真实渲染截图与交互验证 | pass | conforms | 经无头 Chromium 1440×900 实机快照、截图、分类筛选与子应用启停验证 |
+| `INT-11` | 移动端触屏操控与防误触 | required：用户明确要求多端可玩 | pass | conforms | 战棋支持触屏首点预览/二次确认与紧凑双行拇指坞，动作类支持虚拟摇杆与大触控键 |
+| `VER-1 / VER-2` | 桌面 `1440×900` 与移动 `390×844` 渲染交互 | required：真实双端截图与交互验证 | pass | conforms | 经无头 Chromium 1440×900 与 390×844 双视口实机快照、新手指引与触屏链路验证 |
 
 ---
 
@@ -73,3 +74,5 @@
 | 2026-11-12 | 外壳交互控件采用边框色切换至 `#C2410C` 的无外环 `:focus-visible` 方案，兼顾键盘可辨识度与纸面干净度。 | KFL `INT-2` / `INT-3` | `src/App.tsx`、`src/shell/HomeHub.tsx` |
 | 2026-11-12 | 仓库文档全面收敛为简体中文单语体系，移除 `README_zh.md` 冗余副本并将手册命名为 `docs/chrono-stage.md`。 | 用户明确指令 | 全仓文档与 `scripts/workspace.mjs` 门禁（`GOV-1`、`CON-4`） |
 | 2026-11-12 | 新增水墨瞬身剑戟动作子应用《墨刃：一闪》（`ink-blade`）：外壳沿用 `Inherit` 暖纸卡片与 `动作` 分类筛选；子应用视口内部采用宣纸庭院、玄墨笔触与朱砂印章视觉基线，保持 `>= 88%` 无遮挡战斗视野与零 `backdrop-filter` 合成负担。 | 用户新建高质量游戏指令 | `src/apps/ink-blade/*`、`src/apps/registry.ts`、`src/shell/HomeHub.tsx`（`GOV-4`、`ALN-2`、`MIN-5`、`INT-2`） |
+| 2026-11-12 | 新增全明牌立体沙盘战棋子应用《璇玑破阵》（`xuanji-breach`）：外壳继承瑞士暖纸卡片与 `策略` 分类筛选；子应用内部采用青铜秘色瓷 2.5D 等轴测沙盘、中央 3×3 璇玑转盘 90° 偏转弹道预演与统一底栏指挥台，杜绝无源状态点与 `backdrop-filter`。 | 用户自主命题精品独立游戏指令 | `src/apps/xuanji-breach/*`、`src/apps/registry.ts`、`src/shell/HomeHub.tsx`（`GOV-4`、`ALN-2`、`MIN-5`、`INT-2`） |
+| 2026-11-12 | 采纳用户明确治理要求：所有游戏统一配备「非阻塞分步实战新手指引 + 图文速查手册」、「平滑适中的三档难度曲线（轻松/标准/宗师）」与「桌面+手机触屏原生双端适配（战棋双点确认预览、动作类虚拟摇杆）」，将 `INT-11` 与 `VER-2`（含 `390×844` 竖屏）升级为游戏子应用 `required` 门禁。 | 用户明确指令 | `AGENTS.md`、`src/apps/xuanji-breach/*`、`src/apps/ink-blade/*`（`GOV-1`、`INT-11`、`VER-2`） |

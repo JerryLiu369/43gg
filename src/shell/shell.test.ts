@@ -15,8 +15,8 @@ const SHELL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SHELL_DIR, '..', '..');
 const VALID_IDS = APP_REGISTRY.map((app) => app.id);
 
-test('APP_REGISTRY registers ink-blade, astral-orrery, lucky-landlord, and chrono-stage with valid metadata and existing paths', () => {
-  assert.equal(APP_REGISTRY.length, 4);
+test('APP_REGISTRY registers xuanji-breach, ink-blade, astral-orrery, lucky-landlord, and chrono-stage with valid metadata and existing paths', () => {
+  assert.equal(APP_REGISTRY.length, 5);
   const seenIds = new Set<string>();
 
   for (const app of APP_REGISTRY) {
@@ -47,6 +47,7 @@ test('APP_REGISTRY registers ink-blade, astral-orrery, lucky-landlord, and chron
     }
   }
 
+  assert.equal(getAppById('xuanji-breach')?.kind, 'react-lazy');
   assert.equal(getAppById('ink-blade')?.kind, 'react-lazy');
   assert.equal(getAppById('astral-orrery')?.kind, 'react-lazy');
   assert.equal(getAppById('lucky-landlord')?.kind, 'react-lazy');
@@ -145,6 +146,9 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
 
   const agentsDoc = fs.readFileSync(path.join(REPO_ROOT, 'AGENTS.md'), 'utf8');
   assert.match(agentsDoc, /用户偏好档案/);
+  assert.match(agentsDoc, /实战新手指引/);
+  assert.match(agentsDoc, /适中难度曲线/);
+  assert.match(agentsDoc, /多端可玩/);
   assert.match(agentsDoc, /Agent 能力加强规范/);
   assert.match(agentsDoc, /自有工程方法论/);
   assert.match(agentsDoc, /演进沉淀日志/);
