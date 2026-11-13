@@ -4,7 +4,7 @@ export type AppRuntimeKind = 'react-lazy' | 'iframe';
 
 export type AppAccent = 'amber' | 'cyan' | 'emerald' | 'rose';
 
-export type AppCategory = 'strategy' | 'racing' | 'incremental';
+export type AppCategory = 'action' | 'strategy' | 'racing' | 'incremental';
 
 export interface WorkspaceAppEntry {
   /** Stable slug used in URL routing (`?app=<id>`) and directory naming */
@@ -41,6 +41,19 @@ export interface WorkspaceAppEntry {
  * - Static HTML/JS app: place folder under `apps/<slug>/` with `index.html`, then add one entry with `kind: 'iframe'` and `entryPath`.
  */
 export const APP_REGISTRY: WorkspaceAppEntry[] = [
+  {
+    id: 'ink-blade',
+    title: '墨刃：一闪',
+    subtitle: '水墨瞬身弹反剑戟动作坊',
+    description: '心眼慢镜刀路推演、击杀即刻一闪刷新、刹那弹反破甲与十二刀铭秘传。',
+    techLabel: '瞬身动作',
+    tags: ['剑戟动作'],
+    category: 'action',
+    accent: 'rose',
+    kind: 'react-lazy',
+    loader: () => import('./ink-blade/InkBladeApp.tsx'),
+    sourceDir: 'src/apps/ink-blade',
+  },
   {
     id: 'astral-orrery',
     title: '天枢浑仪',

@@ -278,10 +278,11 @@ function cmdCheck(argv) {
       'src/shell/shell.test.ts',
       'src/apps/lucky-landlord/engine.test.ts',
       'src/apps/astral-orrery/engine.test.ts',
+      'src/apps/ink-blade/engine.test.ts',
     ],
     ROOT_DIR,
   );
-  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord + astral-orrery)');
+  console.log('   OK: unit tests passed (physics + shell/registry + lucky-landlord + astral-orrery + ink-blade)');
 
   if (!skipBuild) {
     const viteBin = path.join(ROOT_DIR, 'node_modules', '.bin', 'vite');

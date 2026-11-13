@@ -10,7 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/game/physics.test.ts src/shell/shell.test.ts src/apps/lucky-landlord/engine.test.ts src/apps/astral-orrery/engine.test.ts",
+    "test": "node --test src/game/physics.test.ts src/shell/shell.test.ts src/apps/lucky-landlord/engine.test.ts src/apps/astral-orrery/engine.test.ts src/apps/ink-blade/engine.test.ts",
     "apps:list": "node scripts/workspace.mjs list",
     "apps:check": "node scripts/workspace.mjs check",
     "build:pages": "node scripts/workspace.mjs stage-pages"
