@@ -13,7 +13,7 @@
 | :--- | :--- |
 | 核心任务与主操作 | 用户在工作区目录快速浏览、按类别筛选并一键启动隔离的 WebApp / 游戏原型；运行态可随时一键返回目录或重新加载当前应用 |
 | 支持平台、输入与窗口范围 | 全端覆盖：桌面端（1280–1920 CSS px 常规视口）与平板/手机竖屏视口（`390×844` 起）同等支持；输入同时兼容鼠标/键盘、触屏（战棋双点确认预览、动作类虚拟摇杆+技能键）与手柄（Gamepad API） |
-| 真实内容与数据来源 | 注册表 `src/apps/registry.ts` 中的真实内置应用（`璇玑破阵`、`墨刃：一闪`、`天枢浑仪`、`吉星包租公`、`CHRONO STAGE`）；各子应用进度、难度偏好与新手指引状态持久化于浏览器本地独立命名空间 `localStorage` |
+| 真实内容与数据来源 | 注册表 `src/apps/registry.ts` 中的真实内置应用（`璇玑破阵`、`墨刃：一闪`、`天枢浑仪`、`吉星包租公`、`CHRONO STAGE`、`车票之旅：欧洲`、`卡卡颂：大盒版`）；各子应用进度、难度偏好与新手指引状态持久化于浏览器本地独立命名空间 `localStorage` |
 | 品牌、主题与几何语言 | 对外品牌名 `43gg` / `43gg 小游戏`；外壳采用单色明亮瑞士暖纸主题（`#FAF8F4` 纸底 + `#FFFFFF` 卡片 + `#1C1917` 主墨色 + `#C2410C` 朱砂印章色）；克制小圆角体系（按钮/标签 `6px`、筛选组 `8px`、应用卡片 `12px`） |
 | 既有系统与界面基线 | `src/index.css` 语义变量、`src/shell/HomeHub.tsx` 纯净卡片网格与几何线条封面图、`src/App.tsx` `44px`（`h-11`）顶栏 |
 | 图标体系、语言与排版方向 | `lucide-react` 线性矢量图标 + 手绘几何 SVG 封面（`ICO-1`）；全中文界面与全中文仓库文档（LTR 横排，`Noto Sans SC` + `Plus Jakarta Sans` + `Barlow Condensed` + `JetBrains Mono`） |
@@ -78,3 +78,4 @@
 | 2026-11-12 | 采纳用户明确治理要求：所有游戏统一配备「非阻塞分步实战新手指引 + 图文速查手册」、「平滑适中的三档难度曲线（轻松/标准/宗师）」与「桌面+手机触屏原生双端适配（战棋双点确认预览、动作类虚拟摇杆）」，将 `INT-11` 与 `VER-2`（含 `390×844` 竖屏）升级为游戏子应用 `required` 门禁。 | 用户明确指令 | `AGENTS.md`、`src/apps/xuanji-breach/*`、`src/apps/ink-blade/*`（`GOV-1`、`INT-11`、`VER-2`） |
 | 2026-11-13 | 将实战分步新手指引与多端适配对齐至其余三款既有子应用：《天枢浑仪》支持随时重温五步实战带教；《吉星包租公》新增四步动作驱动实战带教与「难度 0 轻松休闲」档；《CHRONO STAGE》新增路书过弯图解手册、四步领航实战带教、三档难度及 `390×844` 竖屏零重叠双拇指操控。 | 用户明确指令 | `src/apps/astral-orrery/*`、`src/apps/lucky-landlord/*`、`src/apps/chrono-stage/*`、`src/components/RallyTutorialModal.tsx`、`src/game/*`（`GOV-1`、`ALN-15`、`INT-11`、`VER-1..2`） |
 | 2026-11-13 | 按用户指令将对外站点品牌统一为 **`43gg` / `43gg 小游戏`**（界面不再展示 `gaistudio` 与模型代号），并将首页目录升级为面向未来任意 N 款游戏可扩展的均等三列卡片网格 + 紧凑列表双视图、自动分类标签派生、实时搜索过滤、本地真实进度摘要及程序化封面兜底。 | 用户明确指令 | `src/shell/HomeHub.tsx`、`src/apps/registry.ts`、`src/App.tsx`、`index.html`、`metadata.json`（`GOV-1`、`ALN-11`、`REU-4`、`CON-3`、`INT-2..3`） |
+| 2026-11-13 | 移植并纯前端离线化《车票之旅：欧洲》（`ticket-to-ride-europe`）与《卡卡颂：大盒版》（`carcassonne-bigbox`）两款策略桌游子应用：移除联机/房间/登录与假状态点，保留完整纯逻辑引擎、三档难度本地 AI 对战、交互式新手指引、内置规则弹窗、独立 `43gg.*` 本地存档及桌面/移动端双端视口适配，并在 `HomeHub` 补齐瑞士几何封面。 | 用户明确指令 | `src/apps/ticket-to-ride-europe/*`、`src/apps/carcassonne-bigbox/*`、`src/apps/registry.ts`、`src/shell/*`（`GOV-1`、`STA-2`、`MIN-2`、`INT-11`、`VER-1..2`） |

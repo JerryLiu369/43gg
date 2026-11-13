@@ -1,0 +1,5074 @@
+{
+  "collection": "carcassonne_big_box",
+  "total_expansions": 11,
+  "total_expansion_tiles": 108,
+  "total_landscape_tiles": 100,
+  "total_message_tiles": 8,
+  "expansions": {
+    "the_river": {
+      "expansion_id": "the_river",
+      "name": "The River (C3)",
+      "name_zh": "河流",
+      "type": "mini_expansion_1",
+      "total_tiles": 12,
+      "description": "Replaces the start tile: the source is placed as starting tile, the other river tiles are shuffled with the lake at the bottom and are drawn first. Each river tile must continue the river; two consecutive bends may not turn the same way and (C3.1) no bend may turn the flow back against the source direction. River segments split fields, cannot be occupied and are never scored.",
+      "tiles": [
+        {
+          "tile_type": "RIV_A",
+          "name": "River Source (Spring)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "S",
+            "F"
+          ],
+          "canonical_code": "FFSF",
+          "wikicarpedia_heading": "FFFS",
+          "features": {
+            "is_river_source": true,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              []
+            ]
+          },
+          "description": "Starting tile of the river. Spring basin in the center with river flowing South.",
+          "verification_note": "The C3 source tile also shows a short road; its edge position could not be verified from text sources, so the tile is modelled with the C2 layout (single river edge)."
+        },
+        {
+          "tile_type": "RIV_B",
+          "name": "River with City Edge and Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "S",
+            "R",
+            "S"
+          ],
+          "canonical_code": "CSRS",
+          "wikicarpedia_heading": "CSRS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [],
+              [],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City edge on North; the road from the South crosses the river on a bridge and ends at the city gate, so the tile has four separate fields. River flowing East to West."
+        },
+        {
+          "tile_type": "RIV_C",
+          "name": "River with Divided City",
+          "count": 1,
+          "edges": [
+            "C",
+            "S",
+            "C",
+            "S"
+          ],
+          "canonical_code": "CSCS",
+          "wikicarpedia_heading": "CSCS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ]
+            ],
+            "roads": [],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ]
+            ]
+          },
+          "description": "Two separate city segments on North and South with river flowing East to West between them."
+        },
+        {
+          "tile_type": "RIV_D",
+          "name": "Straight River (Variant 1)",
+          "count": 1,
+          "edges": [
+            "F",
+            "S",
+            "F",
+            "S"
+          ],
+          "canonical_code": "FSFS",
+          "wikicarpedia_heading": "FSFS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "Straight river section flowing East to West, dividing fields into North and South banks."
+        },
+        {
+          "tile_type": "RIV_E",
+          "name": "River Bend with City Corner",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "S",
+            "S"
+          ],
+          "canonical_code": "CCSS",
+          "wikicarpedia_heading": "CCSS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [],
+            "rivers": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          },
+          "description": "City corner on North and East, river curving from South to West."
+        },
+        {
+          "tile_type": "RIV_F",
+          "name": "Straight River (Variant 2)",
+          "count": 1,
+          "edges": [
+            "F",
+            "S",
+            "F",
+            "S"
+          ],
+          "canonical_code": "FSFS",
+          "wikicarpedia_heading": "FSFS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "Straight river section flowing East to West, dividing fields into North and South banks."
+        },
+        {
+          "tile_type": "RIV_G",
+          "name": "River Bend (Curve 1)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "S",
+            "S"
+          ],
+          "canonical_code": "FFSS",
+          "wikicarpedia_heading": "FFSS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "River bend turning 90 degrees between South and West."
+        },
+        {
+          "tile_type": "RIV_H",
+          "name": "River with Monastery and Road",
+          "count": 1,
+          "edges": [
+            "F",
+            "S",
+            "R",
+            "S"
+          ],
+          "canonical_code": "FSRS",
+          "wikicarpedia_heading": "FSRS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": true,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "river"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Monastery situated by the river bank; river flows East to West; road exits to the South."
+        },
+        {
+          "tile_type": "RIV_I",
+          "name": "River Bend with Road Corner",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "S",
+            "S"
+          ],
+          "canonical_code": "RRSS",
+          "wikicarpedia_heading": "RRSS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "rivers": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Road curves from North to East; river curves from South to West. Divides fields into three strips."
+        },
+        {
+          "tile_type": "RIV_J",
+          "name": "River Bend (Curve 2)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "S",
+            "S"
+          ],
+          "canonical_code": "FFSS",
+          "wikicarpedia_heading": "FFSS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "River bend turning 90 degrees between South and West with garden illustration."
+        },
+        {
+          "tile_type": "RIV_K",
+          "name": "River with Continuous Road Bridge",
+          "count": 1,
+          "edges": [
+            "R",
+            "S",
+            "R",
+            "S"
+          ],
+          "canonical_code": "RSRS",
+          "wikicarpedia_heading": "RSRS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_bridge": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "rivers": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Continuous road from North to South crossing via bridge over river flowing East to West."
+        },
+        {
+          "tile_type": "RIV_L",
+          "name": "River Lake with Monastery (C3)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "S",
+            "F"
+          ],
+          "canonical_code": "FFSF",
+          "wikicarpedia_heading": "FFFS",
+          "features": {
+            "is_river_source": false,
+            "is_river_lake": true,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "rivers": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              []
+            ]
+          },
+          "description": "Last river tile: the river ends in a lake. In the C3 edition (Big Box 7) the lake tile shows a monastery."
+        }
+      ]
+    },
+    "inns_and_cathedrals": {
+      "expansion_id": "inns_and_cathedrals",
+      "name": "Inns & Cathedrals (Exp. 1)",
+      "name_zh": "客栈与大教堂",
+      "type": "major_expansion_1",
+      "total_tiles": 18,
+      "scoring_tiles": 0,
+      "description": "Introduces inns by lakes (a completed road with at least one inn next to it scores 2 points per tile; 0 points if incomplete at game end) and cathedrals (a completed city with a cathedral scores 3 points per tile and per coat of arms; 0 points if incomplete at game end), plus one large meeple per player. In Big Box 7 the 50/100 points tiles (8) and the 6th pink colour belong to the base game.",
+      "tiles": [
+        {
+          "tile_type": "IC_A",
+          "name": "Inn on Curved Road",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "Curved road connecting South and West with an Inn on the lake."
+        },
+        {
+          "tile_type": "IC_B",
+          "name": "Inn on Straight Road",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "Straight road connecting East and West with an Inn on the lake and garden."
+        },
+        {
+          "tile_type": "IC_C",
+          "name": "Inn on 3-Way Crossroad",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FRRR",
+          "wikicarpedia_heading": "FRRR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "inn_road_edges": [
+              "E"
+            ]
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "3-way junction ending in a village; the inn lake lies next to the eastern branch only."
+        },
+        {
+          "tile_type": "IC_D",
+          "name": "Monastery with Straight Road",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          },
+          "description": "Monastery between two road segments; both roads end at the monastery (two separate roads, two separate fields)."
+        },
+        {
+          "tile_type": "IC_E",
+          "name": "Two Curved Roads",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "W"
+              ],
+              [
+                "S",
+                "E"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0",
+                "S2",
+                "W0"
+              ],
+              [
+                "E2",
+                "S0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Two separate curved roads (North-West and South-East) with a field strip between them."
+        },
+        {
+          "tile_type": "IC_F",
+          "name": "City Corner with Terminating Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CCRF",
+          "wikicarpedia_heading": "CCRF",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East with road entering South and ending at city wall."
+        },
+        {
+          "tile_type": "IC_G",
+          "name": "City Edge with Garden",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CFFF",
+          "wikicarpedia_heading": "CFFF",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": false,
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City edge on North; the field below it is divided: the eastern edge is a separate field from the southern and western edges."
+        },
+        {
+          "tile_type": "IC_H",
+          "name": "Four Separate City Segments around an Inner Field with Garden",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_inner_field": true,
+            "has_garden": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "INNER"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "E",
+                "S",
+                "W"
+              ]
+            ]
+          },
+          "description": "Four different city segments and one enclosed field with a garden in the centre (official I&C clarification)."
+        },
+        {
+          "tile_type": "IC_I",
+          "name": "Opposite City Edges with Village Crossroad",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CRCR",
+          "wikicarpedia_heading": "CRCR",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "merge_barriers": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ],
+              [
+                "S"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "Two separate city edges (N, S) and two road segments (E, W) ending at a village; small non-claimable road stubs link the village to both cities and split the field into four corners."
+        },
+        {
+          "tile_type": "IC_J",
+          "name": "City Edge with Straight Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CFRF",
+          "wikicarpedia_heading": "CFRF",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City edge on North; road from the South runs up to the city gate and splits the field into a western and an eastern part."
+        },
+        {
+          "tile_type": "IC_Ka",
+          "name": "Cathedral in 4-Sided City (A)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E",
+                "S",
+                "W"
+              ]
+            ],
+            "roads": [],
+            "fields": [],
+            "field_cities": []
+          },
+          "description": "Cathedral located in a 4-sided city tile (variant A)."
+        },
+        {
+          "tile_type": "IC_Kb",
+          "name": "Cathedral in 4-Sided City (B)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E",
+                "S",
+                "W"
+              ]
+            ],
+            "roads": [],
+            "fields": [],
+            "field_cities": []
+          },
+          "description": "Cathedral located in a 4-sided city tile (variant B)."
+        },
+        {
+          "tile_type": "IC_L",
+          "name": "Inn on Curved Road with City Corner",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          },
+          "description": "City corner with a coat of arms on North and East; curved road on South and West with an inn by the lake."
+        },
+        {
+          "tile_type": "IC_M",
+          "name": "Inn on Curved Road with City Edge",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CFRR",
+          "wikicarpedia_heading": "CFRR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          },
+          "description": "City edge on North; curved road on South and West with an Inn on the lake."
+        },
+        {
+          "tile_type": "IC_N",
+          "name": "Inn on Road with City Corner",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "R"
+          ],
+          "canonical_code": "CCFR",
+          "wikicarpedia_heading": "CCFR",
+          "features": {
+            "has_inn": true,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East; road from the West with an inn by the lake ends at the city gate."
+        },
+        {
+          "tile_type": "IC_O",
+          "name": "Three Separate City Edges",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CCCF",
+          "wikicarpedia_heading": "CCCF",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": false,
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "E"
+              ],
+              [
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "E",
+                "S"
+              ]
+            ]
+          },
+          "description": "Three separate city edges on North, East and South; the field enters from the West and borders all three cities."
+        },
+        {
+          "tile_type": "IC_P",
+          "name": "City Corner with Coat of Arms and Separate City Edge",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CCCF",
+          "wikicarpedia_heading": "CCCF",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": true,
+            "shield_city": "E"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "E",
+                "S"
+              ],
+              [
+                "N"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "E",
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner with a coat of arms on East and South plus a separate city edge on North; field on the West."
+        },
+        {
+          "tile_type": "IC_Q",
+          "name": "City Tube with Coat of Arms and Two Gate Roads",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CRCR",
+          "wikicarpedia_heading": "CRCR",
+          "features": {
+            "has_inn": false,
+            "has_cathedral": false,
+            "is_monastery": false,
+            "has_shield": true,
+            "road_ends_at": {
+              "E": "city",
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (with a coat of arms); separate roads from East and West end at its gates, leaving four corner fields."
+        }
+      ]
+    },
+    "traders_and_builders": {
+      "expansion_id": "traders_and_builders",
+      "name": "Traders & Builders (Exp. 2)",
+      "name_zh": "商人与建造者",
+      "type": "major_expansion_2",
+      "total_tiles": 24,
+      "trade_goods_breakdown": {
+        "wine": 9,
+        "grain": 6,
+        "cloth": 5,
+        "none": 4
+      },
+      "description": "Introduces 20 trade goods tokens (9 Wine, 6 Grain, 5 Cloth) awarded to the player who completes a city, plus the Builder (double turns) and Pig (field bonus).",
+      "tiles": [
+        {
+          "tile_type": "TB_A",
+          "name": "City Edge with Road Corner",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CRFF",
+          "wikicarpedia_heading": "CRFF",
+          "features": {
+            "trade_good": null,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "E": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City edge on North; road from the East ends at the city gate; field on South and West."
+        },
+        {
+          "tile_type": "TB_B",
+          "name": "Continuous Road Bridge",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "trade_good": null,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_bridge": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "S"
+              ],
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Road overpass bridge: continuous road N-S passes over continuous road E-W without intersecting!"
+        },
+        {
+          "tile_type": "TB_C",
+          "name": "City Edge with Curved Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CFRR",
+          "wikicarpedia_heading": "CFRR",
+          "features": {
+            "trade_good": null,
+            "is_monastery": false,
+            "has_shield": false,
+            "merge_barriers": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City edge on North; road from the South runs to the city gate and the road from the West ends where it meets that road."
+        },
+        {
+          "tile_type": "TB_D",
+          "name": "City Corner with Gate Road and Separate City Edge (Grain)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "C"
+          ],
+          "canonical_code": "CCRC",
+          "wikicarpedia_heading": "CCCR",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            },
+            "trade_good_city": "N",
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N",
+                "W"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (grain) whose gate road comes from the South, plus a separate city edge on the West."
+        },
+        {
+          "tile_type": "TB_E",
+          "name": "City Tube with Gate Road (Grain)",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CFCR",
+          "wikicarpedia_heading": "CFCR",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (grain) with a road from the West ending at its gate."
+        },
+        {
+          "tile_type": "TB_F",
+          "name": "City Corner with Road (Grain)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "R"
+          ],
+          "canonical_code": "CCFR",
+          "wikicarpedia_heading": "CCFR",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (grain) with a road from the West ending at the city gate."
+        },
+        {
+          "tile_type": "TB_G",
+          "name": "City Corner (Grain)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CCFF",
+          "wikicarpedia_heading": "CCFF",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East; features Grain trade symbol."
+        },
+        {
+          "tile_type": "TB_H",
+          "name": "3-Sided City (Grain)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CCCF",
+          "wikicarpedia_heading": "CCCF",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E",
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "3-sided city covering North, East, and South; features Grain trade symbol."
+        },
+        {
+          "tile_type": "TB_I",
+          "name": "City Corner with Road (Grain Variant)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "R"
+          ],
+          "canonical_code": "CCFR",
+          "wikicarpedia_heading": "CCFR",
+          "features": {
+            "trade_good": "grain",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "W": "city"
+            },
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "W2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "S0",
+                "S1",
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (grain) with a road from the West ending at the city gate; the southern field is separated from the field south of the road."
+        },
+        {
+          "tile_type": "TB_J",
+          "name": "Monastery with 3-Way Road Junction",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FRRR",
+          "wikicarpedia_heading": "FRRR",
+          "features": {
+            "trade_good": null,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Monastery situated at a 3-way village crossroad."
+        },
+        {
+          "tile_type": "TB_K",
+          "name": "City Corner with Road (Cloth)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CCRF",
+          "wikicarpedia_heading": "CCRF",
+          "features": {
+            "trade_good": "cloth",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East; road entering South; features Cloth trade symbol."
+        },
+        {
+          "tile_type": "TB_L",
+          "name": "City Corner with Gate Road and Separate City Edge (Cloth)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "C"
+          ],
+          "canonical_code": "CCRC",
+          "wikicarpedia_heading": "CCCR",
+          "features": {
+            "trade_good": "cloth",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            },
+            "trade_good_city": "N",
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N",
+                "W"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (cloth) whose gate road comes from the South, plus a separate city edge on the West."
+        },
+        {
+          "tile_type": "TB_M",
+          "name": "City Corner and Two City Edges around an Inner Field (Cloth)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "trade_good": "cloth",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_inner_field": true,
+            "trade_good_city": "N"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "W"
+              ],
+              [
+                "S"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "INNER"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "S",
+                "E"
+              ]
+            ]
+          },
+          "description": "City corner on North and West (cloth) and separate city edges on South and East around an enclosed field."
+        },
+        {
+          "tile_type": "TB_N",
+          "name": "City Tube and City Edge with Inner Field (Cloth)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CCCF",
+          "wikicarpedia_heading": "CCCF",
+          "features": {
+            "trade_good": "cloth",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_inner_field": true,
+            "trade_good_city": "N"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "W0",
+                "W1",
+                "W2"
+              ],
+              [
+                "INNER"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N",
+                "E"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (cloth) and a separate city edge on the East enclosing an inner field; open field on the West."
+        },
+        {
+          "tile_type": "TB_O",
+          "name": "City Corner with Two Gate Roads (Cloth)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "trade_good": "cloth",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city",
+              "W": "city"
+            },
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (cloth); separate roads from South and West each end at a city gate, leaving four separate fields."
+        },
+        {
+          "tile_type": "TB_P",
+          "name": "City Tube and City Edge with Inner Field (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CCCF",
+          "wikicarpedia_heading": "CCCF",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_inner_field": true,
+            "trade_good_city": "N"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "W0",
+                "W1",
+                "W2"
+              ],
+              [
+                "INNER"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N",
+                "E"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (wine) and a separate city edge on the East enclosing an inner field; open field on the West."
+        },
+        {
+          "tile_type": "TB_Q",
+          "name": "Straight City Tube (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CFCF",
+          "wikicarpedia_heading": "CFCF",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "Continuous city section connecting North and South; features Wine trade symbol."
+        },
+        {
+          "tile_type": "TB_R",
+          "name": "City Tube with Two Gate Roads (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CRCR",
+          "wikicarpedia_heading": "CRCR",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "E": "city",
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (wine); separate roads from East and West end at its gates, leaving four corner fields."
+        },
+        {
+          "tile_type": "TB_S",
+          "name": "City Tube with Gate Road (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CFCR",
+          "wikicarpedia_heading": "CFCR",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City connecting North and South (wine) with a road from the West ending at its gate."
+        },
+        {
+          "tile_type": "TB_T",
+          "name": "City Corner (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CCFF",
+          "wikicarpedia_heading": "CCFF",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East; features Wine trade symbol."
+        },
+        {
+          "tile_type": "TB_U",
+          "name": "City Corner with Two Gate Roads (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true,
+            "road_ends_at": {
+              "S": "city",
+              "W": "city"
+            },
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (wine) with a garden; separate roads from South and West each end at a city gate."
+        },
+        {
+          "tile_type": "TB_V",
+          "name": "3-Sided City with Road (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "C"
+          ],
+          "canonical_code": "CCRC",
+          "wikicarpedia_heading": "CCCR",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E",
+                "W"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "3-sided city with road ending at city gate; features Wine trade symbol."
+        },
+        {
+          "tile_type": "TB_W",
+          "name": "City Corner with Road (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CCRF",
+          "wikicarpedia_heading": "CCRF",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            },
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ],
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "City corner on North and East (wine) with a road from the South ending at the city gate; the western field is separated from the field west of the road."
+        },
+        {
+          "tile_type": "TB_X",
+          "name": "Two City Corners around an Inner Field (Wine)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "trade_good": "wine",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_inner_field": true,
+            "trade_good_city": "N"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "W"
+              ],
+              [
+                "E",
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "INNER"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "E"
+              ]
+            ]
+          },
+          "description": "Two separate city corners (North-West with wine, East-South) around an enclosed inner field."
+        }
+      ]
+    },
+    "the_flying_machines": {
+      "expansion_id": "the_flying_machines",
+      "name": "The Flying Machines (Mini #1)",
+      "name_zh": "飞行器",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "dice_included": "1 custom flight die (1, 1, 2, 2, 3, 3)",
+      "description": "Each tile shows a flying machine pointing straight or diagonally (flight_direction = compass direction in base orientation, rotated with the tile). Instead of a normal placement, a normal or large meeple may board it: roll the die (1,1,2,2,3,3) and fly that many tiles; the meeple must then be placed on an incomplete road, city or monastery of the landing tile even if occupied (never a field, never a feature completed by this tile); otherwise it returns to supply.",
+      "tiles": [
+        {
+          "tile_type": "FLI_A",
+          "name": "Flying Machine on Curved Road (Diagonal)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "NE",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "diagonal"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_B",
+          "name": "Flying Machine on Straight Road (Diagonal)",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "NW",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "diagonal"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_C",
+          "name": "Flying Machine on Straight Road (Along the Road)",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "W",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "straight"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_D",
+          "name": "Flying Machine on Straight Road (Across the Road)",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "N",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "straight"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_E",
+          "name": "Flying Machine on Curved Road (Straight, Variant 1)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "W",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "straight"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_F",
+          "name": "Flying Machine on Curved Road (Straight, Variant 2)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "S",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "straight"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_G",
+          "name": "Flying Machine in Field (Straight)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "F",
+            "F"
+          ],
+          "canonical_code": "FFFF",
+          "wikicarpedia_heading": "FFFF",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "N",
+            "is_monastery": false,
+            "has_shield": false,
+            "flight_kind": "straight"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "FLI_H",
+          "name": "Flying Machine in Field with Garden (Diagonal)",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "F",
+            "F"
+          ],
+          "canonical_code": "FFFF",
+          "wikicarpedia_heading": "FFFF",
+          "features": {
+            "has_flying_machine": true,
+            "flight_direction": "NE",
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true,
+            "flight_kind": "diagonal"
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              []
+            ]
+          }
+        }
+      ]
+    },
+    "the_messengers": {
+      "expansion_id": "the_messengers",
+      "name": "The Messengers (Mini #2)",
+      "name_zh": "传令官",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "figures_included": "6 messenger figures (1 per player color)",
+      "description": "Each player receives a messenger meeple placed on space 0 of the scoreboard. Whenever a player scores points, they choose to move either their scoring meeple or their messenger. Landing on a dark space (multiples of 5) triggers drawing an active message tile.",
+      "message_tiles": [
+        {
+          "tile_id": "MSG_01",
+          "dispatch_number": 1,
+          "name": "Shortest Road",
+          "description": "Choose a road where you have a highwayman. If on multiple, choose the one worth the fewest points. Score it as if at game end; meeple remains."
+        },
+        {
+          "tile_id": "MSG_02",
+          "dispatch_number": 2,
+          "name": "Smallest City",
+          "description": "Choose a city where you have a knight. If on multiple, choose the one worth the fewest points. Score it as if at game end; meeple remains."
+        },
+        {
+          "tile_id": "MSG_03",
+          "dispatch_number": 3,
+          "name": "Smallest Monastery",
+          "description": "Choose a monastery where you have a monk/abbot. If on multiple, choose the one worth fewest points. Score it as if at game end; meeple remains."
+        },
+        {
+          "tile_id": "MSG_04",
+          "dispatch_number": 4,
+          "name": "Add a Landscape Tile",
+          "description": "Draw an extra landscape tile and place it immediately following normal rules, including deploying a meeple."
+        },
+        {
+          "tile_id": "MSG_05",
+          "dispatch_number": 5,
+          "name": "2 Points per Coat of Arms",
+          "description": "Score 2 points for each coat of arms (shield) in all cities where you have at least one knight."
+        },
+        {
+          "tile_id": "MSG_06",
+          "dispatch_number": 6,
+          "name": "2 Points per Knight",
+          "description": "Score 2 points for each of your knights currently in play. Knights remain in cities."
+        },
+        {
+          "tile_id": "MSG_07",
+          "dispatch_number": 7,
+          "name": "2 Points per Farmer",
+          "description": "Score 2 points for each of your farmers currently in play. Farmers remain in fields."
+        },
+        {
+          "tile_id": "MSG_08",
+          "dispatch_number": 8,
+          "name": "Score a Meeple and Return It",
+          "description": "Choose one of your meeples. If you hold majority on its feature, score it as at game end. Then return that meeple to your supply."
+        }
+      ]
+    },
+    "the_ferries": {
+      "expansion_id": "the_ferries",
+      "name": "The Ferries (Mini #3)",
+      "name_zh": "渡轮",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "wooden_pieces": "8 wooden ferries",
+      "description": "Features 8 tiles with lakes and road piers. When placing a tile with a lake, place a wooden ferry token connecting two of the road branches. Whenever a road connected by a ferry is extended, the ferry can be repositioned.",
+      "tiles": [
+        {
+          "tile_type": "FER_01",
+          "name": "Ferry Lake with City Edge (3 Roads)",
+          "count": 3,
+          "edges": [
+            "C",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CRRR",
+          "wikicarpedia_heading": "CRRR",
+          "features": {
+            "has_ferry_lake": true,
+            "pier_count": 3,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [],
+              []
+            ]
+          },
+          "description": "City edge on North; ferry lake with 3 road piers entering from East, South, and West."
+        },
+        {
+          "tile_type": "FER_02",
+          "name": "Ferry Lake in Field (3 Roads)",
+          "count": 3,
+          "edges": [
+            "F",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FRRR",
+          "wikicarpedia_heading": "FRRR",
+          "features": {
+            "has_ferry_lake": true,
+            "pier_count": 3,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Field on North; ferry lake with 3 road piers entering from East, South, and West."
+        },
+        {
+          "tile_type": "FER_03",
+          "name": "Ferry Lake Crossroads (4 Roads)",
+          "count": 2,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "has_ferry_lake": true,
+            "pier_count": 4,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N"
+              ],
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Ferry lake with 4 road piers entering from all 4 directions."
+        }
+      ]
+    },
+    "the_goldmines": {
+      "expansion_id": "the_goldmines",
+      "name": "The Goldmines (Mini #4)",
+      "name_zh": "金矿",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "wooden_pieces": "16 wooden gold ingots",
+      "description": "When a gold tile is placed, put one ingot on it and one on an orthogonally or diagonally adjacent tile. When a claimed road, city, monastery or garden is completed, the ingots on its tiles (monastery/garden: the 3x3 area) go to the player with the majority; on ties, or several completed features controlled by different players, entitled players take one ingot at a time starting with the active player clockwise. Uncollected ingots are discarded at game end; each collected ingot is worth 1/2/3/4 points for 1-3/4-6/7-9/10+ ingots.",
+      "tiles": [
+        {
+          "tile_type": "GLD_A",
+          "name": "Goldmine on Two Curved Roads",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "W"
+              ],
+              [
+                "S",
+                "E"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0",
+                "S2",
+                "W0"
+              ],
+              [
+                "E2",
+                "S0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Gold symbol; two separate curved roads (North-West and South-East)."
+        },
+        {
+          "tile_type": "GLD_B",
+          "name": "Goldmine on City Corner and Curved Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "GLD_C",
+          "name": "Goldmine on City Corner with Monastery",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "GLD_D",
+          "name": "Goldmine with Road Bridge over a City",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CRCR",
+          "wikicarpedia_heading": "CRCR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_bridge": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "Gold symbol; a road runs East-West on a bridge over a city connecting North and South (four corner fields)."
+        },
+        {
+          "tile_type": "GLD_E",
+          "name": "Goldmine on Monastery between Two Curved Roads",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "E"
+              ],
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Gold symbol; monastery between two curved roads (North-East and South-West)."
+        },
+        {
+          "tile_type": "GLD_F",
+          "name": "Goldmine on Road Overpass",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_bridge": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "N",
+                "S"
+              ],
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Gold symbol; a North-South road crosses an East-West road on a bridge (both roads continue)."
+        },
+        {
+          "tile_type": "GLD_G",
+          "name": "Goldmine on City Corner with Monastery",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CCFF",
+          "wikicarpedia_heading": "CCFF",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          }
+        },
+        {
+          "tile_type": "GLD_H",
+          "name": "Goldmine on Curved Road with Monastery",
+          "count": 1,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_goldmine": true,
+            "is_monastery": true,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        }
+      ]
+    },
+    "mage_and_witch": {
+      "expansion_id": "mage_and_witch",
+      "name": "Mage & Witch (Mini #5)",
+      "name_zh": "法师与女巫",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "figures_included": "1 purple Mage figure, 1 orange Witch figure",
+      "description": "Placing a tile with a magic symbol requires placing or moving either the Mage or the Witch to an incomplete city or road. When scored: Mage grants +1 pt per tile; Witch halves the total feature score (rounded up).",
+      "tiles": [
+        {
+          "tile_type": "MAG_A",
+          "name": "Magic Symbol on 3-Way Road Junction",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CRRR",
+          "wikicarpedia_heading": "CRRR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "MAG_B",
+          "name": "Magic Symbol on Three Separate City Edges with Gate Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "C"
+          ],
+          "canonical_code": "CCRC",
+          "wikicarpedia_heading": "CCCR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            },
+            "field_layout": "explicit"
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "E"
+              ],
+              [
+                "N"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "E"
+              ],
+              [
+                "W",
+                "N",
+                "E"
+              ]
+            ]
+          },
+          "description": "Magic symbol; separate city edges on East, North and West, the road from the South ends at the eastern city."
+        },
+        {
+          "tile_type": "MAG_C",
+          "name": "Magic Symbol on 3-Sided City with Road (B)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "C"
+          ],
+          "canonical_code": "CCRC",
+          "wikicarpedia_heading": "CCCR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "S": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E",
+                "W"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "S0"
+              ],
+              [
+                "S2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          }
+        },
+        {
+          "tile_type": "MAG_D",
+          "name": "Magic Symbol on Two Separate City Edges",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CFCF",
+          "wikicarpedia_heading": "CFCF",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "S"
+              ]
+            ]
+          },
+          "description": "Magic symbol; separate city edges on North and South with one field between them."
+        },
+        {
+          "tile_type": "MAG_E",
+          "name": "Magic Symbol on Two City Edges and Curved Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "E"
+              ],
+              []
+            ]
+          },
+          "description": "Magic symbol and garden; separate city edges on North and East, curved road South-West."
+        },
+        {
+          "tile_type": "MAG_F",
+          "name": "Magic Symbol on City Corner and Curved Road (B)",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CCRR",
+          "wikicarpedia_heading": "CCRR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "E"
+              ]
+            ],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "MAG_G",
+          "name": "Magic Symbol on City Tube with Two Gate Roads",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "C",
+            "R"
+          ],
+          "canonical_code": "CRCR",
+          "wikicarpedia_heading": "CRCR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "E": "city",
+              "W": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2"
+              ],
+              [
+                "W0"
+              ],
+              [
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "Magic symbol; city connecting North and South, separate roads from East and West end at its gates."
+        },
+        {
+          "tile_type": "MAG_H",
+          "name": "Magic Symbol on City Edge, Gate Road and Curved Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "CRRR",
+          "wikicarpedia_heading": "CRRR",
+          "features": {
+            "has_magic_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "road_ends_at": {
+              "E": "city"
+            }
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0"
+              ],
+              [
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ],
+              []
+            ]
+          },
+          "description": "Magic symbol; city edge on North, a road from the East ending at the city gate and a separate curved road South-West."
+        }
+      ]
+    },
+    "the_robbers": {
+      "expansion_id": "the_robbers",
+      "name": "The Robbers (Mini #6)",
+      "name_zh": "强盗",
+      "type": "mini_expansion",
+      "total_tiles": 8,
+      "figures_included": "6 robber figures (1 per player color)",
+      "description": "When a player draws a tile with a robber (bag) symbol, before placing it each player, starting with the active player and going clockwise, places their robber from supply on a scoreboard space occupied by another player's score figure (the active player may instead move an already placed robber). When a figure on that space scores during a turn, the robber owner scores half of the points that player scored this turn (rounded up) after the scoring step; the robber then returns to supply. Robbers never steal robber points. Each robber still on the scoreboard at game end gives 3 points before final scoring.",
+      "tiles": [
+        {
+          "tile_type": "ROB_A",
+          "name": "Robber Symbol on Curved Road",
+          "count": 2,
+          "edges": [
+            "F",
+            "F",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FFRR",
+          "wikicarpedia_heading": "FFRR",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "ROB_C",
+          "name": "Robber Symbol on 3-Way Road Junction",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FRRR",
+          "wikicarpedia_heading": "FRRR",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "S"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "ROB_D",
+          "name": "Robber Symbol on City Edge with Garden",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "F",
+            "F"
+          ],
+          "canonical_code": "CFFF",
+          "wikicarpedia_heading": "CFFF",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false,
+            "has_garden": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          }
+        },
+        {
+          "tile_type": "ROB_E",
+          "name": "Robber Symbol on City Edge and Curved Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CRRF",
+          "wikicarpedia_heading": "CRRF",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E",
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "ROB_F",
+          "name": "Robber Symbol on Straight Road",
+          "count": 2,
+          "edges": [
+            "F",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "FRFR",
+          "wikicarpedia_heading": "FRFR",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "E",
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              []
+            ]
+          }
+        },
+        {
+          "tile_type": "ROB_H",
+          "name": "Robber Symbol on Straight City Tube",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CFCF",
+          "wikicarpedia_heading": "CFCF",
+          "features": {
+            "has_robber_symbol": true,
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              [
+                "N"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "the_crop_circles": {
+      "expansion_id": "the_crop_circles",
+      "name": "The Crop Circles (Mini #7)",
+      "name_zh": "麦田怪圈",
+      "type": "mini_expansion",
+      "total_tiles": 6,
+      "crop_circle_types": {
+        "club": "Affects Highwaymen / Roads (2 tiles)",
+        "rake": "Affects Farmers / Fields (2 tiles)",
+        "shield": "Affects Knights / Cities (2 tiles)"
+      },
+      "description": "Tiles show a crop circle (rake = farmers, club = highwaymen, shield = knights). After scoring, the active player chooses A (each player may add a meeple from supply to a feature where they already have a meeple of the indicated type) or B (each player must remove one meeple of the indicated type). Resolution starts with the player to the left of the active player, proceeds clockwise and ends with the active player.",
+      "tiles": [
+        {
+          "tile_type": "CRP_A",
+          "name": "Club Crop Circle by a Curved Road and a Dead End",
+          "count": 1,
+          "edges": [
+            "F",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "FRRR",
+          "wikicarpedia_heading": "FRRR",
+          "features": {
+            "crop_circle_type": "club",
+            "affects_feature": "road",
+            "is_monastery": false,
+            "has_shield": false,
+            "merge_barriers": true
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "N1",
+                "N2",
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Club crop circle; curved road South-West and a road from the East ending at the crop circle, which touches the curve."
+        },
+        {
+          "tile_type": "CRP_B",
+          "name": "Club Crop Circle at a Curved Road and Two Dead Ends",
+          "count": 1,
+          "edges": [
+            "R",
+            "R",
+            "R",
+            "R"
+          ],
+          "canonical_code": "RRRR",
+          "wikicarpedia_heading": "RRRR",
+          "features": {
+            "crop_circle_type": "club",
+            "affects_feature": "road",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [],
+            "roads": [
+              [
+                "S",
+                "W"
+              ],
+              [
+                "N"
+              ],
+              [
+                "E"
+              ]
+            ],
+            "fields": [
+              [
+                "N0",
+                "E2",
+                "S0",
+                "W2"
+              ],
+              [
+                "N2",
+                "E0"
+              ],
+              [
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [],
+              [],
+              []
+            ]
+          },
+          "description": "Club crop circle; curved road South-West plus roads from North and East ending at the crop circle."
+        },
+        {
+          "tile_type": "CRP_C",
+          "name": "Rake Crop Circle on City Edge and Straight Road",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "R",
+            "F"
+          ],
+          "canonical_code": "CFRF",
+          "wikicarpedia_heading": "CFRF",
+          "features": {
+            "crop_circle_type": "rake",
+            "affects_feature": "field",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "S"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2",
+                "S0",
+                "S2",
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ]
+            ]
+          },
+          "description": "Rake crop circle; city edge on North and a road from the South ending at the crop circle in a single field."
+        },
+        {
+          "tile_type": "CRP_D",
+          "name": "Rake Crop Circle between City Edge and Two Dead Ends",
+          "count": 1,
+          "edges": [
+            "C",
+            "R",
+            "F",
+            "R"
+          ],
+          "canonical_code": "CRFR",
+          "wikicarpedia_heading": "CRFR",
+          "features": {
+            "crop_circle_type": "rake",
+            "affects_feature": "field",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ]
+            ],
+            "roads": [
+              [
+                "E"
+              ],
+              [
+                "W"
+              ]
+            ],
+            "fields": [
+              [
+                "E0",
+                "W2"
+              ],
+              [
+                "E2",
+                "S0",
+                "S1",
+                "S2",
+                "W0"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N"
+              ],
+              []
+            ]
+          },
+          "description": "Rake crop circle; city edge on North, roads from East and West end at the crop circle and split the field."
+        },
+        {
+          "tile_type": "CRP_E",
+          "name": "Shield Crop Circle between Two City Edges",
+          "count": 1,
+          "edges": [
+            "C",
+            "F",
+            "C",
+            "F"
+          ],
+          "canonical_code": "CFCF",
+          "wikicarpedia_heading": "CFCF",
+          "features": {
+            "crop_circle_type": "shield",
+            "affects_feature": "city",
+            "is_monastery": false,
+            "has_shield": false,
+            "merge_barriers": true
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N"
+              ],
+              [
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [
+              [
+                "E0",
+                "E1",
+                "E2"
+              ],
+              [
+                "W0",
+                "W1",
+                "W2"
+              ]
+            ],
+            "field_cities": [
+              [
+                "N",
+                "S"
+              ],
+              [
+                "N",
+                "S"
+              ]
+            ]
+          },
+          "description": "Shield crop circle touching separate city edges on North and South; it divides the field into West and East."
+        },
+        {
+          "tile_type": "CRP_F",
+          "name": "Shield Crop Circle between Two City Corners",
+          "count": 1,
+          "edges": [
+            "C",
+            "C",
+            "C",
+            "C"
+          ],
+          "canonical_code": "CCCC",
+          "wikicarpedia_heading": "CCCC",
+          "features": {
+            "crop_circle_type": "shield",
+            "affects_feature": "city",
+            "is_monastery": false,
+            "has_shield": false
+          },
+          "internal_connectivity": {
+            "cities": [
+              [
+                "N",
+                "W"
+              ],
+              [
+                "E",
+                "S"
+              ]
+            ],
+            "roads": [],
+            "fields": [],
+            "field_cities": []
+          },
+          "description": "Shield crop circle between two separate city corners (North-West and East-South); no field."
+        }
+      ]
+    },
+    "the_abbot": {
+      "expansion_id": "the_abbot",
+      "name": "The Abbot",
+      "name_zh": "修道院长",
+      "type": "mini_expansion",
+      "total_tiles": 0,
+      "figures_included": "6 Abbot figures (1 per player color)",
+      "description": "Each player has an abbot that may be placed only on a monastery or garden of the tile just placed (normal meeples can never occupy gardens). Instead of placing any figure in step 2, a player may return their abbot from an incomplete monastery or garden and immediately score 1 point plus 1 per surrounding tile (1-8). Completed: 9 points; final scoring like a monk."
+    }
+  }
+}
