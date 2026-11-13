@@ -8,6 +8,7 @@ import {
   type WorkspaceAppEntry,
 } from '../apps/registry.ts';
 import { readHubSnapshot } from './hubProgress.ts';
+import { CONTRIBUTING_URL, REPO_URL } from './site.ts';
 
 interface HomeHubProps {
   apps: ReadonlyArray<WorkspaceAppEntry>;
@@ -621,7 +622,16 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                 免安装点开即玩的独立小游戏大厅
               </h1>
               <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-[#57534E]">
-                全部游戏均内置分步实战新手指引、三档难度与键鼠/触屏双端支持，存档自动保存在本地浏览器。
+                桌面和手机都能玩，进度自动保存在本地浏览器。也欢迎
+                <a
+                  href={CONTRIBUTING_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-0.5 font-medium text-[#1C1917] underline decoration-[#D6D0C4] underline-offset-[3px] hover:text-[#C2410C] hover:decoration-[#C2410C] focus:outline-none focus-visible:text-[#C2410C] focus-visible:decoration-[#C2410C] transition-colors"
+                >
+                  投稿你的游戏
+                </a>
+                。
               </p>
             </div>
 
@@ -896,11 +906,28 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
 
       <footer className="w-full border-t border-[#E4DFD5]">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-2 text-xs text-[#78716C] tabular-nums">
-          <span>43gg 小游戏 · 独立网页游戏大厅</span>
           <span>
             当前收录 {apps.length} 款作品
-            {savedAppsCount > 0 ? ` · 本机已存 ${savedAppsCount} 款进度` : ' · 本地自动存档'}
+            {savedAppsCount > 0 ? ` · 本机已存 ${savedAppsCount} 款进度` : ''}
           </span>
+          <nav aria-label="项目链接" className="flex items-center gap-4">
+            <a
+              href={CONTRIBUTING_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#1C1917] focus:outline-none focus-visible:text-[#C2410C] transition-colors"
+            >
+              投稿指南
+            </a>
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#1C1917] focus:outline-none focus-visible:text-[#C2410C] transition-colors"
+            >
+              GitHub 源码
+            </a>
+          </nav>
         </div>
       </footer>
     </div>

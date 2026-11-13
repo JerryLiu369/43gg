@@ -1,6 +1,6 @@
 {
   "name": "43gg 小游戏",
-  "description": "43gg 小游戏大厅，免安装点开即玩的独立网页游戏合集，收录《璇玑破阵》、《墨刃：一闪》、《天枢浑仪》、《吉星包租公》与《CHRONO STAGE》等作品。",
+  "description": "43gg 小游戏：免安装、点开即玩的网页小游戏合集，桌面和手机都能玩，进度自动保存在本地。",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
