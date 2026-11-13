@@ -103,7 +103,7 @@ test('retired app ids alias to live entries without shadowing or chaining', () =
     assert.equal(APP_ID_ALIASES[newId], undefined, `Alias target ${newId} must not itself be an alias`);
   }
   assert.equal(resolveAppId('ticket-to-ride-europe'), 'meridian-rails');
-  assert.equal(resolveAppId(' FangcunRealms-BigBox '), 'fangcun-realms');
+  assert.equal(resolveAppId(' Ticket-To-Ride-Europe '), 'meridian-rails');
   assert.equal(getAppById('carcassonne-bigbox')?.id, 'fangcun-realms');
   assert.equal(resolveAppId('meridian-rails'), 'meridian-rails');
   assert.equal(resolveAppId('nonexistent'), null);
