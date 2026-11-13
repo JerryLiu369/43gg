@@ -812,7 +812,7 @@ export const HomeHub: React.FC<HomeHubProps> = ({ apps, onLaunchApp }) => {
                             </span>
                           ) : (
                             <span className="text-[#78716C] truncate">
-                              实战指引 · 三档难度 · 双端可玩
+                              {app.highlights.join(' · ')}
                             </span>
                           )}
 
