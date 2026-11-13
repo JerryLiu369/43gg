@@ -104,3 +104,47 @@ test('buildIframeEntryUrl resolves static sub-apps cleanly on both root and /gai
     'https://jerryliu369.github.io/gaistudio/apps/demo-static/index.html?stage=1',
   );
 });
+
+test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md, and Chinese-only docs', () => {
+  const requiredFiles = [
+    'README.md',
+    'AGENTS.md',
+    'kfl-spec.md',
+    'docs/chrono-stage.md',
+    'skills/kasidia-frontend-law/SKILL.md',
+    'skills/kasidia-frontend-law/references/rules.md',
+    'skills/kasidia-frontend-law/references/spec-template.md',
+    'skills/kasidia-frontend-law/references/design-review.md',
+  ];
+
+  for (const rel of requiredFiles) {
+    const abs = path.join(REPO_ROOT, rel);
+    assert.ok(fs.existsSync(abs) && fs.statSync(abs).isFile(), `Expected required file: ${rel}`);
+  }
+
+  assert.equal(
+    fs.existsSync(path.join(REPO_ROOT, 'README_zh.md')),
+    false,
+    'README_zh.md must not exist; README.md is directly written in Chinese',
+  );
+  assert.equal(
+    fs.existsSync(path.join(REPO_ROOT, 'docs/chrono-stage_zh.md')),
+    false,
+    'docs/chrono-stage_zh.md should be unified as docs/chrono-stage.md',
+  );
+
+  const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  assert.match(readme, /天枢浑仪/);
+  assert.match(readme, /吉星包租公/);
+  assert.match(readme, /CHRONO STAGE/);
+  assert.match(readme, /skills\/kasidia-frontend-law\/SKILL\.md/);
+  assert.match(readme, /AGENTS\.md/);
+  assert.doesNotMatch(readme, /README_zh\.md/);
+
+  const agentsDoc = fs.readFileSync(path.join(REPO_ROOT, 'AGENTS.md'), 'utf8');
+  assert.match(agentsDoc, /用户偏好档案/);
+  assert.match(agentsDoc, /Agent 能力加强规范/);
+  assert.match(agentsDoc, /自有工程方法论/);
+  assert.match(agentsDoc, /演进沉淀日志/);
+});
+

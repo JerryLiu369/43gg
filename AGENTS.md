@@ -1,0 +1,115 @@
+# AGENTS.md — 工作区持久记忆库与工程宪章
+
+本文档是 `gaistudio` 仓库的**跨会话持久记忆库（Persistent Memory Bank）**与 **Agent 行为宪章**。任何进入本仓库工作的编码 Agent，在开始分析、设计或修改代码前，**必须首先完整阅读本文件与 [`kfl-spec.md`](./kfl-spec.md)**；凡涉及前端界面、组件、排版、色彩、微交互或视觉验收的任务，**必须同步读取并严格遵循 [`skills/kasidia-frontend-law/SKILL.md`](./skills/kasidia-frontend-law/SKILL.md) 及其 [`references/rules.md`](./skills/kasidia-frontend-law/references/rules.md)**。
+
+---
+
+## 记忆沉淀与自我演进机制
+
+为了避免每次新对话“失忆”或重复试错，Agent 必须按以下规则持续维护本文件：
+
+- **触发时机**：当用户在对话中明确新的喜好/禁忌、纠正某类设计或代码偏差、拍板新的架构约定，或在复杂任务中验证出高效稳定的本仓解法时，在当轮交付收尾前同步更新本文件。
+- **写入纪律**：
+  1. 偏好更新写入「用户偏好档案」；质量红线写入「Agent 能力加强规范」；可复用技术套路写入「自有工程方法论」。
+  2. 每次实质性新增或修订，在文末「演进沉淀日志」追加一行日期与精炼摘要。
+  3. **只沉淀高信噪比的可执行规则与真实结论**，严禁堆砌寒暄、空洞口号或一次性临时调试流水账（遵循 KFL `CON-4` 删减测试原则）。
+
+---
+
+## 用户偏好档案（最高优先级 · KFL `GOV-1`）
+
+### 全中文单语文档与沟通规范
+- **文档只留中文、不写英文**：仓库内所有自建文档（`README.md`、`AGENTS.md`、`kfl-spec.md`、`docs/*.md` 等）一律直接使用**简体中文**撰写。
+- **禁止双语拆分与冗余翻译**：严禁维护 `README_zh.md` / `README_en.md` 双份文件，也不要在中文标题后机械追加 `(Overview)`、`(Controls)` 等无信息增量的英文括注；仅代码标识符、框架/协议专有名词（如 `React`、`WebGL`、`Three.js`、`WRC`）或特定作品原名（如 `CHRONO STAGE`）保留英文。
+- **日常回复简洁直给**：与用户沟通统一使用自然克制的中文，结论先行，不刷屏、不吹嘘、不暴露底层内部步骤编号。
+
+### 美学品味与前端铁律（强制执行 KFL）
+- **唯一前端设计准则**：全仓前端界面严格遵循 [`skills/kasidia-frontend-law/`](./skills/kasidia-frontend-law/)（Kasidia Frontend Law）的优先级序列：**明确的用户要求 → 已确立的项目视觉方向 → 视觉品质与辨识度 → 日常易懂性与任务效率 → 一致性与实现质量 → 无障碍增强与数值诊断参考**。
+- **外壳视觉基线（Swiss Paper 瑞士暖纸体系）**：
+  - 统一工作区外壳（`HomeHub`、顶部壳层导航、通用异常恢复页）固定采用 `Inherit`（继承既有系统）路径：低饱和暖白纸底 `#FAF8F4`、纯白卡片 `#FFFFFF`、暖灰细边框 `#E4DFD5`、深石墨主字色 `#1C1917`、暖石次级字色 `#57534E / #78716C`、朱砂印章强调色 `#C2410C`。
+  - 独立游戏/沉浸式子应用（如 3D 竞速、星轨浑仪、桌面账本）在自身视口内可拥有贴合题材的专属视觉世界（`Explore` 或子应用自有基线），但内部排版对齐、组件语义复用、真实状态反馈与防堆砌纪律同样受 KFL 约束。
+- **严防六大高频 AI 界面坏味道（KFL Anti-Patterns）**：
+  1. **禁止废话填充文案与虚构业务数据**（`CON-1 / CON-4`）：不编造虚假统计条、Logo 墙、伪评价或无意义的副标题口号。
+  2. **禁止无源假状态点与装饰性遥测**（`STA-2`）：严禁添加无真实数据源支撑的绿色在线圆点、“System Ready / Live”徽章或假脉冲动画。
+  3. **禁止给无序并列模块强加序号**（`MIN-2`）：并列卡片、平级分区标题或文档常规章节不随意标注 `01 / 02 / 03` 装饰编号。
+  4. **按语义角色克制使用图标与文字**（`MIN-5`）：紧凑高频工具动作用纯图标（配键盘焦点可见提示）；核心业务主操作用「语义图标 + 明确文字」；导航项、分类 Tab、筛选器与选项值直接展示清晰文字标签，既不把必要导航名藏进纯图标，也不给每个导航标签强塞装饰图标。
+  5. **清除删减遗留空洞、保留有意呼吸感留白**（`ALN-14`）：删除元素后同步收拢空网格轨道与残留 `min-height`，同时保留区分层级的克制留白，不为堆满屏幕而强行塞卡片。
+  6. **禁止新注入侧边彩色强调竖条或装饰下划线**（`INT-3a`）：不为卡片、行、提示框随意加左侧彩条或标题下方装饰横杠。
+- **克制的焦点与滚动条语言**：
+  - 新增或自研控件优先使用与调色板协调的现有边框色、字色或底色微调表达 `:focus-visible`（如暖灰边框切换为 `#C2410C` 朱砂色），不叠加刺眼的默认外发光粗环（`INT-2 / INT-3`）。
+  - 所有滚动容器复用统一的细暖石滚动条契约（兼顾标准 `scrollbar-width / scrollbar-color` 与 `::-webkit-scrollbar`，遵循 `SCR-1..3`）。
+
+### 仓库组织与安全偏好
+- **单仓多应用收口**：所有实验原型、增量游戏与 3D 模拟统一收纳于 `gaistudio` 单一工作区，通过 `src/apps/registry.ts` 集中注册，保持根目录整洁。
+- **源码私有、静态构建公开**：Git 仓库保持 `Private`，GitHub Actions 仅发布编译后的 `./dist` 静态产物，严禁把 `.env*`、源码映射（`.map`）或未脱敏凭据带入构建目录。
+
+---
+
+## Agent 能力加强规范（Capability Hardening Norms）
+
+### 先读契约、区分规则等级（KFL Stage 0 → 6）
+- 动手改 UI 前先确认属于 **`Inherit`（沿用既有视觉基线，无需重新生成概念图或推翻现有风格）** 还是 **`Explore`（确立全新视觉方向）**，并查阅 `kfl-spec.md` 中已锁定的保留决策（Preserved Choices）。
+- 严格区分 KFL 三类规则等级与实测状态（`GOV-4`）：
+  - `required`：用户明确指令、内容真实性、功能可用性与真实渲染验证证据，必须 100% 达标，严禁静默降级。
+  - `default`：默认设计导向；若因具体题材或构图需要偏离，必须在 `kfl-spec.md` 决策日志写明理由与适用范围并在后续迭代中延续。
+  - `advisory`：数值对比度（如 4.5:1）、字号下限、圆角阶梯、44px 触控参考等诊断指标；用于辅助定位真实阅读或点击障碍，绝不为迎合单一数字而把柔和次级字色粗暴刷黑或破坏既有视觉层次，同时如实记录诊断结果，绝不把未通过的诊断伪造为 `pass`。
+
+### 纯逻辑剥离与确定性单元测试硬门禁
+- 凡涉及物理模拟、经济产出公式、牌组/倍率结算、存档读写迁移、URL 路由解析等核心逻辑，**必须与 React / DOM 渲染组件彻底解耦**，沉淀在独立的 `engine.ts`、`physics.ts`、`router.ts` 等纯逻辑模块中。
+- 使用 Node 内置 `node:test` 与 `node:assert/strict` 编写确定性单元测试（支持固定随机种子复现），在进入浏览器视觉调优前必须先确保 `npm test` 与 `npm run typecheck` 零错误通过。
+
+### 子应用生命周期隔离与零泄漏红线
+- **大厅零负载**：访问首页应用大厅（`/`）时，严禁提前实例化任何子应用的 Three.js / WebGL 渲染器、物理循环或 `AudioContext`。
+- **退出必销毁**：子应用卸载返回目录或点击顶部「刷新」重挂载时，`useEffect` 返回的清理函数必须完整执行：
+  1. `cancelAnimationFrame` 与清理全部 `setTimeout / setInterval`；
+  2. 释放 Three.js `Geometry`、`Material`、`Texture`、`RenderTarget` 并销毁 `WebGLRenderer`；
+  3. 关闭或挂起 `AudioContext`，停止 `window.speechSynthesis` 播报；
+  4. 移除绑定在 `window / document` 上的键盘、鼠标、手柄、失焦与 `resize` 事件监听；
+  5. 清除写入 `document.body.dataset` 的运行态标记。
+- **存储命名空间隔离**：各子应用 `localStorage` 读写必须使用独立命名空间前缀并具备异常兜底（损坏存档安全回退初始态，绝不白屏崩溃）。
+
+### 真实浏览器渲染与交互验收铁律（KFL `VER-1` + Ultra 闭环）
+- **禁止“盲编即交付”**：`tsc` 与 `vite build` 通过只证明语法与打包合法，**绝不能替代真实渲染检查**。
+- 任何涉及 UI/交互的改动，完成构建后必须重启开发服（容器环境默认关闭 HMR），通过 `playwright-cli`（无头 Chromium）实际打开页面：
+  1. 检查控制台（`console`）与网络请求（`requests`）是否存在真实异常；
+  2. 使用无障碍快照（`snapshot`）核验原生语义控件（`<button>`、`<a href>`、`aria-label`、`aria-pressed`）与文本状态；
+  3. 捕获关键状态真实截图（每次使用唯一文件名存入 `.playwright-cli/`）并以资深设计师标准逐项挑刺（布局对齐、字号对比、溢出裁切、焦点态与开闭过渡），修复根因后复测并关闭浏览器进程（`trap 'playwright-cli close' EXIT`）。
+- 对确实因环境限制未能执行的检查，按 `VER-6` 如实声明边界，绝不虚报已验证。
+
+---
+
+## 自有工程方法论（本仓实战沉淀）
+
+### 方法一：单挂载画布 + Ref 状态桥接 + 60Hz DOM 直写（WebGL / 游戏高性能范式）
+- **适用场景**：`CHRONO STAGE`、`天枢浑仪` 等包含连续物理步进或 3D 场景渲染的子应用（尤其兼顾无独立 GPU 容器环境的 SwiftShader 软件渲染性能）。
+- **标准做法**：
+  - `WebGLRenderer` 与三维场景在 `useEffect(..., [])` 中**仅初始化一次**；React 侧的最新回调、静音开关、视角模式、输入配置全部同步到 `useRef`，避免 React 重渲染触发画布销毁重建。
+  - **高低频状态分层**：每帧变化的遥测数据（车速、RPM 灯带、踏板行程、实时计时差）通过 `hudRefs` 直接更新对应 DOM 节点的 `textContent` 或 `style.transform`；仅阶段切换（标题页、暂停、结算弹窗、升级面板）触发低频 React `setState`。
+  - 支持 `?autostart=1` 查询参数跳过标题封面直达主运行态，便于自动化回归快速切入核心循环。
+
+### 方法二：双路径同构路由与静态资产安全摆渡
+- **适用场景**：工作区同时部署在本地/AI Studio 根路径 `/` 与 GitHub Pages 项目子路径 `/gaistudio/`。
+- **标准做法**：
+  - `vite.config.ts` 保持 `base: './'`，所有路由跳转统一走 `src/shell/router.ts`（`buildAppUrl` / `buildHomeUrl` / `parseAppIdFromLocation`），以 `?app=<slug>` 为主路由并兼容 `#/apps/<slug>`。
+  - 静态子应用通过 `vite.config.ts` 内置的 `workspaceStaticAppsPlugin` 在开发态映射 `/apps/<slug>/`，构建态自动剔除 `.env*` 与 `.md` 后拷贝至 `dist/apps/<slug>/`。
+
+### 方法三：小应用“两步注册 + 一键门禁”标准流水线
+- **标准做法**：
+  1. 在 `src/apps/<slug>/` 建立模块化目录（`content.ts` 静态配置、`types.ts` 类型定义、`engine.ts` 纯逻辑状态机、`engine.test.ts` 单测、`storage.ts` 持久化、`audio.ts` 合成音效、`*App.tsx` 视图层）。
+  2. 在 `src/apps/registry.ts` 添加唯一注册项并在 `HomeHub.tsx` 补充契合瑞士极简线条风格的矢量封面 `AppCoverGraphic`。
+  3. 收尾统一执行 `npm run apps:check`，一站式完成 `.env` 跟踪检查、工作区必备文件核验、`tsc --noEmit`、全量单元测试、`vite build` 以及 `dist/` 源码/密钥零泄漏审计。
+
+### 方法四：KFL 共享拥有者根因修复法（Shared-Owner Repair）
+- **标准做法**：
+  - 布局按 KFL 三层作用域划分归属：**页面外框（Page Frame）**管最大宽度与外边距、**区域布局（Region Layout）**管内容组轨道分配、**组件内部（Component Interior）**管自身内边距与图标文字基线（`ALN-2..4`）。
+  - 发现错位、拥挤或可读性缺陷时，回到对应的共享 CSS 变量（`src/index.css`）或共享容器组件一次修好并回归受影响的兄弟视图，严禁写针对单一分辨率的魔法像素微调（`REU-7`）。
+
+---
+
+## 演进沉淀日志（Memory Changelog）
+
+| 日期 | 沉淀事项与核心结论 | 来源 |
+| :--- | :--- | :--- |
+| 2026-11-12 | 将 `AngleNaris/KFL`（Kasidia Frontend Law）完整引入仓库 `skills/kasidia-frontend-law/`，并在根目录建立 `kfl-spec.md` 作为工作区长期视觉与交互契约。 | 用户明确指令 |
+| 2026-11-12 | 确立全仓「纯简体中文单语文档」规范：重写中文 `README.md`，移除英文版与双语对照 `README_zh.md`，归并 `docs/chrono-stage.md`，并在自动化门禁中守护该约定。 | 用户明确指令 |
+| 2026-11-12 | 创建本 `AGENTS.md` 持久记忆库，固化用户品味偏好、KFL 六大防堆砌红线、子应用生命周期零泄漏规范及四项本仓自有工程方法论。 | 用户明确指令 |
