@@ -350,6 +350,45 @@ function summarizeMistlight(storage: StorageReader): string | null {
   return `已通航 ${records.length} 片海域 · 收集 ${records.reduce((sum, record) => sum + record.stars, 0)} 枚星`;
 }
 
+function summarizeEmberForge(storage: StorageReader): string | null {
+  const active = safeParseJson<{
+    phase?: unknown;
+    stageIndex?: unknown;
+    score?: unknown;
+  }>(storage.getItem('43gg.ember_forge.run.v1'));
+  if (
+    active &&
+    active.phase !== 'defeat' &&
+    active.phase !== 'victory' &&
+    typeof active.stageIndex === 'number' &&
+    Number.isFinite(active.stageIndex) &&
+    active.stageIndex >= 0
+  ) {
+    const score = typeof active.score === 'number' ? Math.floor(active.score) : 0;
+    return `第 ${Math.floor(active.stageIndex) + 1} 阵锻打中 · ${score} 分`;
+  }
+
+  const meta = safeParseJson<{
+    runsPlayed?: unknown;
+    victories?: unknown;
+    bestScore?: unknown;
+    highestStageReached?: unknown;
+  }>(storage.getItem('43gg.ember_forge.meta.v1'));
+  if (!meta) return null;
+  const victories = typeof meta.victories === 'number' ? Math.floor(meta.victories) : 0;
+  const bestScore = typeof meta.bestScore === 'number' ? Math.floor(meta.bestScore) : 0;
+  const runsPlayed = typeof meta.runsPlayed === 'number' ? Math.floor(meta.runsPlayed) : 0;
+  const highest = typeof meta.highestStageReached === 'number' ? Math.floor(meta.highestStageReached) : 1;
+
+  if (victories > 0) {
+    return `已通关 ${victories} 次 · 最高 ${bestScore} 分`;
+  }
+  if (runsPlayed > 0 || bestScore > 0 || highest > 1) {
+    return `最高第 ${Math.max(1, highest)} 阵 · 最高 ${bestScore} 分`;
+  }
+  return null;
+}
+
 export function readHubSnapshot(
   validAppIds: ReadonlyArray<string>,
   storage: StorageReader | null = getBrowserStorage(),
@@ -380,6 +419,7 @@ export function readHubSnapshot(
     ['meridian-rails', summarizeMeridianRails(storage)],
     ['fangcun-realms', summarizeFangcunRealms(storage)],
     ['inch-of-shade', summarizeInchOfShade(storage)],
+    ['ember-forge', summarizeEmberForge(storage)],
   ];
 
   for (const [id, text] of summaries) {

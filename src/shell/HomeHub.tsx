@@ -649,6 +649,66 @@ const AppCoverGraphic: React.FC<{ app: WorkspaceAppEntry }> = ({ app }) => {
     );
   }
 
+  if (appId === 'ember-forge') {
+    return (
+      <svg
+        viewBox="0 0 320 180"
+        className="w-full h-full group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+        fill="none"
+        aria-hidden="true"
+      >
+        <PlateRegistrationMarks />
+        {/* Forged furnace frame */}
+        <rect
+          x="66"
+          y="22"
+          width="188"
+          height="136"
+          rx="6"
+          fill="#FAF8F4"
+          stroke="#CFC7B8"
+          strokeWidth="1.5"
+        />
+        {/* Faint concentric kiln rings */}
+        <circle cx="160" cy="96" r="46" stroke="#EAE5DC" strokeWidth="1.1" />
+        <circle cx="160" cy="96" r="24" stroke="#EAE5DC" strokeWidth="1" />
+        {/* Top launcher barrel */}
+        <circle cx="160" cy="36" r="7.5" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.7" />
+        {/* Ricochet path from launcher -> gold crit peg -> bellows pulse -> crucible */}
+        <path
+          d="M160 36L116 74L188 100L148 138"
+          stroke="#C2410C"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Bellows pulse shockwave ring */}
+        <circle
+          cx="188"
+          cy="100"
+          r="15"
+          stroke="#0F766E"
+          strokeWidth="1.5"
+          strokeDasharray="4 3"
+        />
+        {/* Bronze & special pegs */}
+        <circle cx="116" cy="74" r="5.6" fill="#C2410C" />
+        <circle cx="204" cy="74" r="4.6" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.6" />
+        <circle cx="160" cy="78" r="4.2" fill="#FAF8F4" stroke="#78716C" strokeWidth="1.4" />
+        <circle cx="188" cy="100" r="5.4" fill="#0F766E" />
+        <circle cx="132" cy="104" r="4.4" fill="#FAF8F4" stroke="#1C1917" strokeWidth="1.6" />
+        <circle cx="102" cy="118" r="3.8" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.4" />
+        <circle cx="218" cy="118" r="3.8" fill="#FAF8F4" stroke="#CFC7B8" strokeWidth="1.4" />
+        {/* Bottom moving crucible catcher */}
+        <path
+          d="M126 140H174L169 149H131L126 140Z"
+          fill="#1C1917"
+        />
+        <line x1="82" y1="145" x2="238" y2="145" stroke="#CFC7B8" strokeWidth="1.2" />
+      </svg>
+    );
+  }
+
   return <ProceduralCoverGraphic app={app} />;
 };
 

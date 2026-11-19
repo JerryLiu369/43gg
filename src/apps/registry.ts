@@ -259,6 +259,23 @@ export const APP_REGISTRY: WorkspaceAppEntry[] = [
     sourceDir: 'src/apps/mistlight-voyage',
     addedAt: '2026-11-13',
   },
+  {
+    id: 'ember-forge',
+    title: '炽穹弹炉',
+    subtitle: '物理弹射 × 半空鼓风控球肉鸽',
+    description: '瞄准青铜符钉打出炽铁球，半空触发鼓风磁冲托举连击、接住承火金盂，锻造八种弹丸与十二件圣物讨伐玄铁饕餮。',
+    author: 'JerryLiu369',
+    model: 'Gemini 4 Neon',
+    highlights: ['真实物理弹射预演', '半空鼓风主动控球', '八球十二圣物构筑'],
+    techLabel: '物理肉鸽',
+    tags: ['物理弹射', '肉鸽构筑', '打铁花', '鼓风控球'],
+    category: 'roguelike',
+    accent: 'amber',
+    kind: 'react-lazy',
+    loader: () => import('./ember-forge/EmberForgeApp.tsx'),
+    sourceDir: 'src/apps/ember-forge',
+    addedAt: '2026-11-18',
+  },
 ];
 
 /**
