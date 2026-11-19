@@ -37,6 +37,7 @@ test('APP_REGISTRY keeps every published app id and each entry has valid metadat
     'mistlight-voyage',
     'meridian-rails',
     'fangcun-realms',
+    'ember-forge',
   ];
   for (const id of PUBLISHED_IDS) {
     const resolved = resolveAppId(id);
@@ -220,6 +221,7 @@ test('workspace enforces vendored KFL skill, AGENTS.md memory bank, kfl-spec.md,
   assert.match(readme, /经纬铁道/);
   assert.match(readme, /方寸山河/);
   assert.match(readme, /寸阴/);
+  assert.match(readme, /炽穹弹炉/);
   assert.match(readme, /skills\/kasidia-frontend-law\/SKILL\.md/);
   assert.match(readme, /AGENTS\.md/);
   assert.doesNotMatch(readme, /README_zh\.md/);
@@ -306,9 +308,16 @@ test('hubProgress reads real local milestones safely and ignores unplayed or mal
     'first-light': { stars: 3, moves: 1, difficulty: 'standard' },
     'around-the-cape': { stars: 2, moves: 7, difficulty: 'standard' },
   } }));
+  store.set('43gg.ember_forge.meta.v1', JSON.stringify({
+    runsPlayed: 2,
+    victories: 1,
+    bestScore: 3120,
+    highestStageReached: 6,
+  }));
 
   const snap = readHubSnapshot(VALID_IDS, mockStorage);
   assert.equal(snap.lastPlayedAppId, 'xuanji-breach');
+  assert.match(snap.progressByAppId['ember-forge'], /已通关 1 次 · 最高 3120 分/);
   assert.match(snap.progressByAppId['inch-of-shade'], /已叼到 2 \/ 20 条鱼干 · 「妙」印 1/);
   assert.match(snap.progressByAppId['moon-mirror'], /已唤醒 2 \/ 9 座夜庭/);
   assert.match(snap.progressByAppId['xuanji-breach'], /已破阵通关 1 次/);
