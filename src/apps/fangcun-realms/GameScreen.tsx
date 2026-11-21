@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bot, Check, GraduationCap, RotateCcw, RotateCw, Settings2, Sparkles, Trophy, Undo2 } from 'lucide-react';
+import {
+  BookOpen,
+  Bot,
+  Check,
+  GraduationCap,
+  Pause,
+  Play,
+  RotateCcw,
+  RotateCw,
+  Settings2,
+  Sparkles,
+  Trophy,
+  Undo2,
+  User,
+} from 'lucide-react';
 import { coordKey, type Action, type GameEvent, type Rotation } from './engine/index.ts';
 import { getCatalog } from './lib/catalog.ts';
 import {
@@ -40,9 +54,12 @@ interface Props {
   onNewSetup: () => void;
   /** Current guided step, or null when the guide is off. */
   guideStep: FcGuideStep | null;
-  /** A placement that scores right away for the human, if any (used by the guide demo). */
+  /** A placement that scores right away for the active human, if any (used by the guide demo). */
   suggestedPlacement: Action | null;
   onSkipGuide: () => void;
+  /** Only used in 0-human AI spectate mode. */
+  spectatePaused?: boolean;
+  onToggleSpectatePause?: () => void;
 }
 
 function actionSpot(a: Action, view: ClientView): { x: number; y: number; feature: number } | null {
@@ -85,12 +102,21 @@ export function GameScreen({
   guideStep,
   suggestedPlacement,
   onSkipGuide,
+  spectatePaused = false,
+  onToggleSpectatePause,
 }: Props) {
   const orderedSeats = useMemo(() => [...seats].sort((a, b) => a.seatIndex - b.seatIndex), [seats]);
+  const humanSeats = useMemo(() => orderedSeats.filter((s) => !s.isBot), [orderedSeats]);
+  const isSingleHuman = humanSeats.length === 1;
+  const isMultiHuman = humanSeats.length > 1;
+  const isAllBots = humanSeats.length === 0;
+  const soleHumanSeat = isSingleHuman ? humanSeats[0].seatIndex : humanSeat;
+
   const names = orderedSeats.map((p) => p.displayName);
   const colors = orderedSeats.map((p) => COLOR_HEX[p.color]);
   const ctx: LabelContext = { view, names, cat };
   const pending = view.pending;
+  const pendingSeat = pending ? orderedSeats[pending.player] ?? null : null;
 
   const [sel, setSel] = useState<{ x: number; y: number; rotation: Rotation } | null>(null);
   const [preferredRotation, setPreferredRotation] = useState<Rotation>(0);
@@ -240,7 +266,7 @@ export function GameScreen({
       return;
     }
     if (!placing) {
-      setHint('等轮到你摸到地块后再试。');
+      setHint(isMultiHuman ? '等轮到真人玩家摸到地块后再试。' : '等轮到你摸到地块后再试。');
       return;
     }
     const fallback = legal.find((a) => a.type === 'PLACE_TILE');
@@ -249,7 +275,7 @@ export function GameScreen({
       setSel({ x: pick.x, y: pick.y, rotation: pick.rotation });
       setHint(
         guideStep === 'score' && !suggestedPlacement
-          ? '这一块暂时封不了口，先接在你随从所在的地形旁边，下一块再收尾。'
+          ? '这一块暂时封不了口，先接在随从所在的地形旁边，下一块再收尾。'
           : '已帮你摆好预览，确认放置即可。',
       );
     }
@@ -261,37 +287,59 @@ export function GameScreen({
     .slice(0, 60);
   const finished = view.finished && view.final;
 
-  const myState = view.players[humanSeat];
+  const myState = isSingleHuman && soleHumanSeat >= 0 ? view.players[soleHumanSeat] : null;
   const remainingTiles = view.drawPileCount + view.riverPileCount;
+
+  const winnerTitle = useMemo(() => {
+    if (!finished || !view.final) return '';
+    const winnerNames = view.final.winners.map((i) => names[i] ?? `玩家 ${i + 1}`).join('、');
+    if (isSingleHuman && soleHumanSeat >= 0) {
+      return view.final.winners.includes(soleHumanSeat) ? '恭喜你取得胜利！' : `${winnerNames} 获得胜利`;
+    }
+    return view.final.winners.length > 1 ? `平局胜出：${winnerNames}` : `${winnerNames} 获得胜利！`;
+  }, [finished, view.final, names, isSingleHuman, soleHumanSeat]);
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
       <header className="fc-topbar select-none">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-amber-200 tabular-nums">
+          <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-amber-200 tabular-nums">
             第 {view.turn.number} 回合 · 剩 {remainingTiles} 块
           </span>
-          {myState && (
+          {isSingleHuman && myState && (
             <span className="hidden sm:inline text-xs text-slate-300 tabular-nums">
               你的得分：<b className="text-amber-300">{myState.score}</b> 分
+            </span>
+          )}
+          {!isSingleHuman && !finished && pendingSeat && (
+            <span
+              data-testid="active-turn-badge"
+              className="hidden sm:inline-flex min-w-0 items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-xs font-semibold text-amber-100"
+            >
+              <span className="fc-swatch" style={{ background: COLOR_HEX[pendingSeat.color] }} />
+              <span className="truncate">
+                {pendingSeat.isBot ? `${pendingSeat.displayName} 思考中` : `当前：${pendingSeat.displayName}`}
+              </span>
             </span>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              sound.play('toggle');
-              onOpenTour();
-            }}
-            className="fc-btn secondary py-1 px-2.5 text-xs"
-            title="重温新手引导"
-            aria-label="重温新手引导"
-          >
-            <GraduationCap className="size-3.5" />
-            <span className="hidden sm:inline">引导</span>
-          </button>
+          {!isAllBots && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.play('toggle');
+                onOpenTour();
+              }}
+              className="fc-btn secondary py-1 px-2.5 text-xs"
+              title="重温新手引导"
+              aria-label="重温新手引导"
+            >
+              <GraduationCap className="size-3.5" />
+              <span className="hidden sm:inline">引导</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onOpenRules}
@@ -338,20 +386,40 @@ export function GameScreen({
 
         <aside className="fc-sidebar">
           {pending && !finished && (
-            <div className={`fc-pending ${legal.length ? 'mine' : ''}`}>
-              {legal.length ? '轮到你：' : '等待：'}
-              {describePending(pending, ctx)}
+            <div className={`fc-pending flex items-center justify-between gap-2 ${legal.length ? 'mine' : ''}`}>
+              <span className="flex min-w-0 items-center gap-2">
+                {pendingSeat && (
+                  <span className="fc-swatch" style={{ background: COLOR_HEX[pendingSeat.color] }} />
+                )}
+                <span className="min-w-0 truncate">
+                  {legal.length
+                    ? isSingleHuman
+                      ? `轮到你：${describePending(pending, ctx)}`
+                      : `轮到 ${describePending(pending, ctx)}`
+                    : `等待：${describePending(pending, ctx)}`}
+                </span>
+              </span>
+              {isAllBots && onToggleSpectatePause && (
+                <button
+                  type="button"
+                  onClick={onToggleSpectatePause}
+                  className="fc-btn shrink-0 px-2 py-0.5 text-[11px]"
+                >
+                  {spectatePaused ? <Play className="size-3" /> : <Pause className="size-3" />}
+                  {spectatePaused ? '继续' : '暂停'}
+                </button>
+              )}
             </div>
           )}
 
           {finished && view.final && (
             <div className="fc-panel border-amber-400/40 bg-amber-400/10">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 fc-display text-base font-bold text-amber-200">
-                  <Trophy className="size-4" />
-                  {view.final.winners.includes(humanSeat) ? '恭喜你取得胜利！' : '终局结算完成'}
+                <span className="flex min-w-0 items-center gap-1.5 fc-display text-base font-bold text-amber-200">
+                  <Trophy className="size-4 shrink-0" />
+                  <span className="truncate">{winnerTitle}</span>
                 </span>
-                <button type="button" onClick={onRematch} className="fc-btn primary py-1 px-3 text-xs">
+                <button type="button" onClick={onRematch} className="fc-btn primary shrink-0 py-1 px-3 text-xs">
                   再来一局
                 </button>
               </div>
@@ -388,7 +456,16 @@ export function GameScreen({
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-amber-300">摸到的地块</div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+                    {isMultiHuman && pendingSeat && !pendingSeat.isBot ? (
+                      <>
+                        <span className="fc-swatch" style={{ background: COLOR_HEX[pendingSeat.color] }} />
+                        <span className="truncate">{pendingSeat.displayName} 摸到的地块</span>
+                      </>
+                    ) : (
+                      <span>摸到的地块</span>
+                    )}
+                  </div>
                   {placing ? (
                     <>
                       <p className="mt-1 text-[11px] leading-4 text-slate-300">
@@ -444,7 +521,9 @@ export function GameScreen({
                       )}
                     </>
                   ) : (
-                    <p className="mt-1 text-xs text-slate-400">{names[view.turn.player]} 正在思考…</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {spectatePaused ? '已暂停观战' : `${names[view.turn.player]} 正在思考…`}
+                    </p>
                   )}
                 </div>
               </section>
@@ -452,6 +531,12 @@ export function GameScreen({
 
             {otherActions.length > 0 && (
               <section className="fc-panel space-y-2" data-coach="figure-actions">
+                {isMultiHuman && pendingSeat && !pendingSeat.isBot && (
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-200">
+                    <span className="fc-swatch" style={{ background: COLOR_HEX[pendingSeat.color] }} />
+                    <span>{pendingSeat.displayName} 请选择</span>
+                  </div>
+                )}
                 {spotActions.length > 0 && (
                   <div className="space-y-1.5 pb-2 border-b border-white/10">
                     <div className="text-xs font-semibold text-amber-300">确认这一步</div>
@@ -553,7 +638,7 @@ export function GameScreen({
                 </div>
                 <div className="flex gap-2">
                   <button type="button" className="fc-btn flex-1" onClick={onNewSetup}>
-                    <Undo2 className="size-3.5" /> 调整对手与模块
+                    <Undo2 className="size-3.5" /> 调整玩家与模块
                   </button>
                   <button type="button" className="fc-btn primary flex-1" onClick={onRematch}>
                     <Sparkles className="size-3.5" /> 再来一局
@@ -570,7 +655,7 @@ export function GameScreen({
             {orderedSeats.map((p) => {
               const st = view.players[p.seatIndex];
               if (!st) return null;
-              const active = pending?.player === p.seatIndex;
+              const active = !finished && pending?.player === p.seatIndex;
               return (
                 <div key={p.id} className={`fc-player ${active ? 'active' : ''}`}>
                   <span className="fc-swatch" style={{ background: COLOR_HEX[p.color] }} />
@@ -578,11 +663,20 @@ export function GameScreen({
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-white">
                         <span className="truncate">{p.displayName}</span>
-                        {p.seatIndex === humanSeat && <span className="fc-tag">你</span>}
+                        {!p.isBot && isSingleHuman && <span className="fc-tag">你</span>}
+                        {!p.isBot && isMultiHuman && (
+                          <span className="fc-tag">
+                            <User className="size-3" />
+                            <span>真人</span>
+                          </span>
+                        )}
                         {p.isBot && (
                           <span className="fc-tag">
                             <Bot className="size-3" />
                           </span>
+                        )}
+                        {active && isMultiHuman && (
+                          <span className="fc-tag">行动中</span>
                         )}
                       </span>
                       <span className="shrink-0 text-sm font-bold text-amber-200 tabular-nums">

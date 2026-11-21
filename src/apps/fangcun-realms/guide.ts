@@ -49,14 +49,25 @@ export function advanceFcGuide(step: FcGuideStep | 'done', signals: FcGuideSigna
   return 'done';
 }
 
-/** Counts the human's guide-relevant actions in `state.actions` from index `from`. */
-export function fcGuideSignals(state: GameState, seat: number, from: number, scoreAtStart: number): FcGuideSignals {
-  const recent = state.actions.slice(from).filter((a) => a.player === seat);
-  const p = state.players[seat];
+/** Counts guide-relevant actions in `state.actions` from index `from` across one or more human seats. */
+export function fcGuideSignals(
+  state: GameState,
+  seat: number | readonly number[],
+  from: number,
+  scoreAtStart: number,
+): FcGuideSignals {
+  const seats = typeof seat === 'number' ? [seat] : seat;
+  const seatSet = new Set(seats);
+  const recent = state.actions.slice(from).filter((a) => seatSet.has(a.player));
+  let totalScore = 0;
+  for (const s of seats) {
+    const p = state.players[s];
+    if (p) totalScore += p.score + p.messengerScore;
+  }
   return {
     tiles: recent.filter((a) => a.type === 'PLACE_TILE').length,
     figureChoices: recent.filter((a) => a.type === 'PLACE_FIGURE' || a.type === 'SKIP_FIGURE').length,
-    points: (p ? p.score + p.messengerScore : 0) - scoreAtStart,
+    points: totalScore - scoreAtStart,
   };
 }
 

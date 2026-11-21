@@ -5,11 +5,12 @@ import { GameScreen } from './GameScreen.tsx';
 import { advanceFcGuide, fcGuideSignals, findScoringPlacement, type FcGuideStep } from './guide.ts';
 import { Handbook } from './Handbook.tsx';
 import { getCatalog } from './lib/catalog.ts';
-import { SetupScreen } from './SetupScreen.tsx';
-import type { BotLevel, FcLocalMatch, FcMetaSave } from './lib/types.ts';
+import { SetupScreen, type SetupStartConfig } from './SetupScreen.tsx';
+import type { BotLevel, FcLocalMatch, FcMetaSave, SeatConfig } from './lib/types.ts';
 import {
   applyHumanFcAction,
   createLocalFcMatch,
+  getHumanSeats,
   hasPendingFcBot,
   projectFcMatch,
   stepFcBot,
@@ -32,6 +33,17 @@ function isAutostartMode(): boolean {
   }
 }
 
+function defaultSeatsFromMeta(meta: FcMetaSave): SeatConfig[] {
+  if (meta.preferredSeats && meta.preferredSeats.length >= 2) {
+    return meta.preferredSeats.map((s) => ({ ...s }));
+  }
+  const botCount = Math.max(1, Math.min(5, meta.preferredBotCount || 1));
+  return [
+    { isBot: false, name: meta.preferredName || '山人' },
+    ...Array.from({ length: botCount }, (): SeatConfig => ({ isBot: true, botLevel: meta.preferredDifficulty })),
+  ];
+}
+
 export default function FangcunRealmsApp() {
   const autostart = useMemo(() => isAutostartMode(), []);
   const [meta, setMeta] = useState<FcMetaSave>(() => loadFcMeta());
@@ -42,8 +54,7 @@ export default function FangcunRealmsApp() {
     if (existing) return existing;
     const initialMeta = loadFcMeta();
     const created = createLocalFcMatch({
-      playerName: initialMeta.preferredName,
-      botLevels: Array.from({ length: initialMeta.preferredBotCount }, () => initialMeta.preferredDifficulty),
+      seats: defaultSeatsFromMeta(initialMeta),
       expansions: initialMeta.preferredExpansions,
     });
     saveActiveFcRun(created);
@@ -51,18 +62,19 @@ export default function FangcunRealmsApp() {
   });
 
   const [lastConfig, setLastConfig] = useState<{
-    playerName: string;
-    botLevels: BotLevel[];
+    seats: SeatConfig[];
     expansions: ExpansionId[];
+    defaultDifficulty: BotLevel;
   }>(() => ({
-    playerName: meta.preferredName,
-    botLevels: Array.from({ length: meta.preferredBotCount }, () => meta.preferredDifficulty),
+    seats: defaultSeatsFromMeta(meta),
     expansions: meta.preferredExpansions,
+    defaultDifficulty: meta.preferredDifficulty,
   }));
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [spectatePaused, setSpectatePaused] = useState(false);
   /** Guided first game: current step, or null when the guide is off. */
   const [guideStep, setGuideStep] = useState<FcGuideStep | null>(null);
   const guideBase = useRef<{ actions: number; score: number } | null>(null);
@@ -91,6 +103,8 @@ export default function FangcunRealmsApp() {
   // Step bot turns cleanly
   useEffect(() => {
     if (!match || !hasPendingFcBot(match)) return;
+    const isAllBots = getHumanSeats(match).length === 0;
+    if (isAllBots && spectatePaused) return;
     const timer = window.setTimeout(() => {
       setMatch((current) => {
         if (!current || !hasPendingFcBot(current)) return current;
@@ -104,14 +118,20 @@ export default function FangcunRealmsApp() {
       });
     }, 420);
     return () => window.clearTimeout(timer);
-  }, [match]);
+  }, [match, spectatePaused]);
 
-  // Guided first game (never under ?autostart=1, which automated checks use).
+  // Guided first game (never under ?autostart=1 or in all-bot spectate mode).
   useEffect(() => {
     if (!match || autostart || !guideWanted.current || match.state.finished) return;
+    const humanSeatIndices = getHumanSeats(match).map((s) => s.seatIndex);
     guideWanted.current = false;
-    const me = match.state.players[match.humanSeat];
-    guideBase.current = { actions: match.state.actions.length, score: me ? me.score + me.messengerScore : 0 };
+    if (humanSeatIndices.length === 0) return;
+    let initialScore = 0;
+    for (const idx of humanSeatIndices) {
+      const p = match.state.players[idx];
+      if (p) initialScore += p.score + p.messengerScore;
+    }
+    guideBase.current = { actions: match.state.actions.length, score: initialScore };
     setGuideStep('tile');
   }, [match, autostart, guideRequest]);
 
@@ -124,72 +144,83 @@ export default function FangcunRealmsApp() {
 
   useEffect(() => {
     if (!guideStep || !match || !guideBase.current) return;
+    const humanSeatIndices = getHumanSeats(match).map((s) => s.seatIndex);
+    if (humanSeatIndices.length === 0) return;
     const base = guideBase.current;
-    const next = advanceFcGuide(guideStep, fcGuideSignals(match.state, match.humanSeat, base.actions, base.score));
+    const next = advanceFcGuide(guideStep, fcGuideSignals(match.state, humanSeatIndices, base.actions, base.score));
     if (next === guideStep) return;
     if (next === 'done') finishGuide(true);
     else setGuideStep(next);
   }, [guideStep, match, finishGuide]);
 
-  const suggestedPlacement = useMemo(
-    () => (guideStep && match ? findScoringPlacement(match.state, getCatalog(), match.humanSeat) : null),
-    [guideStep, match],
-  );
+  const suggestedPlacement = useMemo(() => {
+    if (!guideStep || !match || !match.state.pending) return null;
+    const pendingSeat = match.seats[match.state.pending.player];
+    if (!pendingSeat || pendingSeat.isBot) return null;
+    return findScoringPlacement(match.state, getCatalog(), pendingSeat.seatIndex);
+  }, [guideStep, match]);
 
-  // Record finished match outcome once
+  // Record finished match outcome once (skip all-bot spectate matches)
   useEffect(() => {
     if (!match || !match.state.finished || !match.state.final) return;
     const key = `${match.updatedAt}:${match.seq}`;
     if (outcomeRecordedRef.current === key) return;
     outcomeRecordedRef.current = key;
-    const won = match.state.final.winners.includes(match.humanSeat);
-    const myScore = match.state.final.scores[match.humanSeat] ?? 0;
     sound.play('fanfare');
-    setMeta(recordFcMatchOutcome(won, myScore));
+
+    const humans = getHumanSeats(match);
+    if (humans.length === 0) return;
+
+    const hasBots = match.seats.some((s) => s.isBot);
+    const humanIndices = humans.map((s) => s.seatIndex);
+    const bestHumanScore = Math.max(...humanIndices.map((idx) => match.state.final!.scores[idx] ?? 0));
+    const won =
+      humans.length === 1
+        ? match.state.final.winners.includes(humanIndices[0])
+        : hasBots && humanIndices.some((idx) => match.state.final!.winners.includes(idx));
+    setMeta(recordFcMatchOutcome(won, bestHumanScore));
   }, [match]);
 
-  const startNewMatch = useCallback(
-    (config: {
-      playerName: string;
-      botLevels: BotLevel[];
-      expansions: ExpansionId[];
-      defaultDifficulty?: BotLevel;
-    }, guided = false) => {
-      sound.play('toggle');
-      guideWanted.current = guided || !loadFcMeta().tutorialCompleted;
-      setGuideStep(null);
-      if (config.defaultDifficulty) {
-        setMeta(
-          updateFcPreferences({
-            preferredName: config.playerName,
-            preferredBotCount: config.botLevels.length,
-            preferredDifficulty: config.defaultDifficulty,
-            preferredExpansions: config.expansions,
-          }),
-        );
-      }
-      setLastConfig({
-        playerName: config.playerName,
-        botLevels: config.botLevels,
-        expansions: config.expansions,
-      });
-      setError(null);
-      outcomeRecordedRef.current = null;
-      const created = createLocalFcMatch({
-        playerName: config.playerName,
-        botLevels: config.botLevels,
-        expansions: config.expansions,
-      });
-      setMatch(created);
-    },
-    [],
-  );
+  const startNewMatch = useCallback((config: SetupStartConfig, guided = false) => {
+    sound.play('toggle');
+    const hasHumans = config.seats.some((s) => !s.isBot);
+    guideWanted.current = hasHumans && (guided || !loadFcMeta().tutorialCompleted);
+    setGuideStep(null);
+    setSpectatePaused(false);
+
+    const firstHumanName = config.seats.find((s) => !s.isBot)?.name?.trim();
+    const botCount = config.seats.filter((s) => s.isBot).length;
+    setMeta(
+      updateFcPreferences({
+        ...(firstHumanName ? { preferredName: firstHumanName } : {}),
+        preferredBotCount: botCount,
+        preferredDifficulty: config.defaultDifficulty,
+        preferredSeats: config.seats,
+        preferredExpansions: config.expansions,
+      }),
+    );
+
+    setLastConfig({
+      seats: config.seats,
+      expansions: config.expansions,
+      defaultDifficulty: config.defaultDifficulty,
+    });
+    setError(null);
+    outcomeRecordedRef.current = null;
+    const created = createLocalFcMatch({
+      seats: config.seats,
+      expansions: config.expansions,
+    });
+    setMatch(created);
+  }, []);
 
   const resumeSavedMatch = useCallback(() => {
     if (!savedMatch) return;
     sound.play('toggle');
     setError(null);
-    guideWanted.current = !loadFcMeta().tutorialCompleted;
+    setSpectatePaused(false);
+    const hasHumans = getHumanSeats(savedMatch).length > 0;
+    guideWanted.current = hasHumans && !loadFcMeta().tutorialCompleted;
     setGuideStep(null);
     setMatch(savedMatch);
   }, [savedMatch]);
@@ -197,6 +228,7 @@ export default function FangcunRealmsApp() {
   const handleReturnToSetup = useCallback(() => {
     guideWanted.current = false;
     setGuideStep(null);
+    setSpectatePaused(false);
     setMatch(null);
     setError(null);
     setSavedMatch(loadActiveFcRun());
@@ -263,6 +295,8 @@ export default function FangcunRealmsApp() {
         guideStep={guideStep}
         suggestedPlacement={suggestedPlacement}
         onSkipGuide={() => finishGuide(false)}
+        spectatePaused={spectatePaused}
+        onToggleSpectatePause={() => setSpectatePaused((p) => !p)}
       />
       <Handbook open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
