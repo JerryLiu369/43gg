@@ -1,8 +1,37 @@
-import { useState } from 'react';
-import { BookOpen, Bot, GraduationCap, Play, RotateCcw, SlidersHorizontal, Trophy, Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  BookOpen,
+  Bot,
+  GraduationCap,
+  Minus,
+  Play,
+  Plus,
+  RotateCcw,
+  SlidersHorizontal,
+  Trophy,
+  User,
+  Users,
+} from 'lucide-react';
 import { ALL_EXPANSIONS, type ExpansionId } from './engine/index.ts';
-import { EXPANSION_INFO, MODULE_GROUPS } from './lib/labels.ts';
-import { BOT_LEVELS, BOT_LEVEL_LABELS, type BotLevel, type FcLocalMatch, type FcMetaSave } from './lib/types.ts';
+import { COLOR_HEX, COLOR_NAMES, EXPANSION_INFO, MODULE_GROUPS } from './lib/labels.ts';
+import {
+  BOT_LEVELS,
+  BOT_LEVEL_LABELS,
+  PLAYER_COLORS,
+  type BotLevel,
+  type FcLocalMatch,
+  type FcMetaSave,
+  type SeatConfig,
+} from './lib/types.ts';
+import {
+  MAX_FC_PLAYERS,
+  adjustBotCount,
+  adjustHumanCount,
+  defaultHumanName,
+  formatSeatSummary,
+  summarizeSeatCounts,
+  toggleSeatType,
+} from './session.ts';
 import { SoundControl } from './SoundControl.tsx';
 
 const EXPANSION_IDS = ALL_EXPANSIONS.filter((e): e is Exclude<ExpansionId, 'BASE'> => e !== 'BASE');
@@ -12,6 +41,34 @@ const DIFFICULTY_HINTS: Record<BotLevel, string> = {
   NORMAL: '电脑会抢城池、封驿道，也懂得及时把随从收回来',
   HARD: '电脑会往前多算几步，擅长挤进你的地盘和卡位封堵',
 };
+
+export interface SetupStartConfig {
+  seats: SeatConfig[];
+  expansions: ExpansionId[];
+  defaultDifficulty: BotLevel;
+}
+
+function initialSeatsFromMeta(meta: FcMetaSave, firstGame: boolean): SeatConfig[] {
+  if (meta.preferredSeats && meta.preferredSeats.length >= 2 && meta.preferredSeats.length <= MAX_FC_PLAYERS) {
+    return meta.preferredSeats.map((s) => ({ ...s }));
+  }
+  if (firstGame) {
+    return [
+      { isBot: false, name: meta.preferredName || '山人' },
+      { isBot: true, botLevel: meta.preferredDifficulty },
+    ];
+  }
+  const bots = Math.min(5, Math.max(1, meta.preferredBotCount || 1));
+  return [
+    { isBot: false, name: meta.preferredName || '山人' },
+    ...Array.from({ length: bots }, (): SeatConfig => ({ isBot: true, botLevel: meta.preferredDifficulty })),
+  ];
+}
+
+function hasMixedBotLevels(seats: readonly SeatConfig[]): boolean {
+  const levels = new Set(seats.filter((s) => s.isBot).map((s) => s.botLevel ?? 'NORMAL'));
+  return levels.size > 1;
+}
 
 export function SetupScreen({
   meta,
@@ -23,47 +80,84 @@ export function SetupScreen({
 }: {
   meta: FcMetaSave;
   savedMatch: FcLocalMatch | null;
-  onStartNew: (config: {
-    playerName: string;
-    botLevels: BotLevel[];
-    expansions: ExpansionId[];
-    defaultDifficulty: BotLevel;
-  }) => void;
+  onStartNew: (config: SetupStartConfig) => void;
   onResume: () => void;
   onOpenRules: () => void;
   /** Starts a match with the step-by-step guide switched on. */
-  onStartGuided: (config: {
-    playerName: string;
-    botLevels: BotLevel[];
-    expansions: ExpansionId[];
-    defaultDifficulty: BotLevel;
-  }) => void;
+  onStartGuided: (config: SetupStartConfig) => void;
 }) {
-  const firstGame = !meta.tutorialCompleted && meta.gamesPlayed === 0;
-  const [playerName, setPlayerName] = useState(meta.preferredName || '山人');
-  // A first game is one opponent and the stream start only: fewer rules, fewer rivals.
-  const [botCount, setBotCount] = useState(firstGame ? 1 : meta.preferredBotCount);
+  const firstGame = !meta.tutorialCompleted && meta.gamesPlayed === 0 && !meta.preferredSeats;
+  const [seats, setSeats] = useState<SeatConfig[]>(() => initialSeatsFromMeta(meta, firstGame));
   const [difficulty, setDifficulty] = useState<BotLevel>(meta.preferredDifficulty);
-  const [customBots, setCustomBots] = useState(false);
-  const [botLevels, setBotLevels] = useState<BotLevel[]>(() =>
-    Array.from({ length: 5 }, () => meta.preferredDifficulty),
+  const [customBots, setCustomBots] = useState<boolean>(() => hasMixedBotLevels(initialSeatsFromMeta(meta, firstGame)));
+  const [expansions, setExpansions] = useState<ExpansionId[]>(() =>
+    firstGame ? ['STREAM'] : meta.preferredExpansions,
   );
-  const [expansions, setExpansions] = useState<ExpansionId[]>(() => (firstGame ? ['STREAM'] : meta.preferredExpansions));
+
+  const counts = useMemo(() => summarizeSeatCounts(seats), [seats]);
 
   const handleGlobalDifficulty = (level: BotLevel) => {
     setDifficulty(level);
     if (!customBots) {
-      setBotLevels(Array.from({ length: 5 }, () => level));
+      setSeats((prev) => prev.map((s) => (s.isBot ? { ...s, botLevel: level } : s)));
     }
+  };
+
+  const handleToggleCustomBots = () => {
+    setCustomBots((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSeats((list) => list.map((s) => (s.isBot ? { ...s, botLevel: difficulty } : s)));
+      }
+      return next;
+    });
+  };
+
+  const handleHumanDelta = (delta: 1 | -1) => {
+    setSeats((prev) => adjustHumanCount(prev, delta, difficulty));
+  };
+
+  const handleBotDelta = (delta: 1 | -1) => {
+    setSeats((prev) => adjustBotCount(prev, delta, difficulty));
+  };
+
+  const handleToggleSeat = (index: number) => {
+    setSeats((prev) => toggleSeatType(prev, index, difficulty));
+  };
+
+  const handleSeatName = (index: number, value: string) => {
+    setSeats((prev) => prev.map((s, i) => (i === index ? { ...s, name: value } : s)));
+  };
+
+  const handleSeatBotLevel = (index: number, level: BotLevel) => {
+    setSeats((prev) => prev.map((s, i) => (i === index ? { ...s, botLevel: level } : s)));
   };
 
   const toggleExpansion = (id: ExpansionId) => {
     setExpansions((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
-  const effectiveLevels: BotLevel[] = Array.from({ length: botCount }, (_, idx) =>
-    customBots ? botLevels[idx] ?? difficulty : difficulty,
-  );
+  const buildStartConfig = (): SetupStartConfig => ({
+    seats: seats.map((s) =>
+      s.isBot
+        ? { isBot: true, botLevel: customBots ? (s.botLevel ?? difficulty) : difficulty }
+        : { isBot: false, name: s.name?.trim() || '' },
+    ),
+    expansions,
+    defaultDifficulty: difficulty,
+  });
+
+  const startButtonLabel =
+    counts.humans === 0
+      ? `开始电脑观战（${counts.bots} 电脑）`
+      : counts.bots === 0
+        ? `开始 ${counts.humans} 人同屏对局`
+        : counts.humans === 1
+          ? `开始对局（1 真人 + ${counts.bots} 电脑）`
+          : `开始同屏对局（${counts.humans} 真人 + ${counts.bots} 电脑）`;
+
+  let humanOrder = 0;
+  let botOrder = 0;
 
   return (
     <div className="h-full w-full overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
@@ -72,21 +166,16 @@ export function SetupScreen({
           <div>
             <h1 className="fc-display text-3xl font-bold text-white sm:text-4xl">方寸山河</h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-              一块块方地拼出城池、驿道、寺院与田野，派随从抢占地盘。和 1 至 5 位电脑对手比谁收下的山河更多。
+              一块块方地拼出城池、驿道、寺院与田野，派随从抢占地盘。支持同屏 2 至 6 位玩家，自由搭配真人与电脑同台对局。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               className="fc-btn secondary"
-              onClick={() =>
-                onStartGuided({
-                  playerName: playerName.trim() || '山人',
-                  botLevels: effectiveLevels,
-                  expansions,
-                  defaultDifficulty: difficulty,
-                })
-              }
+              disabled={counts.humans === 0}
+              title={counts.humans === 0 ? '至少需要 1 位真人玩家才能开启操作引导' : undefined}
+              onClick={() => onStartGuided(buildStartConfig())}
             >
               <GraduationCap className="size-4" /> 带引导开一局
             </button>
@@ -100,9 +189,9 @@ export function SetupScreen({
         {savedMatch && (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-400/35 bg-gradient-to-r from-amber-400/15 to-transparent p-4">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-amber-200">检测到未完成的单机对局</p>
+              <p className="text-xs font-semibold text-amber-200">检测到未完成的对局</p>
               <p className="mt-0.5 text-xs text-slate-300">
-                第 {savedMatch.state.turn.number} 回合 · {savedMatch.seats.length} 位玩家 · 牌堆剩余{' '}
+                第 {savedMatch.state.turn.number} 回合 · {formatSeatSummary(savedMatch.seats)} · 牌堆剩余{' '}
                 {savedMatch.state.drawPile.length + savedMatch.state.riverPile.length} 张
               </p>
             </div>
@@ -117,120 +206,216 @@ export function SetupScreen({
             <h2 className="fc-display text-lg font-bold text-white">对局配置</h2>
 
             <div>
-              <label htmlFor="fc-player-name" className="block text-xs font-semibold text-slate-200">
-                你的名字
-              </label>
-              <input
-                id="fc-player-name"
-                type="text"
-                maxLength={16}
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="山人"
-                className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/30 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-                  <Users className="size-3.5 text-amber-300" /> 电脑对手数量
+                  <Users className="size-3.5 text-amber-300" /> 参战人数（2–6 位）
                 </span>
-                <span className="text-[11px] text-slate-400">共 {botCount + 1} 位玩家</span>
-              </div>
-              <div className="mt-2 grid grid-cols-5 gap-2">
-                {[1, 2, 3, 4, 5].map((count) => (
-                  <button
-                    key={count}
-                    type="button"
-                    onClick={() => setBotCount(count)}
-                    aria-pressed={botCount === count}
-                    className={`rounded-xl border py-2 text-xs font-semibold transition cursor-pointer ${
-                      botCount === count
-                        ? 'border-amber-300/70 bg-amber-400/20 text-amber-100'
-                        : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25'
-                    }`}
-                  >
-                    {count} 电脑
-                  </button>
-                ))}
-              </div>
-              {firstGame && botCount === 1 && (
-                <p className="mt-1.5 text-[11px] text-slate-400">第一局先和 1 位电脑练手、只开溪流开局，熟悉后再加人加模块。</p>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-                  <Bot className="size-3.5 text-amber-300" /> 对手难度
+                <span className="text-[11px] text-slate-400 tabular-nums">
+                  共 {counts.total} 位 · {formatSeatSummary(seats)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setCustomBots((v) => !v)}
-                  className="inline-flex items-center gap-1 text-[11px] text-amber-300 hover:text-amber-200 cursor-pointer"
-                >
-                  <SlidersHorizontal className="size-3" />
-                  {customBots ? '改为统一难度' : '分别设置每个电脑'}
-                </button>
               </div>
 
-              {!customBots ? (
-                <>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {BOT_LEVELS.map((level) => (
+              <div className="mt-2 grid grid-cols-2 gap-2.5">
+                <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <User className="size-3.5 shrink-0 text-amber-300" />
+                    <span className="text-xs font-semibold text-slate-200 whitespace-nowrap">真人玩家</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-1.5 sm:justify-end shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleHumanDelta(-1)}
+                      disabled={counts.humans <= 0}
+                      aria-label="减少真人玩家"
+                      className="fc-btn p-1.5"
+                    >
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span
+                      data-testid="human-count"
+                      className="w-6 text-center text-sm font-bold text-white tabular-nums"
+                    >
+                      {counts.humans}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleHumanDelta(1)}
+                      disabled={counts.humans >= MAX_FC_PLAYERS}
+                      aria-label="增加真人玩家"
+                      className="fc-btn p-1.5"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Bot className="size-3.5 shrink-0 text-amber-300" />
+                    <span className="text-xs font-semibold text-slate-200 whitespace-nowrap">电脑玩家</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-1.5 sm:justify-end shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleBotDelta(-1)}
+                      disabled={counts.bots <= 0}
+                      aria-label="减少电脑玩家"
+                      className="fc-btn p-1.5"
+                    >
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span
+                      data-testid="bot-count"
+                      className="w-6 text-center text-sm font-bold text-white tabular-nums"
+                    >
+                      {counts.bots}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleBotDelta(1)}
+                      disabled={counts.bots >= MAX_FC_PLAYERS}
+                      aria-label="增加电脑玩家"
+                      className="fc-btn p-1.5"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-2" aria-label="席位列表">
+                {seats.map((seat, idx) => {
+                  const color = PLAYER_COLORS[idx];
+                  const isBot = seat.isBot;
+                  const hIdx = isBot ? -1 : humanOrder++;
+                  const bIdx = isBot ? botOrder++ : -1;
+                  const level = customBots ? (seat.botLevel ?? difficulty) : difficulty;
+                  const placeholder = isBot ? '' : defaultHumanName(hIdx, counts.humans);
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+                    >
+                      <span
+                        className="fc-swatch"
+                        style={{ background: COLOR_HEX[color] }}
+                        title={`${COLOR_NAMES[color]}方`}
+                      />
                       <button
-                        key={level}
                         type="button"
-                        onClick={() => handleGlobalDifficulty(level)}
-                        aria-pressed={difficulty === level}
-                        className={`rounded-xl border py-2.5 text-xs font-semibold transition cursor-pointer ${
-                          difficulty === level
-                            ? 'border-amber-300/70 bg-amber-400/20 text-amber-100'
-                            : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25'
+                        onClick={() => handleToggleSeat(idx)}
+                        aria-label={`第 ${idx + 1} 席当前为${isBot ? '电脑' : '真人'}，点击切换`}
+                        title="点击切换真人或电脑"
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition cursor-pointer focus-visible:border-amber-300 focus-visible:outline-none ${
+                          isBot
+                            ? 'border-white/15 bg-white/[0.04] text-slate-300 hover:border-white/30'
+                            : 'border-amber-300/60 bg-amber-400/15 text-amber-100 hover:border-amber-300'
                         }`}
                       >
-                        {BOT_LEVEL_LABELS[level]}
+                        {isBot ? <Bot className="size-3" /> : <User className="size-3" />}
+                        <span>{isBot ? '电脑' : '真人'}</span>
                       </button>
-                    ))}
-                  </div>
-                  <p className="mt-1.5 text-[11px] text-slate-400">{DIFFICULTY_HINTS[difficulty]}</p>
-                </>
-              ) : (
-                <div className="mt-2 space-y-2">
-                  {Array.from({ length: botCount }, (_, idx) => {
-                    const current = botLevels[idx] ?? difficulty;
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
-                      >
-                        <span className="text-xs font-medium text-slate-200">电脑 {idx + 1}</span>
-                        <div className="flex gap-1.5">
-                          {BOT_LEVELS.map((level) => (
-                            <button
-                              key={level}
-                              type="button"
-                              onClick={() =>
-                                setBotLevels((prev) => prev.map((item, i) => (i === idx ? level : item)))
-                              }
-                              aria-pressed={current === level}
-                              className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
-                                current === level
-                                  ? 'border-amber-300/70 bg-amber-400/20 text-amber-100'
-                                  : 'border-white/10 bg-white/[0.02] text-slate-400 hover:text-slate-200'
-                              }`}
-                            >
-                              {BOT_LEVEL_LABELS[level]}
-                            </button>
-                          ))}
+
+                      {!isBot ? (
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={seat.name ?? ''}
+                          onChange={(e) => handleSeatName(idx, e.target.value)}
+                          placeholder={placeholder}
+                          aria-label={`第 ${idx + 1} 席玩家名字`}
+                          className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 px-2.5 py-1 text-xs text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-slate-200">
+                            电脑 {bIdx + 1}
+                            {!customBots && (
+                              <span className="ml-1.5 text-[11px] text-slate-400">
+                                （{BOT_LEVEL_LABELS[level]}）
+                              </span>
+                            )}
+                          </span>
+                          {customBots && (
+                            <div className="flex gap-1">
+                              {BOT_LEVELS.map((lv) => (
+                                <button
+                                  key={lv}
+                                  type="button"
+                                  onClick={() => handleSeatBotLevel(idx, lv)}
+                                  aria-pressed={level === lv}
+                                  className={`rounded-lg border px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer focus-visible:border-amber-300 focus-visible:outline-none ${
+                                    level === lv
+                                      ? 'border-amber-300/70 bg-amber-400/20 text-amber-100'
+                                      : 'border-white/10 bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                                  }`}
+                                >
+                                  {BOT_LEVEL_LABELS[lv]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {firstGame && counts.humans === 1 && counts.bots === 1 && (
+                <p className="mt-1.5 text-[11px] text-slate-400">
+                  第一局默认 1 真人 + 1 电脑、只开溪流开局；随时可增减人数改成多人同屏或人机混战。
+                </p>
               )}
             </div>
+
+            {counts.bots > 0 && (
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+                    <Bot className="size-3.5 text-amber-300" /> 电脑难度
+                  </span>
+                  {counts.bots >= 2 && (
+                    <button
+                      type="button"
+                      onClick={handleToggleCustomBots}
+                      className="inline-flex items-center gap-1 text-[11px] text-amber-300 hover:text-amber-200 cursor-pointer"
+                    >
+                      <SlidersHorizontal className="size-3" />
+                      {customBots ? '改为统一难度' : '分别设置每个电脑'}
+                    </button>
+                  )}
+                </div>
+
+                {!customBots ? (
+                  <>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {BOT_LEVELS.map((level) => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => handleGlobalDifficulty(level)}
+                          aria-pressed={difficulty === level}
+                          className={`rounded-xl border py-2.5 text-xs font-semibold transition cursor-pointer focus-visible:border-amber-300 focus-visible:outline-none ${
+                            difficulty === level
+                              ? 'border-amber-300/70 bg-amber-400/20 text-amber-100'
+                              : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/25'
+                          }`}
+                        >
+                          {BOT_LEVEL_LABELS[level]}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-400">{DIFFICULTY_HINTS[difficulty]}</p>
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-slate-400">
+                    可在上方席位列表中为每位电脑单独选择「轻松 / 标准 / 宗师」。
+                  </p>
+                )}
+              </div>
+            )}
 
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -241,10 +426,18 @@ export function SetupScreen({
                   <button type="button" onClick={() => setExpansions([])} className="fc-btn px-2 py-0.5 text-[11px]">
                     只玩基础
                   </button>
-                  <button type="button" onClick={() => setExpansions(['STREAM', 'HERMIT'])} className="fc-btn px-2 py-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setExpansions(['STREAM', 'HERMIT'])}
+                    className="fc-btn px-2 py-0.5 text-[11px]"
+                  >
                     入门搭配
                   </button>
-                  <button type="button" onClick={() => setExpansions([...EXPANSION_IDS])} className="fc-btn px-2 py-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setExpansions([...EXPANSION_IDS])}
+                    className="fc-btn px-2 py-0.5 text-[11px]"
+                  >
                     全部开启
                   </button>
                 </div>
@@ -270,7 +463,9 @@ export function SetupScreen({
                             }`}
                           >
                             <span className="block truncate text-xs font-semibold">{EXPANSION_INFO[id].name}</span>
-                            <span className="mt-0.5 line-clamp-2 block text-[10px] leading-4 opacity-80">{EXPANSION_INFO[id].hint}</span>
+                            <span className="mt-0.5 line-clamp-2 block text-[10px] leading-4 opacity-80">
+                              {EXPANSION_INFO[id].hint}
+                            </span>
                           </button>
                         );
                       })}
@@ -283,16 +478,9 @@ export function SetupScreen({
             <button
               type="button"
               className="fc-btn primary w-full py-3 text-sm font-bold"
-              onClick={() =>
-                onStartNew({
-                  playerName: playerName.trim() || '山人',
-                  botLevels: effectiveLevels,
-                  expansions,
-                  defaultDifficulty: difficulty,
-                })
-              }
+              onClick={() => onStartNew(buildStartConfig())}
             >
-              <Play className="size-4" /> 开始单机对局
+              <Play className="size-4" /> {startButtonLabel}
             </button>
           </section>
 
@@ -323,6 +511,7 @@ export function SetupScreen({
                 <li>拖动版图平移，滚轮或双指缩放。</li>
                 <li>点虚线方格预览摆法，再点同一格或用旋转键换朝向，四边接上后确认放置。</li>
                 <li>手机上点圆点只是预选，再点一次或按确认才派出随从。</li>
+                <li>同屏多人时所有信息公开，轮到谁行动会用对应阵营色点高亮提示，轮流操作即可。</li>
               </ul>
             </section>
           </aside>

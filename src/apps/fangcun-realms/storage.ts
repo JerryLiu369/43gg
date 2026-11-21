@@ -1,12 +1,44 @@
 import { ALL_EXPANSIONS, type ExpansionId } from './engine/index.ts';
 import { LEGACY_KEYS, isMatchOnCurrentCatalog, migrateLegacyMatch, migrateModuleList } from './legacy.ts';
-import type { BotLevel, FcLocalMatch, FcMetaSave } from './lib/types.ts';
+import { PLAYER_COLORS, type BotLevel, type FcLocalMatch, type FcMetaSave, type PlayerColor, type SeatConfig } from './lib/types.ts';
 
 export const FC_META_KEY = '43gg.fangcun_realms.meta.v1';
 export const FC_ACTIVE_RUN_KEY = '43gg.fangcun_realms.active_run.v1';
 export const FC_AUDIO_KEY = '43gg.fangcun_realms.audio.v1';
 
 const VALID_EXPANSIONS = new Set<string>(ALL_EXPANSIONS);
+const VALID_COLORS = new Set<string>(PLAYER_COLORS);
+
+function isBotLevel(v: unknown): v is BotLevel {
+  return v === 'EASY' || v === 'NORMAL' || v === 'HARD';
+}
+
+function sanitizePreferredSeats(raw: unknown, fallbackDifficulty: BotLevel): SeatConfig[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: SeatConfig[] = [];
+  for (const item of raw.slice(0, 6)) {
+    if (!item || typeof item !== 'object') continue;
+    const rec = item as Partial<SeatConfig>;
+    const isBot = rec.isBot === true;
+    const color: PlayerColor | undefined =
+      typeof rec.color === 'string' && VALID_COLORS.has(rec.color) ? (rec.color as PlayerColor) : undefined;
+    if (isBot) {
+      out.push({
+        isBot: true,
+        botLevel: isBotLevel(rec.botLevel) ? rec.botLevel : fallbackDifficulty,
+        ...(color ? { color } : {}),
+      });
+    } else {
+      const name = typeof rec.name === 'string' ? rec.name.trim().slice(0, 16) : '';
+      out.push({
+        isBot: false,
+        ...(name ? { name } : {}),
+        ...(color ? { color } : {}),
+      });
+    }
+  }
+  return out.length >= 2 && out.length <= 6 ? out : undefined;
+}
 
 const DEFAULT_META: FcMetaSave = {
   gamesPlayed: 0,
@@ -78,22 +110,18 @@ export function loadFcMeta(storage: Storage | null = getStorage()): FcMetaSave {
     const raw = storage.getItem(FC_META_KEY);
     if (!raw) return { ...DEFAULT_META, preferredExpansions: [...DEFAULT_META.preferredExpansions] };
     const parsed = JSON.parse(raw) as Partial<FcMetaSave>;
-    const diff: BotLevel =
-      parsed.preferredDifficulty === 'EASY' ||
-      parsed.preferredDifficulty === 'NORMAL' ||
-      parsed.preferredDifficulty === 'HARD'
-        ? parsed.preferredDifficulty
-        : 'NORMAL';
+    const diff: BotLevel = isBotLevel(parsed.preferredDifficulty) ? parsed.preferredDifficulty : 'NORMAL';
     const botCount =
       typeof parsed.preferredBotCount === 'number' &&
       Number.isInteger(parsed.preferredBotCount) &&
-      parsed.preferredBotCount >= 1 &&
-      parsed.preferredBotCount <= 5
+      parsed.preferredBotCount >= 0 &&
+      parsed.preferredBotCount <= 6
         ? parsed.preferredBotCount
         : 2;
     const expansions = Array.isArray(parsed.preferredExpansions)
       ? migrateModuleList(parsed.preferredExpansions, VALID_EXPANSIONS)
       : [...DEFAULT_META.preferredExpansions];
+    const preferredSeats = sanitizePreferredSeats(parsed.preferredSeats, diff);
     return {
       gamesPlayed: typeof parsed.gamesPlayed === 'number' && parsed.gamesPlayed >= 0 ? Math.floor(parsed.gamesPlayed) : 0,
       victories: typeof parsed.victories === 'number' && parsed.victories >= 0 ? Math.floor(parsed.victories) : 0,
@@ -101,6 +129,7 @@ export function loadFcMeta(storage: Storage | null = getStorage()): FcMetaSave {
       preferredName: typeof parsed.preferredName === 'string' && parsed.preferredName.trim() ? parsed.preferredName.trim().slice(0, 16) : '山人',
       preferredDifficulty: diff,
       preferredBotCount: botCount,
+      ...(preferredSeats ? { preferredSeats } : {}),
       preferredExpansions: expansions,
       tutorialCompleted: parsed.tutorialCompleted === true,
       lastPlayedAt: typeof parsed.lastPlayedAt === 'string' ? parsed.lastPlayedAt : null,
@@ -141,19 +170,24 @@ export function updateFcPreferences(
     preferredName?: string;
     preferredDifficulty?: BotLevel;
     preferredBotCount?: number;
+    preferredSeats?: SeatConfig[];
     preferredExpansions?: ExpansionId[];
     tutorialCompleted?: boolean;
   },
   storage: Storage | null = getStorage(),
 ): FcMetaSave {
   const prev = loadFcMeta(storage);
+  const diff = patch.preferredDifficulty ?? prev.preferredDifficulty;
+  const sanitizedSeats =
+    patch.preferredSeats !== undefined ? sanitizePreferredSeats(patch.preferredSeats, diff) : prev.preferredSeats;
   const next: FcMetaSave = {
     ...prev,
     ...(patch.preferredName !== undefined ? { preferredName: patch.preferredName.trim().slice(0, 16) || '山人' } : {}),
     ...(patch.preferredDifficulty !== undefined ? { preferredDifficulty: patch.preferredDifficulty } : {}),
     ...(patch.preferredBotCount !== undefined
-      ? { preferredBotCount: Math.min(5, Math.max(1, Math.floor(patch.preferredBotCount))) }
+      ? { preferredBotCount: Math.min(6, Math.max(0, Math.floor(patch.preferredBotCount))) }
       : {}),
+    ...(sanitizedSeats ? { preferredSeats: sanitizedSeats } : {}),
     ...(patch.preferredExpansions !== undefined ? { preferredExpansions: [...patch.preferredExpansions] } : {}),
     ...(patch.tutorialCompleted !== undefined ? { tutorialCompleted: patch.tutorialCompleted } : {}),
   };

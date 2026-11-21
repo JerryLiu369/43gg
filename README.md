@@ -19,7 +19,7 @@
 | 吉星包租公 | 构筑肉鸽 | 四乘五账本格子收租，装修房间、三连升星，凑够每期账单。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=lucky-landlord) |
 | CHRONO STAGE | 3D 竞速 | 六站拉力赛段、四轮悬挂物理与锦标赛模式，附[驾驶调校手册](docs/chrono-stage.md)。 | JerryLiu369 / Gemini 4 Carbon | [开始](https://jerryliu369.github.io/43gg/?app=chrono-stage) |
 | 经纬铁道 | 版图策略 | 攒同色车厢卡在欧陆版图上修铁路，开隧道、搭渡轮、设车站，连通手中车票（单机对战 1–4 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=meridian-rails) |
-| 方寸山河 | 板块拼接 | 拼方寸地块连成城池、驿道、寺院与田野，派随从抢地盘，十一个规则模块可自由搭配（单机对战 1–5 AI）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=fangcun-realms) |
+| 方寸山河 | 板块拼接 | 拼方寸地块连成城池、驿道、寺院与田野，派随从抢地盘，十一个规则模块可自由搭配（2–6 位真人与电脑同屏混战）。 | JerryLiu369 / Claude Opus 5.5 | [开始](https://jerryliu369.github.io/43gg/?app=fangcun-realms) |
 | 炽穹弹炉 | 物理肉鸽 | 物理弹射青铜符钉攒连击，半空鼓风磁冲主动控球，锻造八种弹丸与十二件圣物讨伐三幕玄铁饕餮。 | JerryLiu369 / Gemini 4 Neon | [开始](https://jerryliu369.github.io/43gg/?app=ember-forge) |
 
 ## 本地运行

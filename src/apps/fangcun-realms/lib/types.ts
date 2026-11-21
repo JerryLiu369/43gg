@@ -31,9 +31,19 @@ export interface LocalSeat {
   botLevel: BotLevel | null;
 }
 
+export interface SeatConfig {
+  isBot: boolean;
+  name?: string;
+  botLevel?: BotLevel;
+  color?: PlayerColor;
+}
+
 export interface FcMatchConfig {
-  playerName: string;
-  botLevels: BotLevel[];
+  /** Explicit seat roster (2–6 seats, any mix of humans and bots). Takes precedence over playerName + botLevels. */
+  seats?: SeatConfig[];
+  /** Legacy single-human shortcut: 1 human + botLevels.length bots. */
+  playerName?: string;
+  botLevels?: BotLevel[];
   expansions: ExpansionId[];
   riverForbidReverseBend?: boolean;
   seed?: string;
@@ -42,6 +52,7 @@ export interface FcMatchConfig {
 export interface FcLocalMatch {
   state: GameState;
   seats: LocalSeat[];
+  /** First human seat index, or -1 in all-bot spectate matches. Kept for backward compatibility. */
   humanSeat: number;
   seq: number;
   updatedAt: string;
@@ -54,6 +65,7 @@ export interface FcMetaSave {
   preferredName: string;
   preferredDifficulty: BotLevel;
   preferredBotCount: number;
+  preferredSeats?: SeatConfig[];
   preferredExpansions: ExpansionId[];
   /** The guided first game has been finished or skipped. */
   tutorialCompleted: boolean;
